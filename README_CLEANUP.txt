@@ -1,0 +1,1 @@
+Suppression des dossiers vides image/ et pdfs/ à la racine. Les fichiers utiles sont dans assets/.
