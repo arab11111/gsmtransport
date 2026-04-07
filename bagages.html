@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestionnaire de Bagages Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#1e40af;
+  --primary-light:#3b82f6;
+  --secondary:#0f766e;
+  --danger:#dc2626;
+  --warning:#d97706;
+  --success:#16a34a;
+  --bg:#f8fafc;
+  --bg-secondary:#ecf0f5;
+  --card:#ffffff;
+  --text-primary:#0f1729;
+  --text-secondary:#64748b;
+  --border:#e2e8f0;
+  --shadow-sm:0 1px 2px 0 rgba(0,0,0,0.05);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,0.1);
+  --shadow-lg:0 10px 15px -3px rgba(0,0,0,0.1);
+  --shadow-xl:0 20px 25px -5px rgba(0,0,0,0.1);
+  --rounded-sm:6px;
+  --rounded-md:10px;
+  --rounded-lg:16px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  background:linear-gradient(135deg,rgba(255, 255, 255, 0.295) 0%,rgba(255, 255, 255, 0.185) 100%),url('image/arriereplant.jpg') center/cover fixed;
+  color:var(--text-primary);
+  min-height:100vh;
+  line-height:1.6;
+}
+
+/* Navigation */
+nav{
+  background:linear-gradient(135deg,var(--primary) 0%,#1e3a8a 100%);
+  color:white;
+  padding:0;
+  box-shadow:var(--shadow-lg);
+  position:sticky;
+  top:0;
+  z-index:1000;
+}
+
+nav .nav-container{
+  max-width:1400px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 2rem;
+  height:70px;
+}
+
+nav .logo-section{
+  display:flex;
+  align-items:center;
+  gap:1rem;
+  font-weight:700;
+  font-size:1.4rem;
+  font-family:'Poppins',sans-serif;
+}
+
+nav .logo-section img{
+  width:48px;
+  height:48px;
+  border-radius:10px;
+  background:rgba(255,255,255,0.1);
+  padding:4px;
+  object-fit:contain;
+}
+
+nav .nav-subtitle{
+  font-size:0.85rem;
+  opacity:0.9;
+  font-weight:400;
+}
+
+.wrap{max-width:1400px;margin:0 auto;padding:2rem}
+
+header.page-header{
+  background:var(--card);
+  border-radius:var(--rounded-lg);
+  padding:2.5rem;
+  margin-bottom:2rem;
+  box-shadow:var(--shadow-md);
+  border-left:5px solid var(--primary);
+}
+
+header.page-header h1{
+  font-family:'Poppins',sans-serif;
+  font-size:2.2rem;
+  margin-bottom:0.5rem;
+  color:var(--text-primary);
+}
+
+header.page-header .breadcrumb{
+  color:var(--text-secondary);
+  font-size:0.95rem;
+}
+
+.grid{display:grid;grid-template-columns:1fr 380px;gap:2rem;margin-bottom:2rem}
+
+.card{
+  background:var(--card);
+  border-radius:var(--rounded-lg);
+  padding:2rem;
+  box-shadow:var(--shadow-md);
+  border:1px solid var(--border);
+  transition:box-shadow 0.3s ease;
+}
+
+.card:hover{box-shadow:var(--shadow-lg)}
+
+.card-title{
+  font-size:1.2rem;
+  font-weight:600;
+  margin-bottom:1.5rem;
+  color:var(--text-primary);
+  font-family:'Poppins',sans-serif;
+  display:flex;
+  align-items:center;
+  gap:0.75rem;
+}
+
+.card-title::before{
+  content:'';
+  width:4px;
+  height:24px;
+  background:var(--primary-light);
+  border-radius:2px;
+}
+
+form{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1.5rem}
+
+.form-group{display:flex;flex-direction:column;gap:0.5rem}
+
+label{
+  display:block;
+  font-size:0.95rem;
+  font-weight:500;
+  color:var(--text-primary);
+  margin-bottom:0.25rem;
+}
+
+input[type=text], input[type=number], select, textarea{
+  width:100%;
+  padding:0.85rem 1rem;
+  border:1.5px solid var(--border);
+  border-radius:var(--rounded-sm);
+  font-size:0.95rem;
+  font-family:inherit;
+  transition:border-color 0.3s ease,box-shadow 0.3s ease;
+  background:var(--card);
+}
+
+input[type=text]:focus, input[type=number]:focus, select:focus, textarea:focus{
+  outline:none;
+  border-color:var(--primary);
+  box-shadow:0 0 0 3px rgba(30,64,175,0.1);
+}
+
+textarea{min-height:100px;resize:vertical}
+
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:0.5rem;
+  padding:0.85rem 1.5rem;
+  border:none;
+  border-radius:var(--rounded-sm);
+  font-size:0.95rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:all 0.3s ease;
+  text-decoration:none;
+  white-space:nowrap;
+  font-family:inherit;
+}
+
+.btn-primary{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:white;box-shadow:var(--shadow-md)}
+
+.btn-primary:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+
+.btn-secondary{background:var(--bg-secondary);color:var(--text-primary);border:1.5px solid var(--border)}
+
+.btn-secondary:hover{background:var(--border);box-shadow:var(--shadow-md)}
+
+.btn-danger{background:var(--danger);color:white;box-shadow:var(--shadow-md)}
+
+.btn-danger:hover{opacity:0.9;transform:translateY(-2px)}
+
+.btn-small{padding:0.6rem 1rem;font-size:0.85rem}
+
+.controls{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem}
+
+.filters{display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
+
+.filter-group{display:flex;gap:0.5rem;align-items:center}
+
+.filter-group label{margin:0;font-size:0.9rem;color:var(--text-secondary);min-width:fit-content}
+
+.filter-group select, .filter-group input{padding:0.65rem 0.85rem;font-size:0.9rem}
+
+.stat-pill{
+  background:var(--bg-secondary);
+  padding:0.75rem 1.5rem;
+  border-radius:50px;
+  font-size:0.9rem;
+  font-weight:600;
+  color:var(--primary);
+  display:inline-flex;
+  gap:0.5rem;
+}
+
+.search-box{padding:0.85rem 1.5rem;border-radius:var(--rounded-sm);border:1.5px solid var(--border);font-size:0.95rem;width:280px}
+
+.table-container{
+  overflow-x:auto;
+  border-radius:var(--rounded-md);
+  border:1px solid var(--border);
+  margin-top:1.5rem;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:var(--card);
+}
+
+th,td{
+  padding:1rem;
+  text-align:left;
+  font-size:0.95rem;
+  border-bottom:1px solid var(--border);
+}
+
+th{
+  background:linear-gradient(135deg,var(--bg-secondary) 0%,#f1f5f9 100%);
+  font-weight:700;
+  color:var(--text-primary);
+  position:sticky;
+  top:0;
+}
+
+tr:hover{background:#fafbfc}
+
+tr:last-child td{border-bottom:none}
+
+.badge{
+  display:inline-block;
+  padding:0.35rem 0.85rem;
+  border-radius:50px;
+  font-size:0.85rem;
+  font-weight:600;
+}
+
+.badge-success{background:#dcfce7;color:var(--success)}
+
+.badge-danger{background:#fee2e2;color:var(--danger)}
+
+.badge-secondary{background:#e5e7eb;color:#374151}
+
+.action-buttons{display:flex;gap:0.5rem;align-items:center}
+
+.btn-icon{
+  background:transparent;
+  border:none;
+  padding:0.5rem;
+  cursor:pointer;
+  font-size:1.1rem;
+  border-radius:6px;
+  transition:background 0.2s ease;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.btn-icon:hover{background:var(--bg-secondary)}
+
+.muted-cell{color:var(--text-secondary);font-style:italic}
+
+.form-row{grid-column:1/-1;display:flex;gap:1rem;justify-content:flex-end;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
+
+.empty-state{
+  text-align:center;
+  padding:3rem 2rem;
+  color:var(--text-secondary);
+}
+
+.empty-state svg{
+  width:80px;
+  height:80px;
+  margin-bottom:1rem;
+  opacity:0.3;
+}
+
+@media (max-width:1024px){
+  .grid{grid-template-columns:1fr}
+  .controls{flex-direction:column;align-items:flex-start}
+  .filters{flex-direction:column;align-items:flex-start}
+  nav .nav-container{padding:0 1rem}
+}
+
+@media (max-width:640px){
+  .wrap{padding:1rem}
+  header.page-header{padding:1.5rem;border-left-width:3px}
+  header.page-header h1{font-size:1.5rem}
+  .card{padding:1.5rem}
+  form{grid-template-columns:1fr}
+  .search-box{width:100%;max-width:none}
+  table{font-size:0.85rem}
+  th,td{padding:0.75rem}
+  .controls{margin-bottom:1rem}
+  nav .logo-section{font-size:1rem}
+}
+</style>
+</head>
+<script src="/socket.io/socket.io.js"></script>
+<body>
+  <div id="notif-reservations" style="background:linear-gradient(90deg,#fffbe6,#e6ffe6);color:#1a4d2e;padding:1.2rem 1.7rem;border-radius:14px;margin:1.5rem auto 1rem auto;max-width:650px;box-shadow:0 4px 18px #0002;font-weight:700;font-size:1.15em;display:none;transition:background 0.3s;"></div>
+  <div id="liste-reservations" style="max-width:700px;margin:0 auto 2rem auto;"></div>
+<!-- Navigation Bar -->
+<nav>
+  <div class="nav-container">
+    <div class="logo-section">
+      <img id="headerLogo" alt="logo" src="image/logo1.png" onerror="this.style.visibility='hidden'" style="margin-right:0.5rem;">
+      <div>
+        <div>GSM Transport de Bagages</div>
+        <div class="nav-subtitle">France = Algérie</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <!-- Page Header -->
+  <header class="page-header">
+    <h1>📦 Gestion des Bagages</h1>
+    <div class="breadcrumb">GSM Transport de bagages </div>
+  </header>
+
+  <div class="grid">
+    <div>
+      <!-- Form Card -->
+      <section class="card">
+        <div class="card-title">✏️ Ajouter / Modifier un bagage</div>
+        <form id="bagageForm" novalidate>
+          <div class="form-group">
+            <label>Numéro de bagage *</label>
+            <input id="bag_number" type="text" required autocomplete="off" placeholder="Ex: BAG-2024-001"/>
+          </div>
+          <div class="form-group">
+            <label>Numéro France</label>
+            <input id="num_fr" type="text" autocomplete="off" placeholder="Ex: FR123456"/>
+          </div>
+          <div class="form-group">
+            <label>Numéro Algérie</label>
+            <input id="num_dz" type="text" autocomplete="off" placeholder="Ex: DZ987654"/>
+          </div>
+          <div class="form-group">
+            <label>Région</label>
+            <select id="region"></select>
+          </div>
+
+          <div class="form-group" id="subRegionWrap" style="display:none">
+            <label>Sous-région (Hors Wilaya)</label>
+            <select id="subRegion">
+              <option value="EAST">EAST</option>
+              <option value="OUEST">OUEST</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="customRegionWrap" style="display:none">
+            <label>Autre région</label>
+            <input id="customRegion" type="text" placeholder="Entrez le nom de la région"/>
+          </div>
+
+          <div class="form-group">
+            <label>Adresse</label>
+            <input id="adresse" type="text" placeholder="Adresse complète"/>
+          </div>
+          <div class="form-group">
+            <label>Type de bagage</label>
+            <input id="type_bagage" type="text" placeholder="Ex: Valise, Carton, Sac"/>
+          </div>
+          <div class="form-group">
+            <label>Statut de paiement</label>
+            <select id="paid"><option value="">-- Sélectionner --</option><option value="Oui">Payé</option><option value="Non">Non payé</option></select>
+          </div>
+          <div class="form-group" id="montantDueContainer" style="display:none">
+            <label>Montant dû (EUR)</label>
+            <input id="montant_due" type="number" min="0" step="0.01" placeholder="0.00" style="border:2px solid var(--danger);color:var(--danger);font-weight:600"/>
+          </div>
+
+          <div class="form-row">
+            <input type="hidden" id="editingId"/>
+            <button type="button" id="clearBtn" class="btn btn-secondary btn-small">Réinitialiser</button>
+            <button type="submit" id="saveBtn" class="btn btn-primary btn-small">💾 Enregistrer</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Data Management Card -->
+      <section class="card" style="margin-top:2rem">
+        <div class="card-title">📋 Liste des Bagages</div>
+        
+        <!-- Filters Section -->
+        <div class="controls" style="margin-bottom:2rem">
+          <div class="filters">
+            <div class="filter-group">
+              <label>Région</label>
+              <select id="filterRegion"><option value="">Toutes</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Sous-région</label>
+              <select id="filterSubRegion"><option value="">Toutes</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Paiement</label>
+              <select id="filterPaid">
+                <option value="">Tous</option>
+                <option value="Non">Non payés</option>
+                <option value="Oui">Payés</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Recherche</label>
+              <input id="search" class="search-box" placeholder="Rechercher par numéro..."/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats and Actions -->
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem">
+          <div class="stat-pill">
+            <span>📊</span>
+            <span>Total: <strong id="count">0</strong> bagages</span>
+          </div>
+        </div>
+
+        <!-- Actions Buttons -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem">
+          <button id="exportEachRegion" class="btn btn-primary">📄 PDF par région</button>
+          <button id="exportUnpaid" class="btn btn-danger">🔴 PDF non payés</button>
+          <button id="exportUnknown" class="btn btn-primary">❓ Régions inconnues</button>
+          <button id="exportJSON" class="btn btn-secondary">📤 Export JSON</button>
+          <button id="importJSON" class="btn btn-secondary">📥 Import JSON</button>
+          <button id="deleteAll" class="btn btn-danger">🗑️ Supprimer tout</button>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+          <table id="table" aria-live="polite">
+            <thead>
+              <tr>
+                <th style="width:40px">#</th>
+                <th>Num Bag</th>
+                <th>Num FR</th>
+                <th>Num DZ</th>
+                <th>Région</th>
+                <th>Adresse</th>
+                <th>Type</th>
+                <th>Statut</th>
+                <th>Montant €</th>
+                <th style="width:100px">Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- Sidebar Stats -->
+    <aside>
+      <section class="card">
+        <div class="card-title">📈 Statistiques</div>
+        <div style="display:grid;gap:1rem">
+          <div style="background:linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%);padding:1.5rem;border-radius:var(--rounded-md);border-left:4px solid var(--success)">
+            <div style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.25rem">Bagages payés</div>
+            <div id="statPaid" style="font-size:1.8rem;font-weight:700;color:var(--success)">0</div>
+          </div>
+          <div style="background:linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%);padding:1.5rem;border-radius:var(--rounded-md);border-left:4px solid var(--danger)">
+            <div style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.25rem">Non payés</div>
+            <div id="statUnpaid" style="font-size:1.8rem;font-weight:700;color:var(--danger)">0</div>
+          </div>
+          <div style="background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);padding:1.5rem;border-radius:var(--rounded-md);border-left:4px solid var(--primary)">
+            <div style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.25rem">Montant total dû</div>
+            <div id="statTotal" style="font-size:1.5rem;font-weight:700;color:var(--primary)">0,00 €</div>
+          </div>
+        </div>
+
+        <div style="margin-top:2rem;padding:1rem;background:var(--bg-secondary);border-radius:var(--rounded-md)">
+          <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.5rem">ℹ️ Astuce</div>
+          <div style="font-size:0.9rem;color:var(--text-primary)">Utilisez les filtres pour affiner votre recherche et les boutons d'export pour générer des rapports PDF.</div>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<!-- jsPDF + AutoTable -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+// Ouvre cloche.html lors du clic sur la cloche
+document.getElementById('bell-btn').addEventListener('click', function(e) {
+  window.open('cloche.html', '_blank', 'width=420,height=420');
+});
+(function(){
+  const STORAGE_KEY = 'liste_bagages_v9';
+  const regionOptions = ["Hors Wilaya","Tizi Ouzou","Azazga","Alger","Michelet","Bejaia","Iloula","Autre","Region non reconnu"];
+
+  const el = id => document.getElementById(id);
+  const bag_number = el('bag_number'), num_fr = el('num_fr'), num_dz = el('num_dz'),
+  region = el('region'), subRegionWrap = el('subRegionWrap'), subRegion = el('subRegion'),
+  customRegionWrap = el('customRegionWrap'), customRegion = el('customRegion'),
+  adresse = el('adresse'), type_bagage = el('type_bagage'),
+  paid = el('paid'), montant_due = el('montant_due'), montantDueContainer = el('montantDueContainer'),
+  editingId = el('editingId'), saveBtn = el('saveBtn'), clearBtn = el('clearBtn'),
+  filterRegion = el('filterRegion'), filterSubRegion = el('filterSubRegion'),
+  filterPaid = el('filterPaid'), search = el('search'),
+  tblBody = document.querySelector('#table tbody'), countEl = el('count'),
+  exportEachRegion = el('exportEachRegion'), exportUnpaid = el('exportUnpaid'), exportUnknown = el('exportUnknown'),
+  exportJSON = el('exportJSON'), importJSON = el('importJSON'), deleteAllBtn = el('deleteAll');
+
+  let data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+  const formatCurrency = (v) => {
+    if(v===undefined||v===null||v==='') return '';
+    return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:2}).format(Number(v));
+      filtered.forEach((it,idx)=>{
+  const socket = io();
+  const notifDiv = document.getElementById('notif-reservations');
+  const listeDiv = document.getElementById('liste-reservations');
+
+  // Gestion notifications sans mode admin
+  function getNotifications() {
+    return JSON.parse(localStorage.getItem('notifications') || '[]');
+  }
+  function saveNotifications(list) {
+    localStorage.setItem('notifications', JSON.stringify(list));
+  }
+  function addNotification(data) {
+    const list = getNotifications();
+    list.unshift({ ...data, read: false });
+    saveNotifications(list);
+    renderNotifications();
+  }
+  function markAllRead() {
+    const list = getNotifications().map(n => ({...n, read: true}));
+    saveNotifications(list);
+    renderNotifications();
+  }
+  function deleteReadNotifications() {
+    const list = getNotifications().filter(n => !n.read);
+    saveNotifications(list);
+    renderNotifications();
+  }
+  function deleteNotification(idx) {
+    const list = getNotifications();
+    list.splice(idx, 1);
+    saveNotifications(list);
+    renderNotifications();
+  }
+  function clearNotifications() {
+    localStorage.removeItem('notifications');
+    renderNotifications();
+  }
+  function renderNotifications() {
+    const notifications = getNotifications();
+    if (notifications.length === 0) {
+      listeDiv.innerHTML = '<p style="text-align:center;color:#888;">Aucune notification de réservation.</p>';
+      notifDiv.style.display = 'none';
+      return;
+    }
+    // Affichage notification en haut, gestion pro
+    const unread = notifications.find(n => !n.read);
+    if (unread) {
+      notifDiv.innerHTML = `
+        <span style=\"color:#d97706;font-size:1.3em;vertical-align:middle;\">⚡</span>
+        <span style=\"color:#1a4d2e;\">Nouvelle réservation reçue !</span>
+        <span style=\"background:#e6ffe6;color:#1a4d2e;border-radius:8px;padding:0.2em 0.7em;margin-left:1em;font-weight:700;\">Total : ${notifications.length}</span>
+        <button onclick=\"markAllRead()\" style=\"margin-left:1em;background:#1e40af;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout marquer comme lu</button>
+        <button onclick=\"deleteReadNotifications()\" style=\"margin-left:0.7em;background:#b91c1c;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Supprimer notifications lues</button>
+        <button onclick=\"clearNotifications()\" style=\"margin-left:0.7em;background:#64748b;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout supprimer</button>
+      `;
+      notifDiv.style.display = 'block';
+    } else {
+      notifDiv.innerHTML = `
+        <span style=\"color:#16a34a;font-size:1.2em;vertical-align:middle;\">✔️</span>
+        <span style=\"color:#1a4d2e;\">Toutes les notifications ont été lues.</span>
+        <span style=\"background:#e6ffe6;color:#1a4d2e;border-radius:8px;padding:0.2em 0.7em;margin-left:1em;font-weight:700;\">Total : ${notifications.length}</span>
+        <button onclick=\"deleteReadNotifications()\" style=\"margin-left:1em;background:#b91c1c;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Supprimer notifications lues</button>
+        <button onclick=\"clearNotifications()\" style=\"margin-left:0.7em;background:#64748b;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout supprimer</button>
+      `;
+      notifDiv.style.display = 'block';
+    }
+    // Affichage historique avec lien PDF bleu et suppression individuelle
+    listeDiv.innerHTML = notifications.map((n, idx) => `
+      <div style=\"background:#fff;border-radius:10px;box-shadow:0 1px 6px #0001;padding:1rem 1.2rem;margin-bottom:1.1rem;${n.read ? 'opacity:0.7;' : ''}\">
+        <b>Bagage #${n.bagage_numero}</b> – <b>${n.exp_nom} ${n.exp_prenom}</b> → <b>${n.dest_nom} ${n.dest_prenom}</b><br>
+        <span style=\\\"color:#1e40af;\\\">${n.pays_dest} / ${n.destination}${n.region ? ' / ' + n.region : ''}</span> | <b>${n.nb_bagages} bagage(s)</b> | <b>${n.poids} kg</b> | <b>${n.prix} €</b><br>
+        <span style=\\\"color:#64748b;\\\">Tél. expéditeur: ${n.exp_tel} – Tél. destinataire: ${n.dest_tel}</span>
+        ${n.notes ? `<div style='margin-top:0.5em;color:#555;'>Note: ${n.notes}</div>` : ''}
+        <div style='margin-top:0.7em;'>
+          <a href=\"/pdfs/reservation_${n.bagage_numero}.pdf\" target=\"_blank\" style=\"color:#2563eb;font-weight:700;text-decoration:underline;font-size:1.08em;\">Télécharger PDF</a>
+          ${n.read ? '<span style=\\\"color:#16a34a;margin-left:1em;\\\">(Lue)</span>' : '<span style=\\\"color:#d97706;margin-left:1em;\\\">(Non lue)</span>'}
+          <button onclick=\"deleteNotification(${idx})\" style=\"margin-left:1em;background:#e11d48;color:#fff;border:none;padding:0.2em 0.7em;border-radius:7px;cursor:pointer;font-weight:600;font-size:0.95em;\">Supprimer</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Écoute directe des notifications socket
+  socket.on('booking_notification', data => {
+    addNotification(data);
+  });
+
+  window.addEventListener('DOMContentLoaded', function() {
+    renderNotifications();
+  });
+
+        tr.appendChild(dzTd);
+    addNotification(data);
+    renderNotifications();
+  });
+
+  window.addEventListener('DOMContentLoaded', function() {
+    checkAdmin();
+    renderNotifications();
+  });
+        
+        tr.appendChild(makeTd(it.region||''));
+        tr.appendChild(makeTd(it.adresse||''));
+        tr.appendChild(makeTd(it.type_bagage||''));
+        
+        const paidTd=document.createElement('td');
+        if(it.paid==='Oui'){
+          paidTd.innerHTML='<span class="badge badge-success">✓ Payé</span>';
+        } else if(it.paid==='Non'){
+          paidTd.innerHTML='<span class="badge badge-danger">✗ Non payé</span>';
+        }
+        tr.appendChild(paidTd);
+        
+        tr.appendChild(makeTd(it.montant_due ? formatCurrency(it.montant_due) : ''));
+        
+        const tdActions=document.createElement('td');
+        tdActions.className='action-buttons';
+        const btnEdit=document.createElement('button');
+        btnEdit.className='btn-icon';
+        btnEdit.innerHTML='✏️';
+        btnEdit.title='Modifier ce bagage';
+        btnEdit.onclick=()=>editEntry(it.id);
+        
+        const btnDel=document.createElement('button');
+        btnDel.className='btn-icon';
+        btnDel.innerHTML='🗑️';
+        btnDel.title='Supprimer ce bagage';
+        btnDel.style.color='var(--danger)';
+        btnDel.onclick=()=>del(it.id);
+        
+        tdActions.append(btnEdit,btnDel);
+        tr.appendChild(tdActions);
+        tblBody.appendChild(tr);
+      });
+    }
+    countEl.textContent = filtered.length;
+    updateStats();
+  }
+
+  function updateStats(){
+    const paidCount = data.filter(it=>it.paid==='Oui').length;
+    const unpaidCount = data.filter(it=>it.paid==='Non').length;
+    const totalAmount = data.filter(it=>it.paid==='Non').reduce((sum,it)=>sum+(Number(it.montant_due)||0),0);
+    
+    document.getElementById('statPaid').textContent = paidCount;
+    document.getElementById('statUnpaid').textContent = unpaidCount;
+    document.getElementById('statTotal').textContent = formatCurrency(totalAmount);
+  }
+
+  // initial render
+  render();
+
+  // --- Gestion du formulaire ---
+  paid.addEventListener('change',()=>{montantDueContainer.style.display=paid.value==='Non'?'block':'none';});
+  region.addEventListener('change',()=>{
+    const isHors = region.value==='Hors Wilaya';
+    subRegionWrap.style.display = isHors ? 'block' : 'none';
+    customRegionWrap.style.display = region.value==='Autre' ? 'block' : 'none';
+  });
+
+  document.getElementById('bagageForm').addEventListener('submit',e=>{
+    e.preventDefault();
+    if(!bag_number.value.trim()){alert('Numéro de bagage requis'); return;}
+    if(paid.value==='Non' && (!montant_due.value || Number(montant_due.value)<=0)){alert('Montant dû requis et > 0'); return;}
+
+    const id = editingId.value || String(Date.now());
+    let regVal = region.value;
+    if(regVal==='Hors Wilaya') regVal=`Hors Wilaya - ${subRegion.value||'EAST'}`;
+    else if(regVal==='Autre') regVal=customRegion.value.trim()||'Autre';
+
+    const it={
+      id,
+      bag_number:bag_number.value.trim(),
+      num_fr:num_fr.value.trim(),
+      num_dz:num_dz.value.trim(),
+      region:regVal,
+      adresse:adresse.value.trim(),
+      type_bagage:type_bagage.value.trim(),
+      paid:paid.value,
+      montant_due:paid.value==='Non'?Number(montant_due.value):''
+    };
+
+    if(editingId.value){
+      const idx=data.findIndex(x=>x.id===id);
+      if(idx>-1) data[idx]=it;
+    } else data.push(it);
+
+    save();
+    document.getElementById('bagageForm').reset();
+    montantDueContainer.style.display='none';
+    customRegionWrap.style.display='none';
+    subRegionWrap.style.display='none';
+    editingId.value='';
+    render();
+  });
+
+  clearBtn.addEventListener('click',()=>{
+    document.getElementById('bagageForm').reset();
+    editingId.value='';
+    montantDueContainer.style.display='none';
+    subRegionWrap.style.display='none';
+    customRegionWrap.style.display='none';
+  });
+
+  function editEntry(id){
+    const it=data.find(x=>x.id===id);
+    if(!it) return;
+    editingId.value=id;
+    bag_number.value=it.bag_number;
+    num_fr.value=it.num_fr;
+    num_dz.value=it.num_dz;
+    if(it.region.startsWith('Hors Wilaya')){
+      region.value='Hors Wilaya';
+      subRegionWrap.style.display='block';
+      subRegion.value=it.region.split('-')[1]?.trim()||'EAST';
+      customRegionWrap.style.display='none';
+    } else if(!regionOptions.includes(it.region)){
+      region.value='Autre';
+      customRegionWrap.style.display='block';
+      customRegion.value=it.region;
+      subRegionWrap.style.display='none';
+    } else {
+      region.value=it.region;
+      subRegionWrap.style.display='none';
+      customRegionWrap.style.display='none';
+    }
+    adresse.value=it.adresse;
+    type_bagage.value=it.type_bagage;
+    paid.value=it.paid;
+    montant_due.value=it.montant_due||'';
+    montantDueContainer.style.display=it.paid==='Non'?'block':'none';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function del(id){
+    if(confirm('Supprimer ce bagage ?')){
+      data=data.filter(x=>x.id!==id);
+      save();
+      render();
+    }
+  }
+
+  deleteAllBtn.addEventListener('click',()=>{
+    if(confirm('Voulez-vous vraiment supprimer tous les bagages ?')){
+      data=[];
+      save();
+      render();
+    }
+  });
+
+  // === EXPORT JSON / IMPORT JSON ===
+  exportJSON.addEventListener('click',()=>{
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`bagages_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  importJSON.addEventListener('click',()=>{
+    const input=document.createElement('input');
+    input.type='file'; input.accept='application/json';
+    input.onchange=e=>{
+      const file=e.target.files[0];
+      if(!file) return;
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        try{
+          const json=JSON.parse(ev.target.result);
+          if(Array.isArray(json)){
+            // ensure each record has id
+            json.forEach(it=>{ if(!it.id) it.id = String(Date.now()) + Math.random().toString(16).slice(2,8); });
+            data=json; save(); render(); alert('Import JSON effectué !');
+          } else alert('JSON invalide : Attendu un tableau');
+        } catch(err){ alert('Erreur JSON: '+err.message); }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  });
+
+  // Helper: safe image to dataURL (may fail cross-origin)
+  async function getLogoDataUrl(){
+    // Désactivé en raison des restrictions CORS
+    return null;
+  }
+
+  // Utility: make safe filename
+  function safeName(s){
+    return s.replace(/[^a-z0-9-_\.]/gi, '_').slice(0,100);
+  }
+
+  // Utility: determine unknown regions
+  function isRegionKnown(regionValue){
+    if(!regionValue) return false;
+    if(regionValue.startsWith('Hors Wilaya')) return true;
+    return regionOptions.includes(regionValue);
+  }
+
+  // === EXPORT: PDF - one file per region ===
+  exportEachRegion.addEventListener('click', async ()=>{
+    const filtered = getFilteredData();
+    if(!filtered.length){ alert('Aucun bagage filtré à exporter'); return; }
+
+    const grouped = {};
+    filtered.forEach(it=>{
+      const r = (it.region && it.region.trim()) || 'Sans région';
+      if(!grouped[r]) grouped[r] = [];
+      grouped[r].push(it);
+    });
+
+    const { jsPDF } = window.jspdf;
+
+    // color constants
+    const GOLD = [212,175,55];          // doré pour l'en-tête
+    const BOTTLE_GREEN = [2,71,49];     // vert bouteille pour Num DZ
+    const UNPAID_RED = [185,28,28];
+
+    for(const [regionName, list] of Object.entries(grouped)){
+      const doc = new jsPDF({unit:'pt',format:'a4'});
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const marginLeft = 36;
+      const marginRight = 36;
+      const now = new Date();
+      const dateTimeStr = now.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'});
+
+      // header
+      doc.setFontSize(14);
+      doc.setTextColor(40,40,40);
+      doc.text(`Bagages — ${regionName}`, marginLeft, 48);
+      doc.setFontSize(9);
+      doc.setTextColor(100,100,100);
+      doc.text(`Généré le : ${dateTimeStr}`, marginLeft, 62);
+
+      // table
+      const body = list.map((it, idx) => {
+        const isUnpaid = it.paid === 'Non';
+        const textColor = isUnpaid ? UNPAID_RED : [40,40,40];
+        return [
+          {content: String(idx + 1), styles: {textColor}},
+          {content: it.bag_number || '', styles: {textColor}},
+          {content: it.num_dz || '', styles: {textColor}},
+          {content: it.adresse || '', styles: {textColor}},
+          {content: it.type_bagage || '', styles: {textColor}},
+          {content: it.paid || '', styles: {textColor}},
+          {content: it.montant_due ? formatCurrency(it.montant_due) : '', styles: {textColor}}
+        ];
+      });
+
+      doc.autoTable({
+        startY: 82,
+        head: [[{content:'#'},{content:'Num Bag'},{content:'Num DZ'},{content:'Adresse'},{content:'Type'},{content:'Payé'},{content:'Montant'}]],
+        body,
+        styles:{fontSize:8,cellPadding:5,overflow:'linebreak',halign:'left'},
+        headStyles:{fillColor:GOLD,textColor:[0,0,0],fontStyle:'bold',halign:'center'},
+        margin:{left:marginLeft,right:marginRight},
+        columnStyles:{
+          0:{cellWidth:32,halign:'center'},
+          1:{cellWidth:70},
+          2:{cellWidth:70},
+          3:{cellWidth:150},
+          4:{cellWidth:70},
+          5:{cellWidth:50,halign:'center'},
+          6:{cellWidth:60,halign:'right'}
+        },
+        didParseCell: function(data){
+          if (data.section === 'body' && data.column.index === 2) {
+            data.cell.styles.textColor = BOTTLE_GREEN;
+          }
+        }
+      });
+
+      const fname = `bagages_${safeName(regionName)}_${new Date().toISOString().slice(0,10)}.pdf`;
+      doc.save(fname);
+    }
+    alert('PDF(s) créés: un fichier par région (téléchargement lancé).');
+  });
+
+  // === EXPORT: PDF - NON PAYÉS (unique) ===
+  exportUnpaid.addEventListener('click', async ()=>{
+    const filtered = getFilteredData();
+    const unpaid = filtered.filter(it=>it.paid==='Non');
+    if(!unpaid.length){ alert('Aucun bagage non payé à exporter'); return; }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({unit:'pt',format:'a4'});
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const marginLeft = 36;
+    const marginRight = 36;
+    const now = new Date();
+    const dateTimeStr = now.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'});
+
+    const BOTTLE_GREEN = [2,71,49];
+    const UNPAID_RED = [185,28,28];
+
+    // header
+    doc.setFontSize(14);
+    doc.setTextColor(40,40,40);
+    doc.text('Bagages NON PAYÉS (Tous régions)', marginLeft, 48);
+    doc.setFontSize(9);
+    doc.setTextColor(100,100,100);
+    doc.text(`Généré le : ${dateTimeStr}`, marginLeft, 62);
+
+    // group unpaid by region for display separation
+    const unpaidGrouped = {};
+    unpaid.forEach(it=>{
+      const r = (it.region && it.region.trim()) || 'Sans région';
+      if(!unpaidGrouped[r]) unpaidGrouped[r]=[];
+      unpaidGrouped[r].push(it);
+    });
+
+    let cursorY = 86;
+    for(const [regionName, list] of Object.entries(unpaidGrouped)){
+      doc.setFontSize(11);
+      doc.setTextColor(30,30,30);
+      doc.text(`Région : ${regionName} ( ${list.length} )`, marginLeft, cursorY);
+      const body = list.map((it, idx) => {
+        const textColor = UNPAID_RED;
+        return [
+          {content: String(idx + 1), styles: {textColor}},
+          {content: it.bag_number || '', styles: {textColor}},
+          {content: it.num_dz || '', styles: {textColor}},
+          {content: it.adresse || '', styles: {textColor}},
+          {content: it.type_bagage || '', styles: {textColor}},
+          {content: it.montant_due ? formatCurrency(it.montant_due) : '', styles: {textColor}}
+        ];
+      });
+
+      const tableStartY = cursorY + 8;
+      doc.autoTable({
+        startY: tableStartY,
+        head: [[{content:'#'},{content:'Num Bag'},{content:'Num DZ'},{content:'Adresse'},{content:'Type'},{content:'Montant'}]],
+        body,
+        styles:{fontSize:8,cellPadding:5,overflow:'linebreak'},
+        headStyles:{fillColor:UNPAID_RED,textColor:[255,255,255],fontStyle:'bold'},
+        margin:{left:marginLeft,right:marginRight},
+        columnStyles:{
+          0:{cellWidth:32,halign:'center'},
+          1:{cellWidth:70},
+          2:{cellWidth:70},
+          3:{cellWidth:180},
+          4:{cellWidth:70},
+          5:{cellWidth:60,halign:'right'}
+        },
+        didParseCell: function(data){
+          if (data.section === 'body' && data.column.index === 2) {
+            data.cell.styles.textColor = BOTTLE_GREEN;
+          }
+        }
+      });
+
+      cursorY = doc.lastAutoTable.finalY + 18;
+      if(cursorY > doc.internal.pageSize.getHeight() - 80){
+        doc.addPage();
+        cursorY = 48;
+      }
+    }
+
+    const fname = `bagages_non_payes_${new Date().toISOString().slice(0,10)}.pdf`;
+    doc.save(fname);
+    alert('PDF NON PAYÉS généré.');
+  });
+
+  // === EXPORT: PDF - régions non reconnues seul ===
+  exportUnknown.addEventListener('click', async ()=>{
+    const filtered = getFilteredData();
+    const unknown = filtered.filter(it => {
+      const rv = it.region || '';
+      return rv === 'Region non reconnu' || !isRegionKnown(rv);
+    });
+    if(!unknown.length){ alert('Aucune région non reconnue à exporter'); return; }
+
+    const grouped = {};
+    unknown.forEach(it=>{
+      const r = (it.region && it.region.trim()) || 'Sans région';
+      if(!grouped[r]) grouped[r] = [];
+      grouped[r].push(it);
+    });
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({unit:'pt',format:'a4'});
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const marginLeft = 36;
+    const marginRight = 36;
+    const now = new Date();
+    const dateTimeStr = now.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'});
+
+    const GOLD = [212,175,55];
+    const BOTTLE_GREEN = [2,71,49];
+    const UNPAID_RED = [185,28,28];
+
+    // header
+    doc.setFontSize(14);
+    doc.setTextColor(40,40,40);
+    doc.text('Bagages — Régions non reconnues', marginLeft, 48);
+    doc.setFontSize(9);
+    doc.setTextColor(100,100,100);
+    doc.text(`Généré le : ${dateTimeStr}`, marginLeft, 62);
+
+    let cursorY = 86;
+    for(const [regionName, list] of Object.entries(grouped)){
+      doc.setFontSize(11);
+      doc.setTextColor(30,30,30);
+      doc.text(`Région : ${regionName} ( ${list.length} )`, marginLeft, cursorY);
+
+      const body = list.map((it, idx) => {
+        const isUnpaid = it.paid === 'Non';
+        const textColor = isUnpaid ? UNPAID_RED : [40,40,40];
+        return [
+          {content: String(idx + 1), styles: {textColor}},
+          {content: it.bag_number || '', styles: {textColor}},
+          {content: it.num_dz || '', styles: {textColor}},
+          {content: it.adresse || '', styles: {textColor}},
+          {content: it.type_bagage || '', styles: {textColor}},
+          {content: it.paid || '', styles: {textColor}},
+          {content: it.montant_due ? formatCurrency(it.montant_due) : '', styles: {textColor}}
+        ];
+      });
+
+      const tableStartY = cursorY + 8;
+      doc.autoTable({
+        startY: tableStartY,
+        head: [[{content:'#'},{content:'Num Bag'},{content:'Num DZ'},{content:'Adresse'},{content:'Type'},{content:'Payé'},{content:'Montant'}]],
+        body,
+        styles:{fontSize:8,cellPadding:5,overflow:'linebreak'},
+        headStyles:{fillColor:GOLD,textColor:[0,0,0],fontStyle:'bold'},
+        margin:{left:marginLeft,right:marginRight},
+        columnStyles:{
+          0:{cellWidth:32,halign:'center'},
+          1:{cellWidth:70},
+          2:{cellWidth:70},
+          3:{cellWidth:140},
+          4:{cellWidth:70},
+          5:{cellWidth:50,halign:'center'},
+          6:{cellWidth:60,halign:'right'}
+        },
+        didParseCell: function(data){
+          if (data.section === 'body' && data.column.index === 2) {
+            data.cell.styles.textColor = BOTTLE_GREEN;
+          }
+        }
+      });
+
+      cursorY = doc.lastAutoTable.finalY + 18;
+      if(cursorY > doc.internal.pageSize.getHeight() - 80){
+        doc.addPage();
+        cursorY = 48;
+      }
+    }
+
+    const fname = `bagages_regions_non_reconnues_${new Date().toISOString().slice(0,10)}.pdf`;
+    doc.save(fname);
+    alert('PDF régions non reconnues généré.');
+  });
+
+  // re-render when filters change
+  [filterRegion, filterSubRegion, filterPaid, search].forEach(inp=>{
+    inp.addEventListener('input', render);
+    inp.addEventListener('change', render);
+  });
+
+})();
+</script>
+</body>
+<script>
+socket.on('booking_notification', data => {
+// --- NOTIFICATIONS : version propre, unique, sans admin ---
+const socket = io();
+const notifDiv = document.getElementById('notif-reservations');
+const listeDiv = document.getElementById('liste-reservations');
+
+function getNotifications() {
+  return JSON.parse(localStorage.getItem('notifications') || '[]');
+}
+function saveNotifications(list) {
+  localStorage.setItem('notifications', JSON.stringify(list));
+}
+function addNotification(data) {
+  const list = getNotifications();
+  list.unshift({ ...data, read: false });
+  saveNotifications(list);
+  renderNotifications();
+}
+function markAllRead() {
+  const list = getNotifications().map(n => ({...n, read: true}));
+  saveNotifications(list);
+  renderNotifications();
+}
+function deleteReadNotifications() {
+  const list = getNotifications().filter(n => !n.read);
+  saveNotifications(list);
+  renderNotifications();
+}
+function deleteNotification(idx) {
+  const list = getNotifications();
+  list.splice(idx, 1);
+  saveNotifications(list);
+  renderNotifications();
+}
+function clearNotifications() {
+  localStorage.removeItem('notifications');
+  renderNotifications();
+}
+function renderNotifications() {
+  const notifications = getNotifications();
+  if (notifications.length === 0) {
+    listeDiv.innerHTML = '<p style="text-align:center;color:#888;">Aucune notification de réservation.</p>';
+    notifDiv.style.display = 'none';
+    return;
+  }
+  // Affichage notification en haut, gestion pro
+  const unread = notifications.find(n => !n.read);
+  if (unread) {
+    notifDiv.innerHTML = `
+      <span style=\"color:#d97706;font-size:1.3em;vertical-align:middle;\">⚡</span>
+      <span style=\"color:#1a4d2e;\">Nouvelle réservation reçue !</span>
+      <span style=\"background:#e6ffe6;color:#1a4d2e;border-radius:8px;padding:0.2em 0.7em;margin-left:1em;font-weight:700;\">Total : ${notifications.length}</span>
+      <button onclick=\"markAllRead()\" style=\"margin-left:1em;background:#1e40af;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout marquer comme lu</button>
+      <button onclick=\"deleteReadNotifications()\" style=\"margin-left:0.7em;background:#b91c1c;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Supprimer notifications lues</button>
+      <button onclick=\"clearNotifications()\" style=\"margin-left:0.7em;background:#64748b;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout supprimer</button>
+    `;
+    notifDiv.style.display = 'block';
+  } else {
+    notifDiv.innerHTML = `
+      <span style=\"color:#16a34a;font-size:1.2em;vertical-align:middle;\">✔️</span>
+      <span style=\"color:#1a4d2e;\">Toutes les notifications ont été lues.</span>
+      <span style=\"background:#e6ffe6;color:#1a4d2e;border-radius:8px;padding:0.2em 0.7em;margin-left:1em;font-weight:700;\">Total : ${notifications.length}</span>
+      <button onclick=\"deleteReadNotifications()\" style=\"margin-left:1em;background:#b91c1c;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Supprimer notifications lues</button>
+      <button onclick=\"clearNotifications()\" style=\"margin-left:0.7em;background:#64748b;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout supprimer</button>
+    `;
+    notifDiv.style.display = 'block';
+  }
+  // Affichage historique avec lien PDF bleu et suppression individuelle
+  listeDiv.innerHTML = notifications.map((n, idx) => `
+    <div style=\"background:#fff;border-radius:10px;box-shadow:0 1px 6px #0001;padding:1rem 1.2rem;margin-bottom:1.1rem;${n.read ? 'opacity:0.7;' : ''}\">
+      <b>Bagage #${n.bagage_numero}</b> – <b>${n.exp_nom} ${n.exp_prenom}</b> → <b>${n.dest_nom} ${n.dest_prenom}</b><br>
+      <span style=\\\"color:#1e40af;\\\">${n.pays_dest} / ${n.destination}${n.region ? ' / ' + n.region : ''}</span> | <b>${n.nb_bagages} bagage(s)</b> | <b>${n.poids} kg</b> | <b>${n.prix} €</b><br>
+      <span style=\\\"color:#64748b;\\\">Tél. expéditeur: ${n.exp_tel} – Tél. destinataire: ${n.dest_tel}</span>
+      ${n.notes ? `<div style='margin-top:0.5em;color:#555;'>Note: ${n.notes}</div>` : ''}
+      <div style='margin-top:0.7em;'>
+        <a href=\"/pdfs/reservation_${n.bagage_numero}.pdf\" target=\"_blank\" style=\"color:#2563eb;font-weight:700;text-decoration:underline;font-size:1.08em;\">Télécharger PDF</a>
+        ${n.read ? '<span style=\\\"color:#16a34a;margin-left:1em;\\\">(Lue)</span>' : '<span style=\\\"color:#d97706;margin-left:1em;\\\">(Non lue)</span>'}
+        <button onclick=\"deleteNotification(${idx})\" style=\"margin-left:1em;background:#e11d48;color:#fff;border:none;padding:0.2em 0.7em;border-radius:7px;cursor:pointer;font-weight:600;font-size:0.95em;\">Supprimer</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Écoute directe des notifications socket
+socket.on('booking_notification', data => {
+  addNotification(data);
+});
+
+window.addEventListener('DOMContentLoaded', function() {
+  renderNotifications();
+});
+</script>
+</html>

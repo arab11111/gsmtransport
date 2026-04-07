@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GSM Express – Réservation Bagage</title>
+  <meta name="description" content="Réservez votre bagage simplement, obtenez un PDF, un QR code, et une notification instantanée." />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap">
+  <style>
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: linear-gradient(120deg, #f3f6ff 0%, #e0e7ff 100%);
+      margin: 0;
+      min-height: 100vh;
+      color: #1e293b;
+    }
+    .container {
+      max-width: 420px;
+      margin: 3rem auto;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 8px 32px #0001;
+      padding: 2.5rem 2rem 2rem 2rem;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+      color: #1e40af;
+    }
+    label {
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 0.3rem;
+      display: block;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 7px;
+      font-size: 1rem;
+      margin-bottom: 1.1rem;
+      background: #f8fafc;
+      color: #1e293b;
+      transition: border 0.2s;
+    }
+    input[readonly] {
+      background: #e0e7ff;
+      color: #334155;
+      font-weight: 700;
+      border-color: #1e40af;
+    }
+    input:focus, textarea:focus {
+      border-color: #1e40af;
+      outline: none;
+    }
+    .actions {
+      display: flex;
+      gap: 0.7rem;
+      justify-content: center;
+      margin-top: 1.2rem;
+    }
+    .btn {
+      background: linear-gradient(90deg, #1e40af 0%, #0ea5e9 100%);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 0.7rem 1.5rem;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 2px 8px #0002;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: linear-gradient(90deg, #0ea5e9 0%, #1e40af 100%);
+    }
+    .btn-clean {
+      background: #f1f5f9;
+      color: #1e293b;
+      border: 1.5px solid #cbd5e1;
+      box-shadow: none;
+    }
+    .btn-clean:hover {
+      background: #e0e7ef;
+    }
+    .qr-section {
+      text-align: center;
+      margin-top: 2rem;
+      display: none;
+    }
+    .notif {
+      background: #e0e7ff;
+      color: #1e40af;
+      border-radius: 8px;
+      padding: 0.8rem 1.2rem;
+      margin-bottom: 1.2rem;
+      text-align: center;
+      font-weight: 600;
+      display: none;
+    }
+    @media (max-width: 600px) {
+      .container { padding: 1.2rem 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <button id="btnLogout" style="position:fixed;top:24px;right:32px;z-index:1000;background:#fff;border:2px solid #1e40af;color:#1e40af;font-weight:700;padding:0.6rem 1.5rem;border-radius:8px;box-shadow:0 2px 8px #0001;cursor:pointer;">Déconnecter</button>
+  <div class="container">
+    <h1>Réserver mon bagage</h1>
+    <div class="notif" id="notif"></div>
+    <form id="reservationForm" autocomplete="on">
+      <label for="bagage_numero">Numéro de bagage</label>
+      <input id="bagage_numero" type="text" readonly autocomplete="off" />
+      <label for="exp_nom">Nom de l'expéditeur</label>
+      <input id="exp_nom" type="text" required placeholder="Nom expéditeur" autocomplete="family-name" />
+      <label for="exp_prenom">Prénom de l'expéditeur</label>
+      <input id="exp_prenom" type="text" required placeholder="Prénom expéditeur" autocomplete="given-name" />
+      <label for="exp_tel">Téléphone expéditeur (FR ou DZ)</label>
+      <input id="exp_tel" type="tel" required placeholder="Ex: +213... ou +33..." autocomplete="tel" />
+      <label for="dest_nom">Nom du destinataire</label>
+      <input id="dest_nom" type="text" required placeholder="Nom destinataire" autocomplete="family-name" />
+      <label for="dest_prenom">Prénom du destinataire</label>
+      <input id="dest_prenom" type="text" required placeholder="Prénom destinataire" autocomplete="given-name" />
+      <label for="dest_tel">Téléphone destinataire (FR ou DZ)</label>
+      <input id="dest_tel" type="tel" required placeholder="Ex: +213... ou +33..." autocomplete="tel" />
+      <label for="pays_dest">Pays de destination</label>
+      <select id="pays_dest" required autocomplete="country">
+        <option value="">Choisir...</option>
+        <option value="France">France</option>
+        <option value="Algérie">Algérie</option>
+      </select>
+      <div id="destination_zone"></div>
+      <label for="nb_bagages">Nombre de bagages</label>
+      <input id="nb_bagages" type="number" min="1" step="1" required placeholder="Ex: 2" autocomplete="off" />
+      <label for="poids">Poids total (kg)</label>
+      <input id="poids" type="number" min="0.1" step="0.1" required placeholder="Ex: 12.5" autocomplete="off" />
+      <label for="notes">Note pour le colis</label>
+      <textarea id="notes" placeholder="Note éventuelle" autocomplete="off"></textarea>
+      <label for="prix">Prix estimé (€)</label>
+      <input id="prix" type="text" readonly autocomplete="off" />
+      <div class="actions">
+        <button type="button" id="btnQr" class="btn">QR Code</button>
+        <button type="button" id="btnPdf" class="btn">Télécharger PDF</button>
+        <button type="submit" class="btn">Réserver</button>
+        <button type="button" id="btnReset" class="btn btn-clean">Nettoyer</button>
+      </div>
+    </form>
+    <div class="qr-section" id="qrZone"></div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const notif = document.getElementById('notif');
+    // --- NOTIFICATIONS : version propre, unique, sans admin ---
+    // Zone d'affichage notifications (ajoutée dynamiquement)
+    let notifDiv = document.getElementById('notif-reservations');
+    let listeDiv = document.getElementById('liste-reservations');
+    if (!notifDiv) {
+      notifDiv = document.createElement('div');
+      notifDiv.id = 'notif-reservations';
+      notifDiv.style = 'background:linear-gradient(90deg,#fffbe6,#e6ffe6);color:#1a4d2e;padding:1.2rem 1.7rem;border-radius:14px;margin:1.5rem auto 1rem auto;max-width:650px;box-shadow:0 4px 18px #0002;font-weight:700;font-size:1.15em;display:none;transition:background 0.3s;';
+      document.body.insertBefore(notifDiv, document.body.firstChild);
+    }
+    if (!listeDiv) {
+      listeDiv = document.createElement('div');
+      listeDiv.id = 'liste-reservations';
+      listeDiv.style = 'max-width:700px;margin:0 auto 2rem auto;';
+      document.body.insertBefore(listeDiv, notifDiv.nextSibling);
+    }
+    function getNotifications() {
+      return JSON.parse(localStorage.getItem('notifications') || '[]');
+    }
+    function saveNotifications(list) {
+      localStorage.setItem('notifications', JSON.stringify(list));
+    }
+    function addNotification(data) {
+      const list = getNotifications();
+      list.unshift({ ...data, read: false });
+      saveNotifications(list);
+      renderNotifications();
+    }
+    function markAllRead() {
+      const list = getNotifications().map(n => ({...n, read: true}));
+      saveNotifications(list);
+      renderNotifications();
+    }
+    function deleteReadNotifications() {
+      const list = getNotifications().filter(n => !n.read);
+      saveNotifications(list);
+      renderNotifications();
+    }
+    function deleteNotification(idx) {
+      const list = getNotifications();
+      list.splice(idx, 1);
+      saveNotifications(list);
+      renderNotifications();
+    }
+    function clearNotifications() {
+      localStorage.removeItem('notifications');
+      renderNotifications();
+    }
+    function renderNotifications() {
+      const notifications = getNotifications();
+      if (notifications.length === 0) {
+        listeDiv.innerHTML = '<p style="text-align:center;color:#888;">Aucune notification de réservation.</p>';
+        notifDiv.style.display = 'none';
+        return;
+      }
+      // Affichage notification en haut, gestion pro
+      const unread = notifications.find(n => !n.read);
+      if (unread) {
+        notifDiv.innerHTML = `
+          <span style=\"color:#d97706;font-size:1.3em;vertical-align:middle;\">⚡</span>
+          <span style=\"color:#1a4d2e;\">Nouvelle réservation reçue !</span>
+          <span style=\"background:#e6ffe6;color:#1a4d2e;border-radius:8px;padding:0.2em 0.7em;margin-left:1em;font-weight:700;\">Total : ${notifications.length}</span>
+          <button onclick=\"markAllRead()\" style=\"margin-left:1em;background:#1e40af;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout marquer comme lu</button>
+          <button onclick=\"deleteReadNotifications()\" style=\"margin-left:0.7em;background:#b91c1c;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Supprimer notifications lues</button>
+          <button onclick=\"clearNotifications()\" style=\"margin-left:0.7em;background:#64748b;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout supprimer</button>
+        `;
+        notifDiv.style.display = 'block';
+      } else {
+        notifDiv.innerHTML = `
+          <span style=\"color:#16a34a;font-size:1.2em;vertical-align:middle;\">✔️</span>
+          <span style=\"color:#1a4d2e;\">Toutes les notifications ont été lues.</span>
+          <span style=\"background:#e6ffe6;color:#1a4d2e;border-radius:8px;padding:0.2em 0.7em;margin-left:1em;font-weight:700;\">Total : ${notifications.length}</span>
+          <button onclick=\"deleteReadNotifications()\" style=\"margin-left:1em;background:#b91c1c;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Supprimer notifications lues</button>
+          <button onclick=\"clearNotifications()\" style=\"margin-left:0.7em;background:#64748b;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout supprimer</button>
+        `;
+        notifDiv.style.display = 'block';
+      }
+      // Affichage historique avec lien PDF bleu et suppression individuelle
+      listeDiv.innerHTML = notifications.map((n, idx) => `
+        <div style=\"background:#fff;border-radius:10px;box-shadow:0 1px 6px #0001;padding:1rem 1.2rem;margin-bottom:1.1rem;${n.read ? 'opacity:0.7;' : ''}\">
+          <b>Bagage #${n.bagage_numero}</b> – <b>${n.exp_nom} ${n.exp_prenom}</b> → <b>${n.dest_nom} ${n.dest_prenom}</b><br>
+          <span style=\\\"color:#1e40af;\\\">${n.pays_dest} / ${n.destination}${n.region ? ' / ' + n.region : ''}</span> | <b>${n.nb_bagages} bagage(s)</b> | <b>${n.poids} kg</b> | <b>${n.prix} €</b><br>
+          <span style=\\\"color:#64748b;\\\">Tél. expéditeur: ${n.exp_tel} – Tél. destinataire: ${n.dest_tel}</span>
+          ${n.notes ? `<div style='margin-top:0.5em;color:#555;'>Note: ${n.notes}</div>` : ''}
+          <div style='margin-top:0.7em;'>
+            <a href=\"${n.pdfLink || ('/pdfs/reservation_' + n.bagage_numero + '.pdf')}\" target=\"_blank\" style=\"color:#2563eb;font-weight:700;text-decoration:underline;font-size:1.08em;\">Télécharger PDF</a>
+            ${n.read ? '<span style=\\\"color:#16a34a;margin-left:1em;\\\">(Lue)</span>' : '<span style=\\\"color:#d97706;margin-left:1em;\\\">(Non lue)</span>'}
+            <button onclick=\"deleteNotification(${idx})\" style=\"margin-left:1em;background:#e11d48;color:#fff;border:none;padding:0.2em 0.7em;border-radius:7px;cursor:pointer;font-weight:600;font-size:0.95em;\">Supprimer</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    // Écoute directe des notifications socket
+    socket.on('booking_notification', data => {
+      addNotification(data);
+    });
+    window.addEventListener('DOMContentLoaded', function() {
+      renderNotifications();
+    });
+    // ...reste du JS existant (formulaire, PDF, QR, etc.)...
+    function generateBagageNumero() {
+      const date = new Date();
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      const rand = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+      return `BAG-${y}${m}${d}-${rand}`;
+    }
+    function calculerPrix(poids) {
+      if (!poids || isNaN(poids)) return '';
+      poids = parseFloat(poids);
+      if (poids <= 25) {
+        return (poids * 4).toFixed(2);
+      } else {
+        return (poids * 3.5).toFixed(2);
+      }
+    }
+    function getFormData() {
+      let pays = document.getElementById('pays_dest').value;
+      let destination = '';
+      let region = '';
+      if (pays === 'Algérie') {
+        destination = document.getElementById('wilaya_dest') ? document.getElementById('wilaya_dest').value : '';
+        if (destination === 'Tizi Ouzou') {
+          region = document.getElementById('region_tizi') ? document.getElementById('region_tizi').value : '';
+        } else if (destination) {
+          region = document.getElementById('region_autre') ? document.getElementById('region_autre').value : '';
+        }
+      } else if (pays === 'France') {
+        destination = document.getElementById('ville_fr') ? document.getElementById('ville_fr').value : '';
+        if (destination === 'Paris') {
+          region = document.getElementById('arr_paris') ? document.getElementById('arr_paris').value : '';
+        } else if (destination === 'Lyon') {
+          region = document.getElementById('arr_lyon') ? document.getElementById('arr_lyon').value : '';
+        } else if (destination === 'Marseille') {
+          region = document.getElementById('arr_marseille') ? document.getElementById('arr_marseille').value : '';
+        } else if (destination) {
+          region = document.getElementById('region_fr_autre') ? document.getElementById('region_fr_autre').value : '';
+        }
+      }
+      return {
+        bagage_numero: document.getElementById('bagage_numero').value,
+        exp_nom: document.getElementById('exp_nom').value,
+        exp_prenom: document.getElementById('exp_prenom').value,
+        exp_tel: document.getElementById('exp_tel').value,
+        dest_nom: document.getElementById('dest_nom').value,
+        dest_prenom: document.getElementById('dest_prenom').value,
+        dest_tel: document.getElementById('dest_tel').value,
+        pays_dest: pays,
+        destination: destination,
+        region: region,
+        nb_bagages: document.getElementById('nb_bagages').value,
+        poids: document.getElementById('poids').value,
+        notes: document.getElementById('notes').value,
+        prix: document.getElementById('prix').value
+      };
+    }
+    function showQr(data) {
+      const qrZone = document.getElementById('qrZone');
+      qrZone.innerHTML = '';
+      qrZone.style.display = 'block';
+      new QRCode(qrZone, {
+        text: JSON.stringify(data),
+        width: 160,
+        height: 160,
+        colorDark: '#1e40af',
+        colorLight: '#fff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+    // Gestion déconnexion Firebase
+    document.getElementById('btnLogout').onclick = async function() {
+      if (window.firebase && window.firebase.auth) {
+        try {
+          await window.firebase.auth().signOut();
+        } catch (e) {}
+      }
+      window.location.href = '/index.html';
+    };
+    function generateAndDownloadPdf(data) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('Confirmation de Réservation', 15, 18);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      let y = 32;
+      doc.text(`Numéro: ${data.bagage_numero}`, 15, y); y += 10;
+      doc.text(`Expéditeur: ${data.exp_nom} ${data.exp_prenom}`, 15, y); y += 10;
+      doc.text(`Destinataire: ${data.dest_nom} ${data.dest_prenom}`, 15, y); y += 10;
+      doc.text(`Téléphone expéditeur: ${data.exp_tel}`, 15, y); y += 10;
+      doc.text(`Téléphone destinataire: ${data.dest_tel}`, 15, y); y += 10;
+      doc.text(`Pays: ${data.pays_dest}`, 15, y); y += 10;
+      doc.text(`Destination: ${data.destination}${data.region ? ' / ' + data.region : ''}`, 15, y); y += 10;
+      doc.text(`Bagages: ${data.nb_bagages} | Poids: ${data.poids} kg | Prix: ${data.prix} €`, 15, y); y += 10;
+      if (data.notes) { doc.text(`Note: ${data.notes}`, 15, y); y += 10; }
+      doc.save(`reservation_${data.bagage_numero}.pdf`);
+    }
+    function sendBellNotification(data) {
+      try {
+        socket.emit('bell_notification', {
+          name: data.nom + ' ' + data.prenom,
+          contact: data.contact,
+          message: `Nouvelle réservation de ${data.nom} ${data.prenom}`,
+          bagage_numero: data.bagage_numero,
+          prix: data.prix,
+          timestamp: new Date().toISOString()
+        });
+        showNotif('Notification cloche envoyée !');
+      } catch (e) {
+        showNotif('Erreur lors de l\'envoi de la notification cloche.', false);
+      }
+    }
+    // Liste des wilayas d'Algérie
+    const wilayas = [
+      "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar", "Blida", "Bouira", "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Alger", "Djelfa", "Jijel", "Sétif", "Saïda", "Skikda", "Sidi Bel Abbès", "Annaba", "Guelma", "Constantine", "Médéa", "Mostaganem", "M'Sila", "Mascara", "Ouargla", "Oran", "El Bayadh", "Illizi", "Bordj Bou Arréridj", "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued", "Khenchela", "Souk Ahras", "Tipaza", "Mila", "Aïn Defla", "Naâma", "Aïn Témouchent", "Ghardaïa", "Relizane", "Timimoun", "Bordj Badji Mokhtar", "Ouled Djellal", "Béni Abbès", "In Salah", "In Guezzam", "Touggourt", "Djanet", "El M'Ghair", "El Meniaa"
+    ];
+
+    const tiziRegions = [
+      "Azazga", "Tizi Ville", "Illoula", "Michelet", "Iferhounene", "Mikla", "Draa Ben Khedda", "Freha", "Tigzirt"
+    ];
+
+    const franceVilles = ["Paris", "Lyon", "Marseille"];
+
+    const parisArr = [
+      "1er", "2e", "3e", "4e", "5e", "6e", "7e", "8e", "9e", "10e", "11e", "12e", "13e", "14e", "15e", "16e", "17e", "18e", "19e", "20e"
+    ];
+
+    const lyonArr = ["1er", "2e", "3e", "4e", "5e", "6e", "7e", "8e", "9e" ];
+
+    const marseilleArr = [
+      "1er", "2e", "3e", "4e", "5e", "6e", "7e", "8e", "9e", "10e", "11e", "12e", "13e", "14e", "15e", "16e"
+    ];
+
+    function renderDestinationField() {
+      const pays = document.getElementById('pays_dest').value;
+      const zone = document.getElementById('destination_zone');
+      if (pays === 'Algérie') {
+        let options = '<option value="">Choisir la wilaya</option>';
+        wilayas.forEach(w => { options += `<option value="${w}">${w}</option>`; });
+        zone.innerHTML = `<label for="wilaya_dest">Wilaya de destination</label><select id="wilaya_dest" required>${options}</select><div id="region_zone"></div>`;
+        setTimeout(() => {
+          document.getElementById('wilaya_dest').addEventListener('change', renderRegionField);
+        }, 0);
+      } else if (pays === 'France') {
+        let options = '<option value="">Choisir la ville</option>';
+        franceVilles.forEach(v => { options += `<option value="${v}">${v}</option>`; });
+        zone.innerHTML = `<label for="ville_fr">Ville de destination</label><select id="ville_fr" required>${options}</select><div id="region_zone_fr"></div>`;
+        setTimeout(() => {
+          document.getElementById('ville_fr').addEventListener('change', renderRegionFranceField);
+        }, 0);
+      } else {
+        zone.innerHTML = '';
+      }
+    }
+
+    function renderRegionField() {
+      const wilaya = document.getElementById('wilaya_dest').value;
+      const regionZone = document.getElementById('region_zone');
+      if (wilaya === 'Tizi Ouzou') {
+        let options = '<option value="">Choisir la région</option>';
+        tiziRegions.forEach(r => { options += `<option value="${r}">${r}</option>`; });
+        regionZone.innerHTML = `<label for="region_tizi">Région</label><select id="region_tizi" required>${options}</select>`;
+      } else if (wilaya) {
+        regionZone.innerHTML = `<label for="region_autre">Région</label><input id="region_autre" type="text" required placeholder="Région dans ${wilaya}" />`;
+      } else {
+        regionZone.innerHTML = '';
+      }
+    }
+
+    function renderRegionFranceField() {
+      const ville = document.getElementById('ville_fr').value;
+      const regionZone = document.getElementById('region_zone_fr');
+      if (ville === 'Paris') {
+        let options = '<option value="">Choisir l\'arrondissement</option>';
+        parisArr.forEach(a => { options += `<option value="${a}">${a} arrondissement</option>`; });
+        regionZone.innerHTML = `<label for="arr_paris">Arrondissement</label><select id="arr_paris" required>${options}</select>`;
+      } else if (ville === 'Lyon') {
+        let options = '<option value="">Choisir l\'arrondissement</option>';
+        lyonArr.forEach(a => { options += `<option value="${a}">${a} arrondissement</option>`; });
+        regionZone.innerHTML = `<label for="arr_lyon">Arrondissement</label><select id="arr_lyon" required>${options}</select>`;
+      } else if (ville === 'Marseille') {
+        let options = '<option value="">Choisir l\'arrondissement</option>';
+        marseilleArr.forEach(a => { options += `<option value="${a}">${a} arrondissement</option>`; });
+        regionZone.innerHTML = `<label for="arr_marseille">Arrondissement</label><select id="arr_marseille" required>${options}</select>`;
+      } else if (ville) {
+        regionZone.innerHTML = `<label for="region_fr_autre">Région</label><input id="region_fr_autre" type="text" required placeholder="Région dans ${ville}" />`;
+      } else {
+        regionZone.innerHTML = '';
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('pays_dest').addEventListener('change', renderDestinationField);
+        renderDestinationField();
+      // Numéro de bagage auto
+      let num = localStorage.getItem('bagage_numero');
+      if (!num) {
+        num = generateBagageNumero();
+        localStorage.setItem('bagage_numero', num);
+      }
+      document.getElementById('bagage_numero').value = num;
+      // Prix dynamique
+      document.getElementById('poids').addEventListener('input', function () {
+        document.getElementById('prix').value = calculerPrix(this.value);
+      });
+      // QR code
+      document.getElementById('btnQr').onclick = function () {
+        const data = getFormData();
+        showQr(data);
+      };
+      // PDF
+      document.getElementById('btnPdf').onclick = function () {
+        const data = getFormData();
+        generateAndDownloadPdf(data);
+      };
+      // Nettoyer
+      document.getElementById('btnReset').onclick = function () {
+        document.getElementById('reservationForm').reset();
+        document.getElementById('bagage_numero').value = num;
+        document.getElementById('prix').value = '';
+        document.getElementById('qrZone').style.display = 'none';
+      };
+      // Réserver (submit)
+      document.getElementById('reservationForm').onsubmit = function (e) {
+        e.preventDefault();
+        const data = getFormData();
+        // Envoi de la réservation au serveur pour notification admin
+        // Le serveur générera et sauvegardera le PDF, puis renverra le lien dans la notification
+        socket.emit('new_booking', data);
+        // Optionnel : notification cloche
+        sendBellNotification(data);
+        generateAndDownloadPdf(data);
+        showQr(data);
+        setTimeout(() => {
+          document.getElementById('reservationForm').reset();
+          document.getElementById('bagage_numero').value = num;
+          document.getElementById('prix').value = '';
+        }, 2000);
+      };
+    });
+  </script>
+</body>
+</html>
