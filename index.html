@@ -646,8 +646,8 @@ document.addEventListener('DOMContentLoaded', function() {
 loadDepartures();
 
 // --- NOTIFICATIONS : version admin uniquement ---
-// Force backend origin (avoid Live Server origin mismatches)
-const SERVER_ORIGIN = 'http://localhost:3002';
+// Use current origin so deployed site connects to its own backend
+const SERVER_ORIGIN = window.location.origin;
 const socket = io(SERVER_ORIGIN);
 const notifDiv = document.getElementById('notif-reservations');
 const listeDiv = document.getElementById('liste-reservations');
