@@ -5,32 +5,10 @@ const path = require('path');
 const fs = require('fs');
 const PDFDocument = require('pdfkit');
 const adminSdk = require('firebase-admin');
-let nodemailer = null;
-let mailTransporter = null;
-let sgMail = null;
-try {
-  nodemailer = require('nodemailer');
-} catch (e) {
-  nodemailer = null;
-}
-if (process.env.SENDGRID_API_KEY) {
-  try {
-    sgMail = require('@sendgrid/mail');
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  } catch (e) {
-    console.warn('SendGrid init failed:', e.message || e);
-    sgMail = null;
-  }
-}
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: process.env.ALLOWED_ORIGINS || '*',
-    methods: ['GET', 'POST']
-  }
-});
+const io = socketIo(server);
 let puppeteer;
 try {
   puppeteer = require('puppeteer-core');
@@ -49,15 +27,6 @@ app.use(express.static(path.join(__dirname)));
 // parse JSON bodies
 app.use(express.json());
 
-// Simple request logging middleware to help debug on Render/local
-app.use((req, res, next) => {
-  console.log(`[HTTP] ${new Date().toISOString()} ${req.method} ${req.originalUrl} from ${req.ip}`);
-  if (req.method === 'POST' || req.method === 'PUT') {
-    try { console.log('[HTTP] body:', JSON.stringify(req.body)); } catch (e) { /* ignore */ }
-  }
-  next();
-});
-
 // Initialize Firebase Admin SDK for server-side Firestore updates
 try {
   if (process.env.SERVICE_ACCOUNT_JSON) {
@@ -74,22 +43,6 @@ try {
   console.warn('firebase-admin initialization warning:', e.message || e);
 }
 const adminDb = adminSdk.firestore ? adminSdk.firestore() : null;
-console.log('Firebase admin initialized:', !!adminDb);
-// Configure SMTP transporter if SMTP vars are present
-if (nodemailer && process.env.SMTP_HOST && process.env.SMTP_USER) {
-  try {
-    mailTransporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: (process.env.SMTP_SECURE === 'true'),
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-    });
-  } catch (e) {
-    console.warn('SMTP transporter init failed:', e.message || e);
-    mailTransporter = null;
-  }
-}
-console.log('Email sender configured - sendgrid:', !!sgMail, 'smtp:', !!mailTransporter, 'adminEmail:', !!process.env.ADMIN_EMAIL);
 
 // Route par défaut
 app.get('/', (req, res) => {
@@ -147,52 +100,6 @@ io.on('connection', (socket) => {
         io.emit('booking_notification', Object.assign({}, bookingData, { pdfLink, date: new Date().toISOString() }));
         // Optionnel : émettre un événement séparé pour PDF généré
         io.emit('pdf_generated', { filename, url: pdfLink });
-        // Envoyer le PDF par email à l'admin si configuré
-        (async () => {
-          try {
-            const adminEmail = process.env.ADMIN_EMAIL;
-            if (!adminEmail) return;
-            const pdfBuffer = fs.readFileSync(filePath);
-            // Prefer SendGrid if available
-            if (sgMail) {
-              const msg = {
-                to: adminEmail,
-                from: process.env.FROM_EMAIL || (process.env.SMTP_USER || 'no-reply@gsmtransport.local'),
-                subject: `Nouvelle réservation ${bookingData.bagage_numero}`,
-                text: `Une nouvelle réservation a été effectuée. Voir la pièce jointe ou ${pdfLink}`,
-                attachments: [
-                  {
-                    content: pdfBuffer.toString('base64'),
-                    filename: filename,
-                    type: 'application/pdf',
-                    disposition: 'attachment'
-                  }
-                ]
-              };
-              try { await sgMail.send(msg); console.log('SendGrid: email sent to', adminEmail); } catch (e) { console.warn('SendGrid send error', e); }
-              return;
-            }
-
-            // Fallback to SMTP via nodemailer
-            if (mailTransporter) {
-              const mailOptions = {
-                from: process.env.FROM_EMAIL || process.env.SMTP_USER,
-                to: adminEmail,
-                subject: `Nouvelle réservation ${bookingData.bagage_numero}`,
-                text: `Nouvelle réservation. PDF disponible: ${pdfLink}`,
-                attachments: [ { filename, path: filePath } ]
-              };
-              mailTransporter.sendMail(mailOptions, (err, info) => {
-                if (err) return console.warn('SMTP send error', err);
-                console.log('SMTP email sent:', info && info.response);
-              });
-              return;
-            }
-            console.log('No email provider configured (SENDGRID_API_KEY or SMTP_*). Skipping email.');
-          } catch (e) {
-            console.warn('Error while sending admin email:', e);
-          }
-        })();
       });
 
       stream.on('error', (err) => {
@@ -221,36 +128,6 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('Client déconnecté:', socket.id);
-  });
-  
-  // Allow admin sockets to send transient settings via socket (note, selectedDate)
-  socket.on('update_settings', async (payload) => {
-    try {
-      // payload may contain adminNote or note, and selectedDate
-      const note = typeof payload === 'object' && (typeof payload.adminNote === 'string' ? payload.adminNote : (typeof payload.note === 'string' ? payload.note : undefined));
-      const selectedDate = typeof payload === 'object' && payload.selectedDate !== undefined ? payload.selectedDate : undefined;
-      const toSave = {};
-      if (note !== undefined) toSave.note = note;
-      if (selectedDate !== undefined) toSave.selectedDate = selectedDate;
-      // persist to Firestore if available, fallback to settings.json
-      if (adminDb) {
-        await adminDb.collection('meta').doc('settings').set(toSave, { merge: true });
-      } else {
-        const settingsFile = path.join(__dirname, 'settings.json');
-        let cur = {};
-        if (fs.existsSync(settingsFile)) {
-          try { cur = JSON.parse(fs.readFileSync(settingsFile, 'utf8')); } catch (e) { cur = {}; }
-        }
-        const next = Object.assign({}, cur, toSave);
-        fs.writeFileSync(settingsFile, JSON.stringify(next, null, 2));
-      }
-      // broadcast to all clients
-      io.emit('settings_updated', toSave);
-      console.log('settings updated via socket by', socket.id, toSave);
-    } catch (err) {
-      console.error('Error handling socket update_settings', err);
-      socket.emit('error', { message: 'update_settings failed' });
-    }
   });
 });
 
@@ -290,7 +167,6 @@ app.get('/generate-pdf/:id', async (req, res) => {
 // Server endpoint to update departures (batch). Optional admin token required via X-ADMIN-TOKEN.
 app.post('/api/departures', async (req, res) => {
   try {
-    console.log('[API] POST /api/departures payload:', req.body);
     const token = req.get('X-ADMIN-TOKEN');
     if (process.env.ADMIN_TOKEN && process.env.ADMIN_TOKEN !== token) {
       return res.status(403).json({ error: 'Forbidden' });
@@ -309,19 +185,6 @@ app.post('/api/departures', async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     console.error('Error /api/departures', err);
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-// Get departures (active dates) - return array of date strings
-app.get('/api/departures', async (req, res) => {
-  try {
-    if (!adminDb) return res.json([]);
-    const snapshot = await adminDb.collection('departures').where('active', '==', true).get();
-    const dates = snapshot.docs.map(d => d.id);
-    return res.json({ dates });
-  } catch (err) {
-    console.error('Error GET /api/departures', err);
     return res.status(500).json({ error: err.message });
   }
 });
@@ -349,24 +212,9 @@ app.get('/api/settings', async (req, res) => {
   }
 });
 
-// Health endpoint for deployment checks
-app.get('/health', (req, res) => {
-  try {
-    return res.json({
-      ok: true,
-      uptime: process.uptime(),
-      firebaseAdmin: !!adminDb,
-      timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
-  }
-});
-
 // Update global settings (admin only). Body: { note?: string, selectedDate?: string }
 app.post('/api/settings', async (req, res) => {
   try {
-    console.log('[API] POST /api/settings payload:', req.body);
     const token = req.get('X-ADMIN-TOKEN');
     if (process.env.ADMIN_TOKEN && process.env.ADMIN_TOKEN !== token) {
       return res.status(403).json({ error: 'Forbidden' });
