@@ -362,7 +362,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 const departuresRef = db.collection('departures');
-const settingsRef = db.collection('settings').doc('site');
 
 // === GESTION AUTH CLIENT (Compat) ===
 const clientLoginBtn = document.getElementById('client-login-btn');
@@ -460,7 +459,6 @@ const adminCodeInput = document.getElementById('admin-code-input');
 const adminCodeError = document.getElementById('admin-code-error');
 const closeAdminCodeModal = document.getElementById('close-admin-code-modal');
 let isAdmin = false;
-let pendingNavigationTarget = null;
 
 function showAdminCodeModal() {
     adminCodeModal.style.display = 'flex';
@@ -472,17 +470,6 @@ function hideAdminCodeModal() {
 }
 adminBtn.addEventListener('click', showAdminCodeModal);
 closeAdminCodeModal.addEventListener('click', hideAdminCodeModal);
-
-// Require admin code before allowing navigation to certain pages
-const bagagesLink = document.getElementById('bagages-link');
-if (bagagesLink) {
-    bagagesLink.addEventListener('click', function(e) {
-        if (isAdmin) return; // already admin, allow normal navigation
-        e.preventDefault();
-        pendingNavigationTarget = bagagesLink.getAttribute('href') || 'bagages.html';
-        showAdminCodeModal();
-    });
-}
 
 adminCodeForm.addEventListener('submit', function(e) {
     e.preventDefault();
@@ -500,12 +487,6 @@ adminCodeForm.addEventListener('submit', function(e) {
                         else localStorage.removeItem('ADMIN_API_TOKEN');
                     }
                 } catch (e) { /* ignore prompt errors */ }
-                // If a navigation was pending (user clicked a restricted link), go there now
-                if (pendingNavigationTarget) {
-                    const target = pendingNavigationTarget;
-                    pendingNavigationTarget = null;
-                    window.location.href = target;
-                }
     } else {
         adminCodeError.textContent = 'Code incorrect.';
         adminCodeError.style.display = 'block';
@@ -524,6 +505,7 @@ function setAdminUI(admin) {
         adminBtn.style.display = 'none';
         quitAdminBtn.style.display = '';
         document.getElementById('admin-note-section').style.display = '';
+        document.getElementById('display-note').style.display = '';
         notifDiv.style.display = '';
         listeDiv.style.display = '';
     } else {
@@ -539,86 +521,6 @@ function setAdminUI(admin) {
     updateAdminCalendarControls();
 }
 
-// --- Settings (admin note + adminSelectedDate) ---
-const displayNoteDiv = document.getElementById('display-note');
-const saveNoteBtn = document.getElementById('save-note-btn');
-const deleteNoteBtn = document.getElementById('delete-note-btn');
-
-// Real-time server connection (used by settings and notifications)
-const SERVER_ORIGIN = window.location.protocol + '//' + window.location.hostname + ':3002';
-const socket = (typeof io === 'function') ? io(SERVER_ORIGIN) : { on: ()=>{}, emit: ()=>{} };
-
-function loadSettingsRealtime() {
-    try {
-        // keep Firestore listener for other settings if used, but primarily
-        // listen for socket updates for transient admin notes
-        try {
-            settingsRef.onSnapshot(doc => {
-                const data = doc.exists ? doc.data() : {};
-                adminSelectedDate = data && (data.selectedDate || data.adminSelectedDate) ? (data.selectedDate || data.adminSelectedDate) : null;
-                const note = data && (data.note || data.adminNote) ? (data.note || data.adminNote) : '';
-                if (note && note.trim()) {
-                    displayNoteDiv.style.display = '';
-                    displayNoteDiv.innerHTML = note.replace(/\n/g, '<br>');
-                } else {
-                    displayNoteDiv.style.display = 'none';
-                    displayNoteDiv.innerHTML = '';
-                }
-                renderCalendar(currentMonth, currentYear);
-            }, err => { console.error('Erreur loadSettingsRealtime', err); });
-        } catch (e) { /* ignore if settings collection not used */ }
-        // Listen for real-time settings broadcasts from server (transient, not persisted)
-        socket.on('settings_updated', payload => {
-            try {
-                adminSelectedDate = payload && (payload.selectedDate || payload.adminSelectedDate) ? (payload.selectedDate || payload.adminSelectedDate) : null;
-                const note = payload && (typeof payload.note === 'string' ? payload.note : (typeof payload.adminNote === 'string' ? payload.adminNote : ''));
-                if (note && note.trim()) {
-                    displayNoteDiv.style.display = '';
-                    displayNoteDiv.innerHTML = note.replace(/\n/g, '<br>');
-                } else {
-                    displayNoteDiv.style.display = 'none';
-                    displayNoteDiv.innerHTML = '';
-                }
-                renderCalendar(currentMonth, currentYear);
-            } catch (err) { console.error('settings_updated handler error', err); }
-        });
-    } catch (e) { console.error('loadSettingsRealtime error', e); }
-}
-
-function requireAdminOrAlert() {
-    if (!isAdmin) { alert('Vous devez entrer le code admin pour effectuer cette action'); return false; }
-    return true;
-}
-
-if (saveNoteBtn) {
-    saveNoteBtn.addEventListener('click', async () => {
-        if (!requireAdminOrAlert()) return;
-        const note = document.getElementById('admin-note').value || '';
-        // If a single date is selected, publish it as adminSelectedDate
-        const dateToPublish = (selectedDates.length === 1) ? selectedDates[0] : adminSelectedDate;
-        try {
-            // Do NOT persist the note in Firestore; emit to server for real-time broadcast only
-            socket.emit('update_settings', { adminNote: note, note: note, selectedDate: dateToPublish });
-            alert('Note diffusée en temps réel.');
-        } catch (err) { console.error('emit update_settings error', err); alert('Erreur lors de l\'envoi de la note'); }
-    });
-}
-
-if (deleteNoteBtn) {
-    deleteNoteBtn.addEventListener('click', async () => {
-        if (!requireAdminOrAlert()) return;
-        try {
-            // Broadcast empty note to remove it from clients; do not save to Firestore
-            socket.emit('update_settings', { adminNote: '' });
-            document.getElementById('admin-note').value = '';
-            alert('Note supprimée (diffusion en temps réel).');
-        } catch (err) { console.error('delete note emit error', err); alert('Erreur lors de la suppression'); }
-    });
-}
-
-// start listening to settings
-loadSettingsRealtime();
-
 
 // === CALENDRIER SIMPLE (Firestone-backed) ===
 const calendarEl = document.getElementById('calendar');
@@ -630,7 +532,6 @@ let currentMonth = today.getMonth();
 let currentYear = today.getFullYear();
 let departDates = []; // will be loaded from Firestore
 let selectedDates = []; // admin selections (not immediately saved)
-let adminSelectedDate = null; // date set by admin via /api/settings (visible to all users)
 let departuresUnsubscribe = null; // Firestore realtime unsubscribe
 
 function renderCalendar(month, year) {
@@ -648,12 +549,7 @@ function renderCalendar(month, year) {
         const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
         const isDepart = departDates.includes(dateStr);
         const isSelected = selectedDates.includes(dateStr);
-        const isAdminSelected = adminSelectedDate === dateStr;
-        // build style: depart (red) has priority, else adminSelected gets highlighted outline
-        let tdStyle = 'padding:0.5em 0.2em;';
-        if (isDepart) tdStyle += "background:#fee2e2;color:#b91c1c;font-weight:700;border-radius:7px;";
-        else if (isAdminSelected) tdStyle += 'outline:3px solid rgba(241,199,11,0.95);border-radius:7px;';
-        html += `<td data-date='${dateStr}' class='${isSelected ? 'selected' : ''}' style='${tdStyle}'>${date}</td>`;
+        html += `<td data-date='${dateStr}' class='${isSelected ? 'selected' : ''}' style='padding:0.5em 0.2em;${isDepart ? "background:#fee2e2;color:#b91c1c;font-weight:700;border-radius:7px;" : ""}'>${date}</td>`;
         dayOfWeek++;
         if (dayOfWeek === 7 && date !== daysInMonth) { html += '</tr><tr>'; dayOfWeek = 0; }
     }
@@ -685,37 +581,16 @@ async function loadDepartures() {
     } catch (err) { console.error('Erreur loadDepartures', err); }
 }
 
-calendarEl.addEventListener('click', async (e) => {
+calendarEl.addEventListener('click', (e) => {
     const td = e.target.closest('td[data-date]');
     if (!td) return;
-    if (!isAdmin) return; // only admin can act
+    if (!isAdmin) return; // only admin can select
     const date = td.getAttribute('data-date');
-    const isDepart = departDates.includes(date);
-    const newActive = !isDepart;
-    try {
-        const token = localStorage.getItem('ADMIN_API_TOKEN');
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['X-ADMIN-TOKEN'] = token;
-        const res = await fetch(`${SERVER_ORIGIN}/api/departures`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ dates: [date], active: newActive })
-        });
-        if (!res.ok) throw new Error('Server error');
-        // update local view optimistically; Firestore realtime listener will correct if needed
-        if (newActive) {
-            if (!departDates.includes(date)) departDates.push(date);
-            adminSelectedDate = date;
-        } else {
-            departDates = departDates.filter(d => d !== date);
-            if (adminSelectedDate === date) adminSelectedDate = null;
-        }
-        socket.emit('update_settings', { adminNote: document.getElementById('admin-note')?.value || '', selectedDate: adminSelectedDate });
-        renderCalendar(currentMonth, currentYear);
-    } catch (err) {
-        console.error('apply single-date selection error', err);
-        alert('Erreur lors de la mise à jour de la date');
-    }
+    const idx = selectedDates.indexOf(date);
+    if (idx === -1) selectedDates.push(date);
+    else selectedDates.splice(idx, 1);
+    td.classList.toggle('selected');
+    updateAdminCalendarControls();
 });
 
 function updateAdminCalendarControls() {
@@ -744,16 +619,13 @@ async function applySelection(active) {
     if (selectedDates.length === 0) return;
     try {
         // Call server API to perform batch update (server will write to Firestore)
-        const token = localStorage.getItem('ADMIN_API_TOKEN');
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['X-ADMIN-TOKEN'] = token;
         const res = await fetch(`${SERVER_ORIGIN}/api/departures`, {
             method: 'POST',
-            headers,
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ dates: selectedDates, active: !!active })
         });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(json.error || json.message || 'Erreur serveur');
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Erreur serveur');
         // Server will update Firestore; local realtime listener will refresh UI
         clearSelection();
     } catch (err) { console.error('applySelection error', err); alert('Erreur lors de la mise à jour des dates'); }
@@ -761,12 +633,12 @@ async function applySelection(active) {
 
 // admin control buttons
 document.addEventListener('DOMContentLoaded', function() {
-    // Remove admin bulk-selection buttons per request
-    ['mark-depart-btn','unmark-depart-btn','clear-selection-btn','admin-calendar-controls'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.remove();
-    });
-    // keep UI state updated
+    const markBtn = document.getElementById('mark-depart-btn');
+    const unmarkBtn = document.getElementById('unmark-depart-btn');
+    const clearBtn = document.getElementById('clear-selection-btn');
+    if (markBtn) markBtn.addEventListener('click', () => applySelection(true));
+    if (unmarkBtn) unmarkBtn.addEventListener('click', () => applySelection(false));
+    if (clearBtn) clearBtn.addEventListener('click', () => clearSelection());
     updateAdminCalendarControls();
 });
 
@@ -774,6 +646,9 @@ document.addEventListener('DOMContentLoaded', function() {
 loadDepartures();
 
 // --- NOTIFICATIONS : version admin uniquement ---
+// Use current origin so deployed site connects to its own backend
+const SERVER_ORIGIN = window.location.origin;
+const socket = io(SERVER_ORIGIN);
 const notifDiv = document.getElementById('notif-reservations');
 const listeDiv = document.getElementById('liste-reservations');
 
@@ -849,12 +724,10 @@ socket.on('settings_updated', (payload) => {
         if (adminTextarea) adminTextarea.value = payload.note || '';
     }
     if (payload && payload.selectedDate !== undefined) {
-        // Update adminSelectedDate so all clients see the admin-chosen date
-        try {
-            adminSelectedDate = payload.selectedDate || null;
-            // re-render calendar to show the admin selected date
-            renderCalendar(currentMonth, currentYear);
-        } catch (e) { /* ignore */ }
+        // Optionally highlight selected date in calendar — simple reload
+        // You could implement a focused selection if needed
+        // For now, call loadDepartures() to refresh from Firestore/backend
+        try { loadDepartures(); } catch (e) { /* ignore */ }
     }
 });
 
@@ -875,9 +748,6 @@ async function loadSettings() {
         if (json.selectedDate !== undefined) {
             // optional: pre-select date in admin UI
             if (json.selectedDate) {
-                // make admin-selected date visible to all users
-                adminSelectedDate = json.selectedDate;
-                // for admin UI also pre-select
                 selectedDates = [json.selectedDate];
                 updateAdminCalendarControls();
                 renderCalendar(currentMonth, currentYear);
@@ -941,8 +811,6 @@ function generatePDF(id) {
 
 window.addEventListener('DOMContentLoaded', function() {
     renderNotifications();
-    // Load global settings (note, selectedDate) on page load
-    try { loadSettings(); } catch (e) { console.warn('loadSettings call failed', e); }
 });
 </script>
 </body>
