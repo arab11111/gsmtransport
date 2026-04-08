@@ -544,6 +544,10 @@ const displayNoteDiv = document.getElementById('display-note');
 const saveNoteBtn = document.getElementById('save-note-btn');
 const deleteNoteBtn = document.getElementById('delete-note-btn');
 
+// Real-time server connection (used by settings and notifications)
+const SERVER_ORIGIN = window.location.protocol + '//' + window.location.hostname + ':3002';
+const socket = (typeof io === 'function') ? io(SERVER_ORIGIN) : { on: ()=>{}, emit: ()=>{} };
+
 function loadSettingsRealtime() {
     try {
         // keep Firestore listener for other settings if used, but primarily
@@ -551,8 +555,8 @@ function loadSettingsRealtime() {
         try {
             settingsRef.onSnapshot(doc => {
                 const data = doc.exists ? doc.data() : {};
-                adminSelectedDate = data && data.adminSelectedDate ? data.adminSelectedDate : null;
-                const note = data && data.adminNote ? data.adminNote : '';
+                adminSelectedDate = data && (data.selectedDate || data.adminSelectedDate) ? (data.selectedDate || data.adminSelectedDate) : null;
+                const note = data && (data.note || data.adminNote) ? (data.note || data.adminNote) : '';
                 if (note && note.trim()) {
                     displayNoteDiv.style.display = '';
                     displayNoteDiv.innerHTML = note.replace(/\n/g, '<br>');
@@ -566,8 +570,8 @@ function loadSettingsRealtime() {
         // Listen for real-time settings broadcasts from server (transient, not persisted)
         socket.on('settings_updated', payload => {
             try {
-                adminSelectedDate = payload && payload.adminSelectedDate ? payload.adminSelectedDate : null;
-                const note = payload && typeof payload.adminNote === 'string' ? payload.adminNote : '';
+                adminSelectedDate = payload && (payload.selectedDate || payload.adminSelectedDate) ? (payload.selectedDate || payload.adminSelectedDate) : null;
+                const note = payload && (typeof payload.note === 'string' ? payload.note : (typeof payload.adminNote === 'string' ? payload.adminNote : ''));
                 if (note && note.trim()) {
                     displayNoteDiv.style.display = '';
                     displayNoteDiv.innerHTML = note.replace(/\n/g, '<br>');
@@ -594,7 +598,7 @@ if (saveNoteBtn) {
         const dateToPublish = (selectedDates.length === 1) ? selectedDates[0] : adminSelectedDate;
         try {
             // Do NOT persist the note in Firestore; emit to server for real-time broadcast only
-            socket.emit('update_settings', { adminNote: note, adminSelectedDate: dateToPublish });
+            socket.emit('update_settings', { adminNote: note, note: note, selectedDate: dateToPublish });
             alert('Note diffusée en temps réel.');
         } catch (err) { console.error('emit update_settings error', err); alert('Erreur lors de l\'envoi de la note'); }
     });
@@ -770,9 +774,6 @@ document.addEventListener('DOMContentLoaded', function() {
 loadDepartures();
 
 // --- NOTIFICATIONS : version admin uniquement ---
-// Use explicit server origin on port 3002 for real-time backend
-const SERVER_ORIGIN = window.location.protocol + '//' + window.location.hostname + ':3002';
-const socket = io(SERVER_ORIGIN);
 const notifDiv = document.getElementById('notif-reservations');
 const listeDiv = document.getElementById('liste-reservations');
 
