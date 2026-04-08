@@ -82,172 +82,582 @@ body {
     color: #fff;
 }
 .logout {
-    /* styles for logout button */
+    background: linear-gradient(90deg,#ff512f,#dd2476);
+    color: #fff;
+}
+.whatsapp {
+    background: linear-gradient(90deg,#25d366,#128c7e);
+    color: #fff;
+}
+.menu-bar button:hover, .menu-bar a:hover {
+    transform: translateY(-2px) scale(1.04);
+    filter: brightness(1.08);
+}
+/* CONTAINER glassmorphism */
+.container {
+    display: flex;
+    gap: 32px;
+    backdrop-filter: blur(24px);
+    background: rgba(255,255,255,0.10);
+    border-radius: 28px;
+    padding: 44px 38px 38px 38px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.22);
+    width: 92%;
+    max-width: 1100px;
+    margin-top: 90px;
+    animation: fadein 1.2s cubic-bezier(.4,0,.2,1);
+}
+@keyframes fadein {
+    from { opacity: 0; transform: scale(0.97) translateY(40px); }
+    to { opacity: 1; transform: none; }
+}
+/* CALENDAR modern card */
+.calendar-section {
+    background: rgba(255,255,255,0.13);
+    padding: 22px 18px 18px 18px;
+    border-radius: 18px;
+    min-width: 270px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    animation: fadein 1.5s 0.2s backwards;
+}
+/* Selected date outline (admin) */
+td.selected { outline: 3px solid rgba(156, 7, 19, 0.85); border-radius:8px; }
+.calendar-section h3 {
+    color: #f1c70b;
+    font-size: 1.13rem;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+/* TEXT */
+h1 {
+    font-size: 2.7rem;
+    margin-bottom: 7px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.13);
+}
+.subtitle {
+    opacity: 0.85;
+    margin-bottom: 22px;
+    font-size: 1.15rem;
+    font-weight: 500;
+}
+/* NOTE */
+.note {
+    background: linear-gradient(90deg,#fffbe6,#ffe6e6);
+    color: #222;
+    padding: 15px 18px;
+    border-radius: 12px;
+    margin-bottom: 18px;
+    font-size: 1.05rem;
+    font-weight: 500;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    animation: fadein 1.3s 0.2s backwards;
+}
+/* APPS */
+.apps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 26px;
+    margin-bottom: 18px;
+}
+.card {
+    background: rgba(255,255,255,0.16);
+    padding: 28px 20px 22px 20px;
+    border-radius: 18px;
+    text-decoration: none;
+    color: #fff;
+    transition: 0.22s cubic-bezier(.4,0,.2,1);
+    border: 1.5px solid rgba(255,255,255,0.18);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+    position: relative;
+    overflow: hidden;
+    animation: fadein 1.3s 0.3s backwards;
+}
+.card:hover {
+    transform: translateY(-7px) scale(1.03);
+    background: rgba(255,255,255,0.23);
+    box-shadow: 0 6px 32px rgba(0,0,0,0.13);
+}
+.card-icon {
+    font-size: 2.7rem;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.10));
+}
+/* STATUS */
+.status {
+    margin-top: 22px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    background: linear-gradient(90deg,#e0ffe6,#e6fff7);
+    color: #1a4d2e;
+    border: 1.5px solid #b2f2e5;
+    font-weight: 600;
+    font-size: 1.01em;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadein 1.2s 0.4s backwards;
+}
+.dot {
+    width: 10px;
+    height: 10px;
+    background: #00ff88;
+    display: inline-block;
+    border-radius: 50%;
+    margin-right: 7px;
+    animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+    0% { opacity: 1 }
+    50% { opacity: 0.4 }
+    100% { opacity: 1 }
+}
+/* FOOTER */
+footer {
+    position: fixed;
+    bottom: 0;
+    width: 100vw;
+    text-align: center;
+    padding: 10px 0 8px 0;
+    background: rgba(30,34,44,0.18);
+    color: #fff;
+    font-size: 1.01rem;
+    letter-spacing: 0.5px;
+    z-index: 20;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
 }
 </style>
 </head>
+
+<body>
+    <!-- Zone notifications réservation -->
+    <div id="notif-reservations" style="background:linear-gradient(90deg,#fffbe6,#e6ffe6);color:#1a4d2e;padding:1.2rem 1.7rem;border-radius:14px;margin:1.5rem auto 1rem auto;max-width:650px;box-shadow:0 4px 18px #0002;font-weight:700;font-size:1.15em;display:none;transition:background 0.3s;"></div>
+    <div id="liste-reservations" style="max-width:700px;margin:0 auto 2rem auto;"></div>
+<div class="menu-bar">
+    <button id="client-login-btn" class="login"><span style="font-size:1.1em;">🔑</span> Connecter</button>
+    <button id="client-logout-btn" class="logout" style="display:none;"><span style="font-size:1.1em;">🚪</span> Déconnecter</button>
+    <!-- Modal de connexion/inscription client -->
+    <div id="client-auth-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,34,44,0.55);z-index:2000;align-items:center;justify-content:center;">
+        <div style="background:#fffbe6;padding:2.2em 2.5em 2em 2.5em;border-radius:18px;box-shadow:0 8px 32px #0003;min-width:320px;max-width:95vw;">
+            <h2 style="color:#1e40af;text-align:center;margin-bottom:1.2em;">Espace Client</h2>
+            <form id="client-auth-form">
+                <input id="client-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:1em;padding:0.7em 1em;border-radius:8px;border:1.5px solid #b2b2b2;font-size:1.07em;">
+                <input id="client-password" type="password" placeholder="Mot de passe" required style="width:100%;margin-bottom:1.2em;padding:0.7em 1em;border-radius:8px;border:1.5px solid #b2b2b2;font-size:1.07em;">
+                <div id="client-auth-error" style="color:#b91c1c;font-size:0.98em;margin-bottom:0.7em;display:none;"></div>
+                <button type="submit" style="width:100%;background:#185a9d;color:#fff;padding:0.7em 0;border-radius:8px;font-weight:700;font-size:1.08em;border:none;">Connexion</button>
+                <button type="button" id="client-register-btn" style="width:100%;margin-top:0.7em;background:#43cea2;color:#222;padding:0.7em 0;border-radius:8px;font-weight:600;font-size:1.01em;border:none;">Créer un compte</button>
+                <button type="button" id="close-client-auth-modal" style="width:100%;margin-top:0.7em;background:#888;color:#fff;padding:0.7em 0;border-radius:8px;font-weight:600;font-size:1.01em;border:none;">Annuler</button>
+            </form>
+            <div id="client-verify-email" style="display:none;color:#1e40af;font-size:1.05em;margin-top:1em;text-align:center;"></div>
+        </div>
+    </div>
+
+    <!-- Modal code admin GSM -->
+    <div id="admin-code-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,34,44,0.55);z-index:2000;align-items:center;justify-content:center;">
+        <div style="background:#fffbe6;padding:2.2em 2.5em 2em 2.5em;border-radius:18px;box-shadow:0 8px 32px #0003;min-width:320px;max-width:95vw;">
+            <h2 style="color:#d80824;text-align:center;margin-bottom:1.2em;">Mode Admin GSM</h2>
+            <form id="admin-code-form">
+                <input id="admin-code-input" type="password" placeholder="Code admin" required style="width:100%;margin-bottom:1.2em;padding:0.7em 1em;border-radius:8px;border:1.5px solid #b2b2b2;font-size:1.07em;">
+                <div id="admin-code-error" style="color:#b91c1c;font-size:0.98em;margin-bottom:0.7em;display:none;"></div>
+                <button type="submit" style="width:100%;background:#d80824;color:#fff;padding:0.7em 0;border-radius:8px;font-weight:700;font-size:1.08em;border:none;">Activer admin</button>
+                <button type="button" id="close-admin-code-modal" style="width:100%;margin-top:0.7em;background:#888;color:#fff;padding:0.7em 0;border-radius:8px;font-weight:600;font-size:1.01em;border:none;">Annuler</button>
+            </form>
+        </div>
+    </div>
+    <button id="adminBtn" class="login" style="background:linear-gradient(90deg,#d80824,#444);color:#fff;">GSM</button>
+    <button id="quit-admin-btn" class="logout" style="display:none;background:linear-gradient(90deg,#888,#444);color:#fff;">Quitter mode admin</button>
+</div>
+
+<div class="container">
+
+    <div class="calendar-section">
+        <h3>🗓️ Départs</h3>
+        <div id="calendar"></div>
+        <div style="margin-top:10px;text-align:center;">
+            <button id="prev-month" style="margin-right:10px;padding:4px 12px;border-radius:8px;background:#185a9d;color:#fff;border:none;">◀</button>
+            <span id="month-label" style="font-weight:600;"></span>
+            <button id="next-month" style="margin-left:10px;padding:4px 12px;border-radius:8px;background:#185a9d;color:#fff;border:none;">▶</button>
+        </div>
+        <!-- Admin calendar controls (visible only in admin mode) -->
+        <div id="admin-calendar-controls" style="display:none;margin-top:8px;text-align:center;gap:8px;">
+            <button id="mark-depart-btn" style="padding:6px 12px;border-radius:8px;background:#16a34a;color:#fff;border:none;font-weight:700;">Marquer comme départ</button>
+            <button id="unmark-depart-btn" style="padding:6px 12px;border-radius:8px;background:#b91c1c;color:#fff;border:none;font-weight:700;">Retirer départ</button>
+            <button id="clear-selection-btn" style="padding:6px 12px;border-radius:8px;background:#64748b;color:#fff;border:none;font-weight:600;">Annuler sélection</button>
+            <div id="admin-selection-info" style="display:inline-block;margin-left:12px;color:#fff;font-weight:600;">Aucune sélection</div>
+        </div>
+    </div>
+
+    <div>
+        <div class="note">
+            🚚 <b>Bienvenue chez GSM Transport !</b><br>
+            <ul style="margin:10px 0 0 18px;padding:0 0 0 0.5em;font-size:1.07em;">
+                <li>Consultez les <b>dates de départ</b> en rouge sur le calendrier.</li>
+                <li>Préparez vos colis à l’avance pour garantir leur prise en charge.</li>
+                <li>Après inscription, <b>vérifiez vos spams</b> sur Gmail pour valider votre compte.</li>
+                <li>Pour toute question ou suivi, contactez-nous directement sur <b>WhatsApp</b> !</li>
+            </ul>
+        </div>
+
+        <h1>📦 GSM Transport</h1>
+        <div class="subtitle">France ⇄ Algérie</div>
+
+        <div class="apps">
+            <a href="gsmexpress.html" id="gsmexpress-link" class="card">
+                <div class="card-icon">🚚</div>
+                <div><strong>GSM Express</strong></div>
+                <div>Gestion des réservations</div>
+            </a>
+            <a href="bagages.html" id="bagages-link" class="card">
+                <div class="card-icon">📋</div>
+                <div><strong>Gestion Bagages</strong></div>
+                <div>Suivi des colis</div>
+            </a>
+        </div>
+
+        <!-- Zone de note admin -->
+        <div id="admin-note-section" style="display:none;margin-bottom:18px;">
+            <label for="admin-note" style="font-weight:600;color:#fff;">Note pour les clients :</label><br>
+            <textarea id="admin-note" rows="3" style="width:100%;border-radius:8px;padding:8px;margin-top:6px;font-size:1em;"></textarea>
+            <div style="margin-top:8px;display:flex;gap:10px;">
+                <button id="save-note-btn" style="padding:8px 18px;border-radius:8px;background:#185a9d;color:#fff;font-weight:600;border:none;">Enregistrer la note</button>
+                <button id="delete-note-btn" style="padding:8px 18px;border-radius:8px;background:#888;color:#fff;font-weight:600;border:none;">Supprimer la note</button>
+            </div>
+        </div>
+
+        <!-- Affichage de la note admin (pour tous) -->
+        <div id="display-note" class="note" style="display:none;"></div>
+
+        <div class="status">
+            <span class="dot"></span>
+            <span>Service en ligne - Prêt à recevoir vos réservations !</span>
+        </div>
+    </div>
+</div>
+
+<footer>
+MJ Tiddas Studio | GSM Transport France - Algérie
+</footer>
+
+<!-- Fenêtre notifications admin -->
+<div id="admin-notif-panel" style="display:none;position:fixed;top:80px;right:40px;z-index:9999;min-width:340px;max-width:420px;background:#fffbe6;border:2px solid #1e40af;border-radius:16px;box-shadow:0 8px 32px #0002;padding:1.2em 1.5em 1.2em 1.5em;color:#1e293b;font-size:1.07em;"></div>
+
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script> <!-- Socket.IO -->
 <script>
-document.addEventListener('DOMContentLoaded', function(){
-    // Cleaned client script: Firebase + Socket.IO real-time settings (transient)
-    const SERVER_ORIGIN = window.location.protocol + '//' + window.location.hostname + ':3002';
-    const socket = (typeof io === 'function') ? io(SERVER_ORIGIN) : { on: ()=>{}, emit: ()=>{} };
+// === CONFIG FIREBASE (Compat) ===
+const firebaseConfig = {
+    apiKey: "AIzaSyBEbxKnHt2QSrrWGTdI6Mgz7o8yca0g2ek",
+    authDomain: "gsmtransport-d1def.firebaseapp.com",
+    projectId: "gsmtransport-d1def",
+    storageBucket: "gsmtransport-d1def.firebasestorage.app",
+    messagingSenderId: "274060784483",
+    appId: "1:274060784483:web:b5b963a46d6619c938d956",
+    measurementId: "G-53ZPPNKRLB"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const departuresRef = db.collection('departures');
+const settingsRef = db.collection('settings').doc('site');
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyBEbxKnHt2QSrrWGTdI6Mgz7o8yca0g2ek",
-        authDomain: "gsmtransport-d1def.firebaseapp.com",
-        projectId: "gsmtransport-d1def",
-        storageBucket: "gsmtransport-d1def.firebasestorage.app",
-        messagingSenderId: "274060784483",
-        appId: "1:274060784483:web:b5b963a46d6619c938d956",
-        measurementId: "G-53ZPPNKRLB"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const departuresRef = db.collection('departures');
+// === GESTION AUTH CLIENT (Compat) ===
+const clientLoginBtn = document.getElementById('client-login-btn');
+const clientLogoutBtn = document.getElementById('client-logout-btn');
+const clientAuthModal = document.getElementById('client-auth-modal');
+const clientAuthForm = document.getElementById('client-auth-form');
+const clientAuthError = document.getElementById('client-auth-error');
+const clientRegisterBtn = document.getElementById('client-register-btn');
+const closeClientAuthModal = document.getElementById('close-client-auth-modal');
+const clientVerifyEmail = document.getElementById('client-verify-email');
 
-    // UI refs
-    const adminBtn = document.getElementById('adminBtn');
-    const quitAdminBtn = document.getElementById('quit-admin-btn');
-    const adminCodeModal = document.getElementById('admin-code-modal');
-    const adminCodeForm = document.getElementById('admin-code-form');
-    const adminCodeInput = document.getElementById('admin-code-input');
-    const adminCodeError = document.getElementById('admin-code-error');
-    const displayNote = document.getElementById('display-note');
-    const adminNoteTextarea = document.getElementById('admin-note');
-    const saveNoteBtn = document.getElementById('save-note-btn');
-    const deleteNoteBtn = document.getElementById('delete-note-btn');
-    const bagagesLink = document.getElementById('bagages-link');
+function showClientAuthModal() {
+    clientAuthModal.style.display = 'flex';
+    clientAuthError.style.display = 'none';
+    clientAuthForm.reset();
+    clientVerifyEmail.style.display = 'none';
+}
+function hideClientAuthModal() {
+    clientAuthModal.style.display = 'none';
+}
 
-    let isAdmin = !!localStorage.getItem('GSM_ADMIN');
-    let adminSelectedDate = null;
+clientLoginBtn.addEventListener('click', showClientAuthModal);
+closeClientAuthModal.addEventListener('click', hideClientAuthModal);
 
-    function showAdminModal() { adminCodeModal.style.display = 'flex'; adminCodeError.style.display = 'none'; adminCodeForm.reset(); }
-    function hideAdminModal() { adminCodeModal.style.display = 'none'; }
-
-    adminBtn.addEventListener('click', showAdminModal);
-    quitAdminBtn.addEventListener('click', () => { isAdmin = false; localStorage.removeItem('GSM_ADMIN'); setAdminUI(false); });
-
-    adminCodeForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const code = (adminCodeInput.value || '').trim();
-        if (code === 'GSM2026') {
-            isAdmin = true; localStorage.setItem('GSM_ADMIN', '1'); hideAdminModal(); setAdminUI(true);
-        } else {
-            adminCodeError.textContent = 'Code incorrect.'; adminCodeError.style.display = 'block';
-        }
-    });
-
-    function setAdminUI(admin) {
-        document.getElementById('admin-note-section').style.display = admin ? '' : 'none';
-        quitAdminBtn.style.display = admin ? '' : 'none';
-        adminBtn.style.display = admin ? 'none' : '';
-    }
-    setAdminUI(isAdmin);
-
-    // Protect bagages link: require admin code before navigation
-    if (bagagesLink) {
-        bagagesLink.addEventListener('click', (e) => {
-            if (isAdmin) return; e.preventDefault(); showAdminModal();
-            const redirectListener = setInterval(() => {
-                if (localStorage.getItem('GSM_ADMIN')) { clearInterval(redirectListener); window.location.href = bagagesLink.getAttribute('href'); }
-            }, 300);
-        });
-    }
-
-    // Calendar render
-    const calendarEl = document.getElementById('calendar');
-    const monthLabel = document.getElementById('month-label');
-    let today = new Date(); let currentMonth = today.getMonth(); let currentYear = today.getFullYear();
-    let departDates = [];
-
-    function renderCalendar(month, year) {
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-        monthLabel.textContent = monthNames[month] + ' ' + year;
-        const days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-        let html = '<table style="width:100%;text-align:center;font-size:1.05em;">' + '<thead><tr>' + days.map(d=>`<th style="color:#1e40af;">${d}</th>`).join('') + '</tr></thead><tbody><tr>';
-        let dayOfWeek = (firstDay + 6) % 7; for (let i=0;i<dayOfWeek;i++) html += '<td></td>';
-        for (let d=1; d<=daysInMonth; d++) {
-            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const isDepart = departDates.includes(dateStr);
-            const isAdminSelected = adminSelectedDate === dateStr;
-            let style = 'padding:0.5em 0.2em;';
-            if (isDepart) style += 'background:#fee2e2;color:#b91c1c;font-weight:700;border-radius:7px;';
-            else if (isAdminSelected) style += 'outline:3px solid rgba(241,199,11,0.95);border-radius:7px;';
-            html += `<td data-date="${dateStr}" style="${style}">${d}</td>`;
-            dayOfWeek++; if (dayOfWeek===7 && d!==daysInMonth) { html += '</tr><tr>'; dayOfWeek=0; }
-        }
-        for (; dayOfWeek<7 && dayOfWeek!==0; dayOfWeek++) html += '<td></td>';
-        html += '</tr></tbody></table>';
-        calendarEl.innerHTML = html;
-
-        // Attach click handler for admin selection
-        calendarEl.querySelectorAll('td[data-date]').forEach(td=>{
-            td.addEventListener('click', () => {
-                if (!isAdmin) return;
-                const date = td.getAttribute('data-date');
-                adminSelectedDate = (adminSelectedDate === date) ? null : date;
-                socket.emit('update_settings', { adminNote: adminNoteTextarea.value || '', selectedDate: adminSelectedDate });
-                renderCalendar(currentMonth, currentYear);
-            });
-        });
-    }
-
-    function changeMonth(delta){ currentMonth+=delta; if(currentMonth<0){currentMonth=11;currentYear--;} if(currentMonth>11){currentMonth=0;currentYear++;} renderCalendar(currentMonth,currentYear); }
-    document.getElementById('prev-month').addEventListener('click', ()=>changeMonth(-1));
-    document.getElementById('next-month').addEventListener('click', ()=>changeMonth(1));
-
-    // Load depart dates from Firestore realtime
-    departuresRef.where('active','==',true).onSnapshot(snap=>{ departDates = snap.docs.map(d=>d.id); renderCalendar(currentMonth,currentYear); }, err=>console.error(err));
-
-    // Socket.IO: receive settings updates (transient)
-    socket.on('settings_updated', payload => {
-        try {
-            if (payload && typeof payload.adminNote === 'string') {
-                displayNote.textContent = payload.adminNote || '';
-                displayNote.style.display = payload.adminNote ? '' : 'none';
-                if (adminNoteTextarea) adminNoteTextarea.value = payload.adminNote || '';
+clientAuthForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const email = document.getElementById('client-email').value;
+    const password = document.getElementById('client-password').value;
+    auth.signInWithEmailAndPassword(email, password)
+        .then(userCred => {
+            if (!userCred.user.emailVerified) {
+                clientVerifyEmail.textContent = 'Veuillez valider votre email (un lien a été envoyé).';
+                clientVerifyEmail.style.display = 'block';
+                userCred.user.sendEmailVerification();
+                auth.signOut();
+                return;
             }
-            if (payload && payload.selectedDate !== undefined) {
-                adminSelectedDate = payload.selectedDate || null;
-                renderCalendar(currentMonth,currentYear);
-            }
-        } catch(e){ console.error('settings_updated handler', e); }
-    });
-
-    // Admin note save/delete -> emit to server (transient)
-    if (saveNoteBtn) saveNoteBtn.addEventListener('click', ()=>{
-        if (!isAdmin) return alert('Activez le mode admin pour publier une note.');
-        const note = (adminNoteTextarea.value || '').trim();
-        socket.emit('update_settings', { adminNote: note, selectedDate: adminSelectedDate });
-        alert('Note diffusée en direct.');
-    });
-    if (deleteNoteBtn) deleteNoteBtn.addEventListener('click', ()=>{
-        if (!isAdmin) return alert('Activez le mode admin pour supprimer la note.');
-        if (!confirm('Supprimer la note pour tous les clients ?')) return;
-        socket.emit('update_settings', { adminNote: '', selectedDate: null });
-        adminNoteTextarea.value = '';
-        alert('Note supprimée.');
-    });
-
-    // Initial load: request current transient settings from server endpoint
-    async function loadSettings(){
-        try{
-            const res = await fetch(`${SERVER_ORIGIN}/api/settings`);
-            if(!res.ok) return;
-            const j = await res.json();
-            if(j && typeof j.note==='string'){ displayNote.textContent=j.note; displayNote.style.display=j.note? '':'none'; if(adminNoteTextarea) adminNoteTextarea.value=j.note; }
-            if(j && j.selectedDate){ adminSelectedDate=j.selectedDate; renderCalendar(currentMonth,currentYear); }
-        }catch(e){ console.warn('loadSettings', e); }
-    }
-
-    window.addEventListener('DOMContentLoaded', ()=>{ renderCalendar(currentMonth,currentYear); loadSettings(); });
+            hideClientAuthModal();
+            setClientUI(true);
+        })
+        .catch(err => {
+            clientAuthError.textContent = 'Erreur : ' + (err.message || 'Identifiants invalides');
+            clientAuthError.style.display = 'block';
+        });
 });
-</script>
+
+clientRegisterBtn.addEventListener('click', function() {
+    const email = document.getElementById('client-email').value;
+    const password = document.getElementById('client-password').value;
+    if (!email || !password) {
+        clientAuthError.textContent = 'Veuillez remplir email et mot de passe.';
+        clientAuthError.style.display = 'block';
+        return;
+    }
+    auth.createUserWithEmailAndPassword(email, password)
+        .then(userCred => {
+            userCred.user.sendEmailVerification();
+            clientVerifyEmail.textContent = 'Inscription réussie ! Vérifiez votre email pour valider votre compte.';
+            clientVerifyEmail.style.display = 'block';
+            clientAuthError.style.display = 'none';
+            auth.signOut();
+        })
+        .catch(err => {
+            clientAuthError.textContent = 'Erreur : ' + (err.message || 'Impossible de créer le compte');
+            clientAuthError.style.display = 'block';
+        });
+});
+
+clientLogoutBtn.addEventListener('click', function() {
+    auth.signOut().then(() => {
+        setClientUI(false);
+    });
+});
+
+function setClientUI(connected) {
+    if (connected) {
+        clientLoginBtn.style.display = 'none';
+        clientLogoutBtn.style.display = '';
+    } else {
+        clientLoginBtn.style.display = '';
+        clientLogoutBtn.style.display = 'none';
+    }
+}
+
+auth.onAuthStateChanged(function(user) {
+    setClientUI(!!user && user.emailVerified);
+});
+
+// === GESTION MODE ADMIN PAR CODE ===
+const adminBtn = document.getElementById('adminBtn');
+const quitAdminBtn = document.getElementById('quit-admin-btn');
+const adminCodeModal = document.getElementById('admin-code-modal');
+const adminCodeForm = document.getElementById('admin-code-form');
+const adminCodeInput = document.getElementById('admin-code-input');
+const adminCodeError = document.getElementById('admin-code-error');
+const closeAdminCodeModal = document.getElementById('close-admin-code-modal');
+let isAdmin = false;
+let pendingNavigationTarget = null;
+
+function showAdminCodeModal() {
+    adminCodeModal.style.display = 'flex';
+    adminCodeError.style.display = 'none';
+    adminCodeForm.reset();
+}
+function hideAdminCodeModal() {
+    adminCodeModal.style.display = 'none';
+}
+adminBtn.addEventListener('click', showAdminCodeModal);
+closeAdminCodeModal.addEventListener('click', hideAdminCodeModal);
+
+// Require admin code before allowing navigation to certain pages
+const bagagesLink = document.getElementById('bagages-link');
+if (bagagesLink) {
+    bagagesLink.addEventListener('click', function(e) {
+        if (isAdmin) return; // already admin, allow normal navigation
+        e.preventDefault();
+        pendingNavigationTarget = bagagesLink.getAttribute('href') || 'bagages.html';
+        showAdminCodeModal();
+    });
+}
+
+adminCodeForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const code = adminCodeInput.value.trim();
+    if (code === 'GSM2026') {
+        hideAdminCodeModal();
+        isAdmin = true;
+                setAdminUI(true);
+                // Prompt for API admin token (optional) to use with server endpoints
+                try {
+                    const stored = localStorage.getItem('ADMIN_API_TOKEN');
+                    const token = window.prompt('Entrez le token ADMIN pour les API (laisser vide si non requis):', stored || '');
+                    if (token !== null) {
+                        if (token) localStorage.setItem('ADMIN_API_TOKEN', token);
+                        else localStorage.removeItem('ADMIN_API_TOKEN');
+                    }
+                } catch (e) { /* ignore prompt errors */ }
+                // If a navigation was pending (user clicked a restricted link), go there now
+                if (pendingNavigationTarget) {
+                    const target = pendingNavigationTarget;
+                    pendingNavigationTarget = null;
+                    window.location.href = target;
+                }
+    } else {
+        adminCodeError.textContent = 'Code incorrect.';
+        adminCodeError.style.display = 'block';
+    }
+});
+
+quitAdminBtn.addEventListener('click', function() {
+    isAdmin = false;
+    setAdminUI(false);
+});
+
+function setAdminUI(admin) {
+    isAdmin = admin;
+    const controls = document.getElementById('admin-calendar-controls');
+    if (admin) {
+        adminBtn.style.display = 'none';
+        quitAdminBtn.style.display = '';
+        document.getElementById('admin-note-section').style.display = '';
+        notifDiv.style.display = '';
+        listeDiv.style.display = '';
+    } else {
+        adminBtn.style.display = '';
+        quitAdminBtn.style.display = 'none';
+        document.getElementById('admin-note-section').style.display = 'none';
+        if (controls) controls.style.display = 'none';
+        notifDiv.style.display = 'none';
+        listeDiv.style.display = 'none';
+        clearSelection();
+    }
+    // ensure calendar controls reflect current admin state
+    updateAdminCalendarControls();
+}
+
+// --- Settings (admin note + adminSelectedDate) ---
+const displayNoteDiv = document.getElementById('display-note');
+const saveNoteBtn = document.getElementById('save-note-btn');
+const deleteNoteBtn = document.getElementById('delete-note-btn');
+
+function loadSettingsRealtime() {
+    try {
+        // keep Firestore listener for other settings if used, but primarily
+        // listen for socket updates for transient admin notes
+        try {
+            settingsRef.onSnapshot(doc => {
+                const data = doc.exists ? doc.data() : {};
+                adminSelectedDate = data && data.adminSelectedDate ? data.adminSelectedDate : null;
+                const note = data && data.adminNote ? data.adminNote : '';
+                if (note && note.trim()) {
+                    displayNoteDiv.style.display = '';
+                    displayNoteDiv.innerHTML = note.replace(/\n/g, '<br>');
+                } else {
+                    displayNoteDiv.style.display = 'none';
+                    displayNoteDiv.innerHTML = '';
+                }
+                renderCalendar(currentMonth, currentYear);
+            }, err => { console.error('Erreur loadSettingsRealtime', err); });
+        } catch (e) { /* ignore if settings collection not used */ }
+        // Listen for real-time settings broadcasts from server (transient, not persisted)
+        socket.on('settings_updated', payload => {
+            try {
+                adminSelectedDate = payload && payload.adminSelectedDate ? payload.adminSelectedDate : null;
+                const note = payload && typeof payload.adminNote === 'string' ? payload.adminNote : '';
+                if (note && note.trim()) {
+                    displayNoteDiv.style.display = '';
+                    displayNoteDiv.innerHTML = note.replace(/\n/g, '<br>');
+                } else {
+                    displayNoteDiv.style.display = 'none';
+                    displayNoteDiv.innerHTML = '';
+                }
+                renderCalendar(currentMonth, currentYear);
+            } catch (err) { console.error('settings_updated handler error', err); }
+        });
+    } catch (e) { console.error('loadSettingsRealtime error', e); }
+}
+
+function requireAdminOrAlert() {
+    if (!isAdmin) { alert('Vous devez entrer le code admin pour effectuer cette action'); return false; }
+    return true;
+}
+
+if (saveNoteBtn) {
+    saveNoteBtn.addEventListener('click', async () => {
+        if (!requireAdminOrAlert()) return;
+        const note = document.getElementById('admin-note').value || '';
+        // If a single date is selected, publish it as adminSelectedDate
+        const dateToPublish = (selectedDates.length === 1) ? selectedDates[0] : adminSelectedDate;
+        try {
+            // Do NOT persist the note in Firestore; emit to server for real-time broadcast only
+            socket.emit('update_settings', { adminNote: note, adminSelectedDate: dateToPublish });
+            alert('Note diffusée en temps réel.');
+        } catch (err) { console.error('emit update_settings error', err); alert('Erreur lors de l\'envoi de la note'); }
+    });
+}
+
+if (deleteNoteBtn) {
+    deleteNoteBtn.addEventListener('click', async () => {
+        if (!requireAdminOrAlert()) return;
+        try {
+            // Broadcast empty note to remove it from clients; do not save to Firestore
+            socket.emit('update_settings', { adminNote: '' });
+            document.getElementById('admin-note').value = '';
+            alert('Note supprimée (diffusion en temps réel).');
+        } catch (err) { console.error('delete note emit error', err); alert('Erreur lors de la suppression'); }
+    });
+}
+
+// start listening to settings
+loadSettingsRealtime();
+
+
+// === CALENDRIER SIMPLE (Firestone-backed) ===
+const calendarEl = document.getElementById('calendar');
+const monthLabel = document.getElementById('month-label');
+const prevBtn = document.getElementById('prev-month');
+const nextBtn = document.getElementById('next-month');
+const today = new Date();
+let currentMonth = today.getMonth();
+let currentYear = today.getFullYear();
+let departDates = []; // will be loaded from Firestore
+let selectedDates = []; // admin selections (not immediately saved)
+let adminSelectedDate = null; // date set by admin via /api/settings (visible to all users)
+let departuresUnsubscribe = null; // Firestore realtime unsubscribe
+
+function renderCalendar(month, year) {
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    monthLabel.textContent = monthNames[month] + ' ' + year;
+    let html = '<table style="width:100%;text-align:center;font-size:1.05em;"><thead><tr>';
+    const days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+    for (let d of days) html += `<th style='color:#1e40af;'>${d}</th>`;
+    html += '</tr></thead><tbody><tr>';
+    let dayOfWeek = (firstDay + 6) % 7; // Lundi=0
+    for (let i = 0; i < dayOfWeek; i++) html += '<td></td>';
+    for (let date = 1; date <= daysInMonth; date++) {
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
+        const isDepart = departDates.includes(dateStr);
+        const isSelected = selectedDates.includes(dateStr);
+        const isAdminSelected = adminSelectedDate === dateStr;
+        // build style: depart (red) has priority, else adminSelected gets highlighted outline
+        let tdStyle = 'padding:0.5em 0.2em;';
+        if (isDepart) tdStyle += "background:#fee2e2;color:#b91c1c;font-weight:700;border-radius:7px;";
+        else if (isAdminSelected) tdStyle += 'outline:3px solid rgba(241,199,11,0.95);border-radius:7px;';
+        html += `<td data-date='${dateStr}' class='${isSelected ? 'selected' : ''}' style='${tdStyle}'>${date}</td>`;
+        dayOfWeek++;
+        if (dayOfWeek === 7 && date !== daysInMonth) { html += '</tr><tr>'; dayOfWeek = 0; }
+    }
+    for (; dayOfWeek < 7 && dayOfWeek !== 0; dayOfWeek++) html += '<td></td>';
+    html += '</tr></tbody></table>';
+    calendarEl.innerHTML = html;
+}
+
 function changeMonth(delta) {
     currentMonth += delta;
     if (currentMonth < 0) { currentMonth = 11; currentYear--; }
@@ -271,16 +681,37 @@ async function loadDepartures() {
     } catch (err) { console.error('Erreur loadDepartures', err); }
 }
 
-calendarEl.addEventListener('click', (e) => {
+calendarEl.addEventListener('click', async (e) => {
     const td = e.target.closest('td[data-date]');
     if (!td) return;
-    if (!isAdmin) return; // only admin can select
+    if (!isAdmin) return; // only admin can act
     const date = td.getAttribute('data-date');
-    const idx = selectedDates.indexOf(date);
-    if (idx === -1) selectedDates.push(date);
-    else selectedDates.splice(idx, 1);
-    td.classList.toggle('selected');
-    updateAdminCalendarControls();
+    const isDepart = departDates.includes(date);
+    const newActive = !isDepart;
+    try {
+        const token = localStorage.getItem('ADMIN_API_TOKEN');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['X-ADMIN-TOKEN'] = token;
+        const res = await fetch(`${SERVER_ORIGIN}/api/departures`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ dates: [date], active: newActive })
+        });
+        if (!res.ok) throw new Error('Server error');
+        // update local view optimistically; Firestore realtime listener will correct if needed
+        if (newActive) {
+            if (!departDates.includes(date)) departDates.push(date);
+            adminSelectedDate = date;
+        } else {
+            departDates = departDates.filter(d => d !== date);
+            if (adminSelectedDate === date) adminSelectedDate = null;
+        }
+        socket.emit('update_settings', { adminNote: document.getElementById('admin-note')?.value || '', selectedDate: adminSelectedDate });
+        renderCalendar(currentMonth, currentYear);
+    } catch (err) {
+        console.error('apply single-date selection error', err);
+        alert('Erreur lors de la mise à jour de la date');
+    }
 });
 
 function updateAdminCalendarControls() {
@@ -326,12 +757,12 @@ async function applySelection(active) {
 
 // admin control buttons
 document.addEventListener('DOMContentLoaded', function() {
-    const markBtn = document.getElementById('mark-depart-btn');
-    const unmarkBtn = document.getElementById('unmark-depart-btn');
-    const clearBtn = document.getElementById('clear-selection-btn');
-    if (markBtn) markBtn.addEventListener('click', () => applySelection(true));
-    if (unmarkBtn) unmarkBtn.addEventListener('click', () => applySelection(false));
-    if (clearBtn) clearBtn.addEventListener('click', () => clearSelection());
+    // Remove admin bulk-selection buttons per request
+    ['mark-depart-btn','unmark-depart-btn','clear-selection-btn','admin-calendar-controls'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+    });
+    // keep UI state updated
     updateAdminCalendarControls();
 });
 
