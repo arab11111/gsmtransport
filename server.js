@@ -49,6 +49,15 @@ app.use(express.static(path.join(__dirname)));
 // parse JSON bodies
 app.use(express.json());
 
+// Simple request logging middleware to help debug on Render/local
+app.use((req, res, next) => {
+  console.log(`[HTTP] ${new Date().toISOString()} ${req.method} ${req.originalUrl} from ${req.ip}`);
+  if (req.method === 'POST' || req.method === 'PUT') {
+    try { console.log('[HTTP] body:', JSON.stringify(req.body)); } catch (e) { /* ignore */ }
+  }
+  next();
+});
+
 // Initialize Firebase Admin SDK for server-side Firestore updates
 try {
   if (process.env.SERVICE_ACCOUNT_JSON) {
@@ -217,8 +226,8 @@ io.on('connection', (socket) => {
   // Allow admin sockets to send transient settings via socket (note, selectedDate)
   socket.on('update_settings', async (payload) => {
     try {
-      // payload: { adminNote?: string, selectedDate?: string }
-      const note = typeof payload === 'object' && typeof payload.adminNote === 'string' ? payload.adminNote : undefined;
+      // payload may contain adminNote or note, and selectedDate
+      const note = typeof payload === 'object' && (typeof payload.adminNote === 'string' ? payload.adminNote : (typeof payload.note === 'string' ? payload.note : undefined));
       const selectedDate = typeof payload === 'object' && payload.selectedDate !== undefined ? payload.selectedDate : undefined;
       const toSave = {};
       if (note !== undefined) toSave.note = note;
@@ -281,6 +290,7 @@ app.get('/generate-pdf/:id', async (req, res) => {
 // Server endpoint to update departures (batch). Optional admin token required via X-ADMIN-TOKEN.
 app.post('/api/departures', async (req, res) => {
   try {
+    console.log('[API] POST /api/departures payload:', req.body);
     const token = req.get('X-ADMIN-TOKEN');
     if (process.env.ADMIN_TOKEN && process.env.ADMIN_TOKEN !== token) {
       return res.status(403).json({ error: 'Forbidden' });
@@ -343,6 +353,7 @@ app.get('/health', (req, res) => {
 // Update global settings (admin only). Body: { note?: string, selectedDate?: string }
 app.post('/api/settings', async (req, res) => {
   try {
+    console.log('[API] POST /api/settings payload:', req.body);
     const token = req.get('X-ADMIN-TOKEN');
     if (process.env.ADMIN_TOKEN && process.env.ADMIN_TOKEN !== token) {
       return res.status(403).json({ error: 'Forbidden' });
