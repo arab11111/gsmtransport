@@ -213,6 +213,36 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('Client déconnecté:', socket.id);
   });
+  
+  // Allow admin sockets to send transient settings via socket (note, selectedDate)
+  socket.on('update_settings', async (payload) => {
+    try {
+      // payload: { adminNote?: string, selectedDate?: string }
+      const note = typeof payload === 'object' && typeof payload.adminNote === 'string' ? payload.adminNote : undefined;
+      const selectedDate = typeof payload === 'object' && payload.selectedDate !== undefined ? payload.selectedDate : undefined;
+      const toSave = {};
+      if (note !== undefined) toSave.note = note;
+      if (selectedDate !== undefined) toSave.selectedDate = selectedDate;
+      // persist to Firestore if available, fallback to settings.json
+      if (adminDb) {
+        await adminDb.collection('meta').doc('settings').set(toSave, { merge: true });
+      } else {
+        const settingsFile = path.join(__dirname, 'settings.json');
+        let cur = {};
+        if (fs.existsSync(settingsFile)) {
+          try { cur = JSON.parse(fs.readFileSync(settingsFile, 'utf8')); } catch (e) { cur = {}; }
+        }
+        const next = Object.assign({}, cur, toSave);
+        fs.writeFileSync(settingsFile, JSON.stringify(next, null, 2));
+      }
+      // broadcast to all clients
+      io.emit('settings_updated', toSave);
+      console.log('settings updated via socket by', socket.id, toSave);
+    } catch (err) {
+      console.error('Error handling socket update_settings', err);
+      socket.emit('error', { message: 'update_settings failed' });
+    }
+  });
 });
 
 const PORT = process.env.PORT || 3002;
