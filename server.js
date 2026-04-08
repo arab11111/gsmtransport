@@ -313,6 +313,19 @@ app.post('/api/departures', async (req, res) => {
   }
 });
 
+// Get departures (active dates) - return array of date strings
+app.get('/api/departures', async (req, res) => {
+  try {
+    if (!adminDb) return res.json([]);
+    const snapshot = await adminDb.collection('departures').where('active', '==', true).get();
+    const dates = snapshot.docs.map(d => d.id);
+    return res.json({ dates });
+  } catch (err) {
+    console.error('Error GET /api/departures', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // Get current global settings (note, selectedDate)
 app.get('/api/settings', async (req, res) => {
   try {
