@@ -9,18 +9,22 @@
   <style>
     body {
       font-family: 'Inter', Arial, sans-serif;
-      background: linear-gradient(120deg, #f3f6ff 0%, #e0e7ff 100%);
+      background-image: linear-gradient(120deg, rgba(107,139,235,0.55) 0%, rgba(223,156,236,0.55) 100%), url('image/polo1.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
       margin: 0;
       min-height: 100vh;
       color: #1e293b;
     }
     .container {
       max-width: 420px;
-      margin: 3rem auto;
-      background: #fff;
-      border-radius: 18px;
+      margin: 1.5rem auto;
+      background: rgba(255,255,255,0.94);
+      border-radius: 14px;
       box-shadow: 0 8px 32px #0001;
-      padding: 2.5rem 2rem 2rem 2rem;
+      padding: 2rem 1.5rem;
+      backdrop-filter: blur(6px);
     }
     h1 {
       text-align: center;
@@ -102,12 +106,22 @@
       display: none;
     }
     @media (max-width: 600px) {
-      .container { padding: 1.2rem 0.5rem; }
+      .container { padding: 1rem 0.8rem; margin: 1rem; border-radius: 10px; }
+      h1 { font-size: 1.25rem; }
+      input, textarea { font-size: 1.05rem; padding: 0.9rem 1rem; }
+      .btn { padding: 0.85rem 1rem; font-size: 1.05rem; }
+      .actions { flex-direction: column; gap: 0.6rem; }
+      .actions .btn { width: 100%; }
+      .qr-section { margin-top: 1rem; }
     }
+
+    /* make action buttons wrap on narrow but not-too-small screens */
+    .actions { display: flex; gap: 0.7rem; justify-content: center; flex-wrap: wrap; }
+    .actions .btn { min-width: 120px; flex: 1 1 auto; }
   </style>
 </head>
 <body>
-  <button id="btnLogout" style="position:fixed;top:24px;right:32px;z-index:1000;background:#fff;border:2px solid #1e40af;color:#1e40af;font-weight:700;padding:0.6rem 1.5rem;border-radius:8px;box-shadow:0 2px 8px #0001;cursor:pointer;">Déconnecter</button>
+  <button id="btnLogout" style="position:fixed;top:24px;right:32px;z-index:1000;background:#a9fd21;border:2px solid #dcdfe9;color:#48547c;font-weight:700;padding:0.6rem 1.5rem;border-radius:8px;box-shadow:0 2px 8px #0001;cursor:pointer;">Menue</button>
   <div class="container">
     <h1>Réserver mon bagage</h1>
     <div class="notif" id="notif"></div>
@@ -139,6 +153,8 @@
       <input id="poids" type="number" min="0.1" step="0.1" required placeholder="Ex: 12.5" autocomplete="off" />
       <label for="notes">Note pour le colis</label>
       <textarea id="notes" placeholder="Note éventuelle" autocomplete="off"></textarea>
+      <label for="selected_date">Date de départ sélectionnée (admin)</label>
+      <input id="selected_date" type="text" readonly autocomplete="off" />
       <label for="prix">Prix estimé (€)</label>
       <input id="prix" type="text" readonly autocomplete="off" />
       <div class="actions">
@@ -252,8 +268,35 @@
     socket.on('booking_notification', data => {
       addNotification(data);
     });
+    // Écoute des mises à jour globales (note admin, date sélectionnée)
+    socket.on('settings_updated', (payload) => {
+      try {
+        if (!payload) return;
+        // Afficher la note admin si fournie
+        if (payload.note !== undefined) {
+          let adminNote = document.getElementById('admin-note-display');
+          if (!adminNote) {
+            adminNote = document.createElement('div');
+            adminNote.id = 'admin-note-display';
+            adminNote.style = 'max-width:700px;margin:0.8rem auto;padding:12px 14px;border-radius:12px;background:linear-gradient(90deg,#fffbe6,#ffe6e6);color:#1e293b;font-weight:600;';
+            const container = document.querySelector('.container') || document.body;
+            container.parentNode.insertBefore(adminNote, container);
+          }
+          adminNote.textContent = payload.note || '';
+          adminNote.style.display = payload.note ? 'block' : 'none';
+        }
+        // Afficher la date sélectionnée dans le formulaire
+        if (payload.selectedDate !== undefined) {
+          const dateInput = document.getElementById('selected_date');
+          if (dateInput) dateInput.value = payload.selectedDate || '';
+          try { localStorage.setItem('selectedDate', payload.selectedDate || ''); } catch (e) {}
+        }
+      } catch (e) { console.warn('settings_updated handler error', e); }
+    });
     window.addEventListener('DOMContentLoaded', function() {
       renderNotifications();
+      // Charger les settings globaux (note admin, selectedDate) au chargement
+      try { loadSettings(); } catch (e) { console.warn('loadSettings failed', e); }
     });
     // ...reste du JS existant (formulaire, PDF, QR, etc.)...
     function generateBagageNumero() {
@@ -325,6 +368,32 @@
         colorLight: '#fff',
         correctLevel: QRCode.CorrectLevel.H
       });
+    }
+    // Charger les settings globaux depuis le backend pour pré-remplir note et date
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        if (!res.ok) return;
+        const data = await res.json().catch(() => ({}));
+        if (!data) return;
+        if (data.note !== undefined) {
+          let adminNote = document.getElementById('admin-note-display');
+          if (!adminNote) {
+            adminNote = document.createElement('div');
+            adminNote.id = 'admin-note-display';
+            adminNote.style = 'max-width:700px;margin:0.8rem auto;padding:12px 14px;border-radius:12px;background:linear-gradient(90deg,#fffbe6,#ffe6e6);color:#1e293b;font-weight:600;';
+            const container = document.querySelector('.container') || document.body;
+            container.parentNode.insertBefore(adminNote, container);
+          }
+          adminNote.textContent = data.note || '';
+          adminNote.style.display = data.note ? 'block' : 'none';
+        }
+        if (data.selectedDate !== undefined) {
+          const dateInput = document.getElementById('selected_date');
+          if (dateInput) dateInput.value = data.selectedDate || '';
+          try { localStorage.setItem('selectedDate', data.selectedDate || ''); } catch (e) {}
+        }
+      } catch (e) { console.warn('Erreur chargement settings:', e); }
     }
     // Gestion déconnexion Firebase
     document.getElementById('btnLogout').onclick = async function() {
@@ -481,22 +550,51 @@
         document.getElementById('qrZone').style.display = 'none';
       };
       // Réserver (submit)
-      document.getElementById('reservationForm').onsubmit = function (e) {
+      document.getElementById('reservationForm').onsubmit = async function (e) {
         e.preventDefault();
         const data = getFormData();
-        // Envoi de la réservation au serveur pour notification admin
-        // Le serveur générera et sauvegardera le PDF, puis renverra le lien dans la notification
+        // Emit to server so it generates the PDF and notifies the admin
         socket.emit('new_booking', data);
-        // Optionnel : notification cloche
-        sendBellNotification(data);
-        generateAndDownloadPdf(data);
+        // Persist booking via REST (optional — will fail gracefully if Firestore not initialized)
+        try {
+          const res = await fetch('/api/bookings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          if (res.ok) {
+            const json = await res.json().catch(() => ({}));
+            console.log('Booking saved:', json);
+          } else {
+            console.warn('Bookings API error', res.status);
+          }
+        } catch (err) {
+          console.warn('Could not save booking to /api/bookings:', err);
+        }
+        // Show QR locally to the user
         showQr(data);
+        // Reset form after a short delay and rotate bagage number
         setTimeout(() => {
           document.getElementById('reservationForm').reset();
-          document.getElementById('bagage_numero').value = num;
+          const newNum = generateBagageNumero();
+          localStorage.setItem('bagage_numero', newNum);
+          document.getElementById('bagage_numero').value = newNum;
           document.getElementById('prix').value = '';
-        }, 2000);
+          document.getElementById('qrZone').style.display = 'none';
+        }, 1200);
       };
+
+      // Quand le serveur a généré un PDF, afficher le lien (l'admin recevra aussi cette notification)
+      socket.on('pdf_generated', (payload) => {
+        try {
+          if (!payload || !payload.url) return;
+          const curNum = document.getElementById('bagage_numero') ? document.getElementById('bagage_numero').value : '';
+          if (payload.filename && curNum && payload.filename.includes(curNum)) {
+            notif.innerHTML = `PDF prêt : <a href="${payload.url}" target="_blank" style="color:#1e40af;font-weight:700;">Télécharger le reçu</a>`;
+            notif.style.display = 'block';
+          }
+        } catch (e) { console.warn('pdf_generated handler error', e); }
+      });
     });
   </script>
 </body>
