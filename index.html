@@ -274,6 +274,16 @@ footer {
 
     <div class="calendar-section">
         <h3>🗓️ Départs</h3>
+        <div id="calendar-legend" style="margin-bottom:10px;display:flex;gap:12px;align-items:center;">
+            <div style="display:flex;gap:6px;align-items:center;color:#fff;font-size:0.95rem;">
+                <span style="width:14px;height:14px;background:#fee2e2;border-radius:4px;display:inline-block;border:1px solid rgba(0,0,0,0.08)"></span>
+                <span>Départ Algérie (rouge)</span>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;color:#fff;font-size:0.95rem;">
+                <span style="width:14px;height:14px;background:#e0f2fe;border-radius:4px;display:inline-block;border:1px solid rgba(0,0,0,0.08)"></span>
+                <span>Départ France (bleu)</span>
+            </div>
+        </div>
         <div id="calendar"></div>
         <div style="margin-top:10px;text-align:center;">
             <button id="prev-month" style="margin-right:10px;padding:4px 12px;border-radius:8px;background:#185a9d;color:#fff;border:none;">◀</button>
@@ -628,7 +638,7 @@ async function applySelection(active) {
         if (!res.ok) throw new Error(json.error || 'Erreur serveur');
         // Server will update Firestore; local realtime listener will refresh UI
         clearSelection();
-    } catch (err) { console.error('applySelection error', err); alert('Erreur lors de la mise à jour des dates'); }
+    } catch (err) { console.error('applySelection error', err); showToast('Erreur lors de la mise à jour des dates', 'error'); }
 }
 
 // admin control buttons
@@ -651,6 +661,52 @@ const SERVER_ORIGIN = window.location.origin;
 const socket = io(SERVER_ORIGIN);
 const notifDiv = document.getElementById('notif-reservations');
 const listeDiv = document.getElementById('liste-reservations');
+
+// Toasts and confirm modal
+const toastContainer = document.createElement('div');
+toastContainer.id = 'toast-container';
+toastContainer.style = 'position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;max-width:320px;';
+document.body.appendChild(toastContainer);
+
+function showToast(msg, type='info', timeout=4000){
+    const el = document.createElement('div');
+    el.textContent = msg;
+    el.style = `padding:10px 14px;border-radius:10px;color:#fff;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,0.12);opacity:0;transform:translateY(-6px);transition:opacity 200ms,transform 200ms;`;
+    if(type==='success') el.style.background = 'linear-gradient(90deg,#16a34a,#059669)';
+    else if(type==='error') el.style.background = 'linear-gradient(90deg,#ef4444,#b91c1c)';
+    else el.style.background = 'linear-gradient(90deg,#2563eb,#1e40af)';
+    toastContainer.appendChild(el);
+    requestAnimationFrame(()=>{ el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+    const id = setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(-6px)'; setTimeout(()=>el.remove(),220); }, timeout);
+    el.addEventListener('click', ()=>{ clearTimeout(id); el.remove(); });
+}
+
+// simple confirm modal returning Promise<boolean>
+const confirmModal = document.createElement('div');
+confirmModal.id = 'confirm-modal';
+confirmModal.style = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);z-index:100000;';
+confirmModal.innerHTML = `
+    <div style="background:#fff;padding:18px;border-radius:12px;min-width:300px;max-width:90vw;color:#111;box-shadow:0 8px 32px #0003;">
+        <div id="confirm-text" style="margin-bottom:12px;font-weight:600;"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button id="confirm-no" style="padding:8px 12px;border-radius:8px;background:#888;color:#fff;border:none;">Non</button>
+            <button id="confirm-yes" style="padding:8px 12px;border-radius:8px;background:#1e40af;color:#fff;border:none;">Oui</button>
+        </div>
+    </div>`;
+document.body.appendChild(confirmModal);
+
+function showConfirm(message){
+    return new Promise(resolve => {
+        confirmModal.style.display = 'flex';
+        document.getElementById('confirm-text').textContent = message;
+        const yes = document.getElementById('confirm-yes');
+        const no = document.getElementById('confirm-no');
+        function cleanup(val){ confirmModal.style.display='none'; yes.removeEventListener('click', onYes); no.removeEventListener('click', onNo); resolve(val); }
+        function onYes(){ cleanup(true); }
+        function onNo(){ cleanup(false); }
+        yes.addEventListener('click', onYes); no.addEventListener('click', onNo);
+    });
+}
 
 function getNotifications() { return JSON.parse(localStorage.getItem('notifications') || '[]'); }
 function saveNotifications(list) { localStorage.setItem('notifications', JSON.stringify(list)); }
@@ -779,25 +835,26 @@ async function saveNoteToServer(note) {
 const saveBtn = document.getElementById('save-note-btn');
 const deleteBtn = document.getElementById('delete-note-btn');
 if (saveBtn) saveBtn.addEventListener('click', async () => {
-    if (!isAdmin) return alert('Activez le mode admin pour enregistrer.');
+    if (!isAdmin) { showToast('Activez le mode admin pour enregistrer.', 'error'); return; }
     const note = document.getElementById('admin-note').value || '';
     try {
         await saveNoteToServer(note);
         document.getElementById('display-note').textContent = note;
         document.getElementById('display-note').style.display = note ? '' : 'none';
-        alert('Note enregistrée');
-    } catch (err) { console.error('save note failed', err); alert('Échec enregistrement note'); }
+        showToast('Note enregistrée', 'success');
+    } catch (err) { console.error('save note failed', err); showToast('Échec enregistrement note', 'error'); }
 });
 if (deleteBtn) deleteBtn.addEventListener('click', async () => {
-    if (!isAdmin) return alert('Activez le mode admin pour supprimer.');
-    if (!confirm('Supprimer la note pour tous les clients ?')) return;
+    if (!isAdmin) { showToast('Activez le mode admin pour supprimer.', 'error'); return; }
+    const ok = await showConfirm('Supprimer la note pour tous les clients ?');
+    if (!ok) return;
     try {
         await saveNoteToServer('');
         document.getElementById('display-note').textContent = '';
         document.getElementById('display-note').style.display = 'none';
         document.getElementById('admin-note').value = '';
-        alert('Note supprimée');
-    } catch (err) { console.error('delete note failed', err); alert('Échec suppression note'); }
+        showToast('Note supprimée', 'success');
+    } catch (err) { console.error('delete note failed', err); showToast('Échec suppression note', 'error'); }
 });
 
 function generatePDF(id) {
@@ -805,13 +862,109 @@ function generatePDF(id) {
         .then(r => r.json())
         .then(data => {
             if (data && data.url) window.open(data.url, '_blank');
-            else alert('Erreur génération PDF');
-        }).catch(err => { console.error(err); alert('Erreur génération PDF'); });
+                else showToast('Erreur génération PDF', 'error');
+            }).catch(err => { console.error(err); showToast('Erreur génération PDF', 'error'); });
 }
 
 window.addEventListener('DOMContentLoaded', function() {
     renderNotifications();
 });
+</script>
+<script>
+(function(){
+    const style = document.createElement('style');
+    style.textContent = `
+        /* hide existing prev/next and admin control buttons (visual removal only) */
+        #prev-month, #next-month, #admin-calendar-controls { display: none !important; }
+        /* make date cells behave like buttons */
+        td[data-date] { cursor: pointer; }
+        td[data-date].dep-algeria { background: #fee2e2 !important; color: #b91c1c !important; font-weight:700 !important; border-radius:7px; }
+        td[data-date].dep-france { background: #e0f2fe !important; color: #1e40af !important; font-weight:700 !important; border-radius:7px; }
+        td[data-date]:focus { outline: 3px solid rgba(59,130,246,0.5); border-radius:6px; }
+    `;
+    document.head.appendChild(style);
+
+    // departMap: { 'YYYY-MM-DD' : 'algeria'|'france' }
+    let departMap = {};
+
+    async function loadServerDepartures(){
+        try{
+            const res = await fetch(`${SERVER_ORIGIN}/api/departures`);
+            if(!res.ok) return;
+            const json = await res.json();
+            departMap = {};
+            (json||[]).forEach(d => { if(d && d.date) departMap[d.date] = (d.country||'').toLowerCase(); });
+            applyDeparturesToCalendar();
+        }catch(e){ console.warn('loadServerDepartures error', e); }
+    }
+
+    function applyDeparturesToCalendar(){
+        document.querySelectorAll('td[data-date]').forEach(td => {
+            const date = td.getAttribute('data-date');
+            td.classList.remove('dep-algeria','dep-france');
+            td.removeAttribute('data-country');
+            const c = departMap[date];
+            if(c === 'algeria' || c === 'algérie' || c === 'algerie'){
+                td.classList.add('dep-algeria'); td.setAttribute('data-country','algeria'); td.title = `Départ Algérie — ${date}`;
+            } else if(c === 'france'){
+                td.classList.add('dep-france'); td.setAttribute('data-country','france'); td.title = `Départ France — ${date}`;
+            } else {
+                td.title = '';
+            }
+            td.setAttribute('role','button'); td.setAttribute('tabindex','0');
+        });
+    }
+
+    function nextStatusFor(date){
+        const cur = departMap[date];
+        if(!cur) return 'algeria';
+        if(cur === 'algeria') return 'france';
+        return null; // remove
+    }
+
+    async function saveDeparture(date, country){
+        try{
+            const token = localStorage.getItem('ADMIN_API_TOKEN');
+            const headers = { 'Content-Type': 'application/json' };
+            if(token) headers['X-ADMIN-TOKEN'] = token;
+            if(!country){
+                const res = await fetch(`${SERVER_ORIGIN}/api/departures/${encodeURIComponent(date)}`, { method: 'DELETE', headers });
+                if(!res.ok) throw new Error('delete failed');
+            } else {
+                const res = await fetch(`${SERVER_ORIGIN}/api/departures`, { method: 'POST', headers, body: JSON.stringify({ date, country }) });
+                if(!res.ok) throw new Error('save failed');
+            }
+            await loadServerDepartures();
+        }catch(e){ console.warn('saveDeparture error', e); showToast('Erreur sauvegarde date (voir console)','error'); }
+    }
+
+    // Click / keyboard handlers: only admin can change
+    calendarEl.addEventListener('click', function(e){
+        const td = e.target.closest('td[data-date]');
+        if(!td) return;
+        if(!isAdmin) return; // only admin can change
+        const date = td.getAttribute('data-date');
+        const next = nextStatusFor(date);
+        saveDeparture(date, next);
+    });
+
+    calendarEl.addEventListener('keydown', function(e){
+        if(e.key !== 'Enter' && e.key !== ' ') return;
+        const td = e.target.closest('td[data-date]');
+        if(!td) return;
+        if(!isAdmin) return;
+        const date = td.getAttribute('data-date');
+        const next = nextStatusFor(date);
+        saveDeparture(date, next);
+        e.preventDefault();
+    });
+
+    // initial load shortly after calendar is rendered
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(loadServerDepartures, 250); });
+
+    // refresh when server signals updates
+    try{ socket.on('departures_updated', () => loadServerDepartures()); }catch(e){}
+})();
 </script>
 </body>
 </html>
