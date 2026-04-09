@@ -931,7 +931,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 const res = await fetch(`${SERVER_ORIGIN}/api/departures/${encodeURIComponent(date)}`, { method: 'DELETE', headers });
                 if(!res.ok) throw new Error('delete failed');
             } else {
-                const res = await fetch(`${SERVER_ORIGIN}/api/departures`, { method: 'POST', headers, body: JSON.stringify({ date, country }) });
+                const res = await fetch(`${SERVER_ORIGIN}/api/departures/single`, { method: 'POST', headers, body: JSON.stringify({ date, country }) });
                 if(!res.ok) throw new Error('save failed');
             }
             await loadServerDepartures();
