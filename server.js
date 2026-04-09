@@ -196,9 +196,14 @@ app.post('/api/departures', async (req, res) => {
     }
 
     // Otherwise expect batch update { dates: [...], active: boolean }
-    if (!adminDb) return res.status(500).json({ error: 'Admin Firestore not initialized' });
     const { dates, active } = body;
     if (!Array.isArray(dates) || typeof active !== 'boolean') return res.status(400).json({ error: 'Invalid payload' });
+    // If Firestore/admin SDK is not available, emit the event and return success (no persistent write)
+    if (!adminDb) {
+      console.warn('Admin Firestore not initialized - skipping persistent batch write for departures');
+      io.emit('departures_changed', { dates, active });
+      return res.json({ success: true, warning: 'Admin Firestore not initialized - no persistence' });
+    }
     const batch = adminDb.batch();
     dates.forEach(date => {
       const docRef = adminDb.collection('departures').doc(date);
