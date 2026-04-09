@@ -44,6 +44,20 @@ try {
 }
 const adminDb = adminSdk.firestore ? adminSdk.firestore() : null;
 
+// Helper: persist notifications to notifications.json (keep newest first, cap at 200)
+function persistNotification(obj){
+  try{
+    const file = path.join(__dirname, 'notifications.json');
+    let arr = [];
+    if (fs.existsSync(file)){
+      try{ arr = JSON.parse(fs.readFileSync(file,'utf8')||'[]'); }catch(e){ arr = []; }
+    }
+    arr.unshift(Object.assign({}, obj, { receivedAt: new Date().toISOString(), read: false }));
+    if (arr.length > 200) arr = arr.slice(0,200);
+    fs.writeFileSync(file, JSON.stringify(arr, null, 2));
+  }catch(e){ console.error('persistNotification error', e); }
+}
+
 // Route par défaut
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -71,6 +85,15 @@ app.post('/upload-pdf', (req, res) => {
 io.on('connection', (socket) => {
   console.log('Un client s\'est connecté:', socket.id);
 
+  // Send any persisted notifications to the newly connected client
+  try {
+    const notifFile = path.join(__dirname, 'notifications.json');
+    if (fs.existsSync(notifFile)) {
+      const list = JSON.parse(fs.readFileSync(notifFile, 'utf8') || '[]');
+      if (Array.isArray(list) && list.length) socket.emit('pending_notifications', list);
+    }
+  } catch (e) { console.error('Error sending pending_notifications', e); }
+
   // Écouter les nouvelles réservations depuis gsmexpress
   socket.on('new_booking', (bookingData) => {
     console.log('Nouvelle réservation reçue:', bookingData);
@@ -97,7 +120,9 @@ io.on('connection', (socket) => {
       stream.on('finish', () => {
         const pdfLink = `/pdfs/${filename}`;
         // Émettre la notification à tous les clients (admin inclus) avec lien réel
-        io.emit('booking_notification', Object.assign({}, bookingData, { pdfLink, date: new Date().toISOString() }));
+        const payload = Object.assign({}, bookingData, { pdfLink, date: new Date().toISOString() });
+        io.emit('booking_notification', payload);
+        persistNotification(Object.assign({}, payload, { type: 'booking' }));
         // Optionnel : émettre un événement séparé pour PDF généré
         io.emit('pdf_generated', { filename, url: pdfLink });
       });
@@ -105,12 +130,16 @@ io.on('connection', (socket) => {
       stream.on('error', (err) => {
         console.error('Erreur écriture PDF:', err);
         // Fallback: émettre la réservation sans pdfLink
-        io.emit('booking_notification', Object.assign({}, bookingData, { date: new Date().toISOString() }));
+        const payload = Object.assign({}, bookingData, { pdfLink: null, date: new Date().toISOString() });
+        io.emit('booking_notification', payload);
+        persistNotification(Object.assign({}, payload, { type: 'booking' }));
       });
 
     } catch (err) {
       console.error('Erreur génération PDF serveur:', err);
-      io.emit('booking_notification', Object.assign({}, bookingData, { date: new Date().toISOString() }));
+      const payload = Object.assign({}, bookingData, { pdfLink: null, date: new Date().toISOString() });
+      io.emit('booking_notification', payload);
+      persistNotification(Object.assign({}, payload, { type: 'booking' }));
     }
   });
 
@@ -443,6 +472,65 @@ app.delete('/api/departures/:date', async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     console.error('Error DELETE /api/departures/:date', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// GET persisted notifications (simple history)
+app.get('/api/notifications', (req, res) => {
+  try {
+    const file = path.join(__dirname, 'notifications.json');
+    if (!fs.existsSync(file)) return res.json([]);
+    const arr = JSON.parse(fs.readFileSync(file, 'utf8') || '[]');
+    return res.json(arr);
+  } catch (err) { console.error('Error GET /api/notifications', err); return res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/notifications - perform actions on persisted notifications (admin only)
+// Body: { action: 'mark_all_read'|'clear'|'delete_read'|'mark_read'|'replace', ids?: [receivedAt], notifications?: [...] }
+app.post('/api/notifications', (req, res) => {
+  try {
+    const token = req.get('X-ADMIN-TOKEN');
+    if (process.env.ADMIN_TOKEN && process.env.ADMIN_TOKEN !== token) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const { action, ids, notifications } = req.body || {};
+    if (!action) return res.status(400).json({ error: 'Missing action' });
+
+    const file = path.join(__dirname, 'notifications.json');
+    let arr = [];
+    if (fs.existsSync(file)) {
+      try { arr = JSON.parse(fs.readFileSync(file, 'utf8') || '[]'); } catch (e) { arr = []; }
+    }
+
+    switch (action) {
+      case 'mark_all_read':
+        arr = arr.map(n => Object.assign({}, n, { read: true }));
+        break;
+      case 'clear':
+        arr = [];
+        break;
+      case 'delete_read':
+        arr = arr.filter(n => !n.read);
+        break;
+      case 'mark_read':
+        if (!Array.isArray(ids)) return res.status(400).json({ error: 'Missing ids array' });
+        arr = arr.map(n => ids.includes(n.receivedAt) ? Object.assign({}, n, { read: true }) : n);
+        break;
+      case 'replace':
+        if (!Array.isArray(notifications)) return res.status(400).json({ error: 'Missing notifications array' });
+        arr = notifications.slice(0, 200);
+        break;
+      default:
+        return res.status(400).json({ error: 'Invalid action' });
+    }
+
+    fs.writeFileSync(file, JSON.stringify(arr, null, 2));
+    // notify connected clients about the change
+    try { io.emit('notifications_updated', { action, count: arr.length }); } catch (e) { /* ignore */ }
+    return res.json({ success: true, notifications: arr });
+  } catch (err) {
+    console.error('Error POST /api/notifications', err);
     return res.status(500).json({ error: err.message });
   }
 });
