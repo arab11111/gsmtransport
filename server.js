@@ -171,8 +171,33 @@ app.post('/api/departures', async (req, res) => {
     if (process.env.ADMIN_TOKEN && process.env.ADMIN_TOKEN !== token) {
       return res.status(403).json({ error: 'Forbidden' });
     }
+    // If payload is single date + country -> treat as single update (compat with client)
+    const body = req.body || {};
+    if (body.date && body.country) {
+      const date = body.date;
+      const country = String(body.country).toLowerCase();
+      if (!['algeria','algérie','algerie','france'].includes(country)) {
+        return res.status(400).json({ error: 'Invalid country value' });
+      }
+      // Persist to Firestore departures_map or local file
+      if (adminDb) {
+        await adminDb.collection('departures_map').doc(date).set({ country }, { merge: true });
+      } else {
+        const file = path.join(__dirname, 'departures.json');
+        let cur = {};
+        if (fs.existsSync(file)) {
+          try { cur = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { cur = {}; }
+        }
+        cur[date] = country;
+        fs.writeFileSync(file, JSON.stringify(cur, null, 2));
+      }
+      io.emit('departures_updated', { date, country, action: 'set' });
+      return res.json({ success: true });
+    }
+
+    // Otherwise expect batch update { dates: [...], active: boolean }
     if (!adminDb) return res.status(500).json({ error: 'Admin Firestore not initialized' });
-    const { dates, active } = req.body;
+    const { dates, active } = body;
     if (!Array.isArray(dates) || typeof active !== 'boolean') return res.status(400).json({ error: 'Invalid payload' });
     const batch = adminDb.batch();
     dates.forEach(date => {
@@ -327,6 +352,92 @@ app.get('/api/bookings/:id', async (req, res) => {
     return res.json({ id: doc.id, data: doc.data() });
   } catch (err) {
     console.error('Error GET /api/bookings/:id', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Lightweight departures API (single-date) ---
+// GET  /api/departures          -> [{ date: 'YYYY-MM-DD', country: 'algeria'|'france' }]
+// POST /api/departures         -> { date, country }  (create/update)
+// DELETE /api/departures/:date -> remove entry
+app.get('/api/departures', async (req, res) => {
+  try {
+    // Try Firestore collection 'departures_map' first
+    if (adminDb) {
+      const snap = await adminDb.collection('departures_map').get();
+      const items = snap.docs.map(d => ({ date: d.id, country: (d.data().country || null) }));
+      return res.json(items);
+    }
+
+    // Fallback to local JSON file
+    const file = path.join(__dirname, 'departures.json');
+    if (!fs.existsSync(file)) return res.json([]);
+    const raw = fs.readFileSync(file, 'utf8');
+    const obj = JSON.parse(raw || '{}');
+    const arr = Object.keys(obj).map(k => ({ date: k, country: obj[k] }));
+    return res.json(arr);
+  } catch (err) {
+    console.error('Error GET /api/departures', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/departures/single', async (req, res) => {
+  try {
+    const token = req.get('X-ADMIN-TOKEN');
+    if (process.env.ADMIN_TOKEN && process.env.ADMIN_TOKEN !== token) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const { date, country } = req.body || {};
+    if (!date || (country !== 'algeria' && country !== 'france' && country !== 'algérie' && country !== 'algerie')) {
+      return res.status(400).json({ error: 'Invalid payload, expected { date, country }' });
+    }
+
+    if (adminDb) {
+      await adminDb.collection('departures_map').doc(date).set({ country: String(country).toLowerCase() }, { merge: true });
+    } else {
+      const file = path.join(__dirname, 'departures.json');
+      let cur = {};
+      if (fs.existsSync(file)) {
+        try { cur = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { cur = {}; }
+      }
+      cur[date] = String(country).toLowerCase();
+      fs.writeFileSync(file, JSON.stringify(cur, null, 2));
+    }
+
+    io.emit('departures_updated', { date, country: String(country).toLowerCase(), action: 'set' });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Error POST /api/departures (single)', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/departures/:date', async (req, res) => {
+  try {
+    const token = req.get('X-ADMIN-TOKEN');
+    if (process.env.ADMIN_TOKEN && process.env.ADMIN_TOKEN !== token) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const date = req.params.date;
+    if (!date) return res.status(400).json({ error: 'Missing date parameter' });
+
+    if (adminDb) {
+      await adminDb.collection('departures_map').doc(date).delete();
+    } else {
+      const file = path.join(__dirname, 'departures.json');
+      if (fs.existsSync(file)) {
+        let cur = {};
+        try { cur = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { cur = {}; }
+        if (cur[date]) delete cur[date];
+        fs.writeFileSync(file, JSON.stringify(cur, null, 2));
+      }
+    }
+
+    io.emit('departures_updated', { date, action: 'delete' });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Error DELETE /api/departures/:date', err);
     return res.status(500).json({ error: err.message });
   }
 });
