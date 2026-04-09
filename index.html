@@ -162,11 +162,11 @@ h1 {
     margin-bottom: 18px;
 }
 .card {
-    background: rgba(255,255,255,0.16);
+    background: rgba(226, 59, 59, 0.16);
     padding: 28px 20px 22px 20px;
     border-radius: 18px;
     text-decoration: none;
-    color: #fff;
+    color: #da4848;
     transition: 0.22s cubic-bezier(.4,0,.2,1);
     border: 1.5px solid rgba(255,255,255,0.18);
     box-shadow: 0 2px 16px rgba(0,0,0,0.10);
@@ -238,13 +238,21 @@ footer {
 <div class="menu-bar">
     <button id="client-login-btn" class="login"><span style="font-size:1.1em;">🔑</span> Connecter</button>
     <button id="client-logout-btn" class="logout" style="display:none;"><span style="font-size:1.1em;">🚪</span> Déconnecter</button>
+    <span id="client-profile" style="display:inline-block;margin-left:12px;color:#fff;font-weight:700;"></span>
     <!-- Modal de connexion/inscription client -->
     <div id="client-auth-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,34,44,0.55);z-index:2000;align-items:center;justify-content:center;">
         <div style="background:#fffbe6;padding:2.2em 2.5em 2em 2.5em;border-radius:18px;box-shadow:0 8px 32px #0003;min-width:320px;max-width:95vw;">
             <h2 style="color:#1e40af;text-align:center;margin-bottom:1.2em;">Espace Client</h2>
             <form id="client-auth-form">
+                <div style="display:flex;gap:8px;margin-bottom:0.8em;">
+                    <input id="client-firstname" type="text" placeholder="Prénom" style="flex:1;padding:0.6em 0.9em;border-radius:8px;border:1.5px solid #b2b2b2;font-size:1.01em;">
+                    <input id="client-lastname" type="text" placeholder="Nom" style="flex:1;padding:0.6em 0.9em;border-radius:8px;border:1.5px solid #b2b2b2;font-size:1.01em;">
+                </div>
                 <input id="client-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:1em;padding:0.7em 1em;border-radius:8px;border:1.5px solid #b2b2b2;font-size:1.07em;">
                 <input id="client-password" type="password" placeholder="Mot de passe" required style="width:100%;margin-bottom:1.2em;padding:0.7em 1em;border-radius:8px;border:1.5px solid #b2b2b2;font-size:1.07em;">
+                <div style="text-align:right;margin-top:-0.6em;margin-bottom:0.8em;">
+                    <a href="#" id="client-forgot-btn" style="color:#1e40af;font-weight:700;text-decoration:none;">Mot de passe oublié ?</a>
+                </div>
                 <div id="client-auth-error" style="color:#b91c1c;font-size:0.98em;margin-bottom:0.7em;display:none;"></div>
                 <button type="submit" style="width:100%;background:#185a9d;color:#fff;padding:0.7em 0;border-radius:8px;font-weight:700;font-size:1.08em;border:none;">Connexion</button>
                 <button type="button" id="client-register-btn" style="width:100%;margin-top:0.7em;background:#43cea2;color:#222;padding:0.7em 0;border-radius:8px;font-weight:600;font-size:1.01em;border:none;">Créer un compte</button>
@@ -284,6 +292,10 @@ footer {
                 <span>Départ France (bleu)</span>
             </div>
         </div>
+        <!-- Selected date (pinned by admin) -->
+        <div id="selected-date-block" style="display:none;margin:10px 0;color:#fff;font-weight:700;">
+            Date sélectionnée : <span id="selected-date-value">Aucune</span>
+        </div>
         <div id="calendar"></div>
         <div style="margin-top:10px;text-align:center;">
             <button id="prev-month" style="margin-right:10px;padding:4px 12px;border-radius:8px;background:#185a9d;color:#fff;border:none;">◀</button>
@@ -295,6 +307,8 @@ footer {
             <button id="mark-depart-btn" style="padding:6px 12px;border-radius:8px;background:#16a34a;color:#fff;border:none;font-weight:700;">Marquer comme départ</button>
             <button id="unmark-depart-btn" style="padding:6px 12px;border-radius:8px;background:#b91c1c;color:#fff;border:none;font-weight:700;">Retirer départ</button>
             <button id="clear-selection-btn" style="padding:6px 12px;border-radius:8px;background:#64748b;color:#fff;border:none;font-weight:600;">Annuler sélection</button>
+            <button id="pin-selected-date-btn" style="padding:6px 12px;border-radius:8px;background:#2563eb;color:#fff;border:none;font-weight:700;">Épingler date</button>
+            <button id="unpin-selected-date-btn" style="padding:6px 12px;border-radius:8px;background:#6b7280;color:#fff;border:none;font-weight:700;">Désépingler</button>
             <div id="admin-selection-info" style="display:inline-block;margin-left:12px;color:#fff;font-weight:600;">Aucune sélection</div>
         </div>
     </div>
@@ -421,23 +435,64 @@ clientAuthForm.addEventListener('submit', function(e) {
 clientRegisterBtn.addEventListener('click', function() {
     const email = document.getElementById('client-email').value;
     const password = document.getElementById('client-password').value;
-    if (!email || !password) {
-        clientAuthError.textContent = 'Veuillez remplir email et mot de passe.';
+    const firstname = document.getElementById('client-firstname').value.trim();
+    const lastname = document.getElementById('client-lastname').value.trim();
+    if (!email || !password || !firstname || !lastname) {
+        clientAuthError.textContent = 'Veuillez remplir prénom, nom, email et mot de passe.';
         clientAuthError.style.display = 'block';
         return;
     }
     auth.createUserWithEmailAndPassword(email, password)
-        .then(userCred => {
-            userCred.user.sendEmailVerification();
-            clientVerifyEmail.textContent = 'Inscription réussie ! Vérifiez votre email pour valider votre compte.';
-            clientVerifyEmail.style.display = 'block';
-            clientAuthError.style.display = 'none';
-            auth.signOut();
+        .then(async userCred => {
+            try {
+                // generate a simple unique code for the user
+                const userCode = 'GSM-' + Math.random().toString(36).substring(2,8).toUpperCase();
+                await userCred.user.sendEmailVerification();
+                // store profile in Firestore (client-side)
+                try {
+                    await db.collection('profiles').doc(userCred.user.uid).set({
+                        firstName: firstname,
+                        lastName: lastname,
+                        code: userCode,
+                        email: email,
+                        createdAt: Date.now()
+                    });
+                } catch (e) { console.warn('Erreur en sauvegardant le profil', e); }
+                clientVerifyEmail.textContent = 'Inscription réussie ! Vérifiez votre email pour valider votre compte.';
+                clientVerifyEmail.style.display = 'block';
+                clientAuthError.style.display = 'none';
+                auth.signOut();
+            } catch (e) {
+                console.error('registration flow', e);
+            }
         })
         .catch(err => {
             clientAuthError.textContent = 'Erreur : ' + (err.message || 'Impossible de créer le compte');
             clientAuthError.style.display = 'block';
         });
+});
+
+// Mot de passe oublié -> envoi email réinitialisation
+document.addEventListener('DOMContentLoaded', () => {
+    const forgot = document.getElementById('client-forgot-btn');
+    if (!forgot) return;
+    forgot.addEventListener('click', async (ev) => {
+        ev.preventDefault();
+        let email = document.getElementById('client-email').value.trim();
+        if (!email) {
+            email = window.prompt('Entrez votre email pour recevoir le lien de réinitialisation :');
+            if (!email) return;
+        }
+        try {
+            await auth.sendPasswordResetEmail(email);
+            showToast('Email de réinitialisation envoyé', 'success');
+            // optionally open the auth modal so user knows to check email
+            showClientAuthModal();
+        } catch (err) {
+            console.error('reset password', err);
+            showToast('Erreur en envoyant l\'email de réinitialisation', 'error');
+        }
+    });
 });
 
 clientLogoutBtn.addEventListener('click', function() {
@@ -458,6 +513,7 @@ function setClientUI(connected) {
 
 auth.onAuthStateChanged(function(user) {
     setClientUI(!!user && user.emailVerified);
+    try { if (user && user.uid) refreshClientProfile(user.uid); else refreshClientProfile(null); } catch(e){}
 });
 
 // === GESTION MODE ADMIN PAR CODE ===
@@ -497,6 +553,8 @@ adminCodeForm.addEventListener('submit', function(e) {
                         else localStorage.removeItem('ADMIN_API_TOKEN');
                     }
                 } catch (e) { /* ignore prompt errors */ }
+                // if a redirect was requested (e.g., trying to open bagages), follow it
+                try { if (window.__pendingAdminRedirect) { const rd = window.__pendingAdminRedirect; window.__pendingAdminRedirect = null; window.location.href = rd; } } catch(e){}
     } else {
         adminCodeError.textContent = 'Code incorrect.';
         adminCodeError.style.display = 'block';
@@ -655,6 +713,52 @@ document.addEventListener('DOMContentLoaded', function() {
 // initial load
 loadDepartures();
 
+// Intercept links: require registration/verified profile for GSM Express
+(function(){
+    const gsmLink = document.getElementById('gsmexpress-link');
+    const bagagesLink = document.getElementById('bagages-link');
+    if (gsmLink) gsmLink.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const user = auth.currentUser;
+        if (!user) { showClientAuthModal(); showToast('Veuillez vous inscrire/connexion pour accéder à GSM Express','info'); return; }
+        if (!user.emailVerified) { showToast('Veuillez vérifier votre email avant d\'accéder à GSM Express','error'); showClientAuthModal(); return; }
+        try {
+            const doc = await db.collection('profiles').doc(user.uid).get();
+            const data = doc.exists ? doc.data() : null;
+            if (!data || !data.firstName || !data.lastName || !data.code) {
+                showClientAuthModal();
+                if (data) {
+                    document.getElementById('client-firstname').value = data.firstName || '';
+                    document.getElementById('client-lastname').value = data.lastName || '';
+                }
+                showToast('Complétez votre profil pour accéder à GSM Express', 'info');
+                return;
+            }
+            window.location.href = 'gsmexpress.html';
+        } catch (err) { console.error('gsm link check', err); showToast('Erreur lors de la vérification du profil', 'error'); }
+    });
+    if (bagagesLink) bagagesLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.__pendingAdminRedirect = 'bagages.html';
+        showAdminCodeModal();
+    });
+})();
+
+// Refresh client profile display in menu
+async function refreshClientProfile(uid) {
+    const el = document.getElementById('client-profile');
+    if (!el) return;
+    if (!uid) { el.textContent = ''; el.style.display = 'none'; return; }
+    try {
+        const doc = await db.collection('profiles').doc(uid).get();
+        if (doc.exists) {
+            const d = doc.data();
+            el.textContent = `${d.firstName || ''} ${d.lastName || ''} (${d.code || ''})`;
+            el.style.display = '';
+        } else { el.textContent = ''; el.style.display = 'none'; }
+    } catch (e) { console.warn('refreshClientProfile', e); }
+}
+
 // --- NOTIFICATIONS : version admin uniquement ---
 // Use current origin so deployed site connects to its own backend
 const SERVER_ORIGIN = window.location.origin;
@@ -768,6 +872,17 @@ socket.on('pdf_generated', data => {
     }
 });
 
+// Receive any persisted notifications the server saved while this client was disconnected
+socket.on('pending_notifications', (arr) => {
+    try {
+        if (!Array.isArray(arr) || !arr.length) return;
+        // reverse so oldest first when injecting into local storage
+        arr.reverse().forEach(n => addNotification(n));
+        renderNotifications();
+        if (isAdmin && arr.length) showToast(`${arr.length} notification(s) reçue(s)`, 'info', 4000);
+    } catch (e) { console.error('pending_notifications handler error', e); }
+});
+
 
 // Listen for settings update from server and update UI
 socket.on('settings_updated', (payload) => {
@@ -785,6 +900,88 @@ socket.on('settings_updated', (payload) => {
         // For now, call loadDepartures() to refresh from Firestore/backend
         try { loadDepartures(); } catch (e) { /* ignore */ }
     }
+});
+
+// --- Selected date UI + admin pin/unpin handlers ---
+// add small CSS for pinned cell
+(function(){
+    const s = document.createElement('style');
+    s.textContent = '.pinned-selected{outline:3px solid rgba(6,78,150,0.85);border-radius:8px;}';
+    document.head.appendChild(s);
+})();
+
+const selectedDateBlock = document.getElementById('selected-date-block');
+const selectedDateValue = document.getElementById('selected-date-value');
+function updateSelectedDateUI(sd) {
+    if (!selectedDateBlock) return;
+    if (!sd) { selectedDateBlock.style.display = 'none'; selectedDateValue.textContent = 'Aucune'; }
+    else {
+        selectedDateBlock.style.display = '';
+        selectedDateValue.textContent = sd;
+    }
+    // highlight cell if in current month view
+    document.querySelectorAll('td[data-date]').forEach(td => td.classList.remove('pinned-selected'));
+    if (sd) {
+        const td = document.querySelector(`td[data-date="${sd}"]`);
+        if (td) td.classList.add('pinned-selected');
+    }
+}
+
+// fetch current settings on load
+(async function fetchInitialSettings(){
+    try {
+        const res = await fetch(`${SERVER_ORIGIN}/api/settings`);
+        if (!res.ok) return;
+        const j = await res.json();
+        if (j && j.selectedDate) updateSelectedDateUI(j.selectedDate);
+    } catch(e){ console.warn('fetch settings', e); }
+})();
+
+// also react to settings updates (keep existing note handling)
+socket.on('settings_updated', (payload) => {
+    try {
+        if (payload && payload.selectedDate !== undefined) updateSelectedDateUI(payload.selectedDate);
+    } catch (e) { console.error('settings_updated UI handler', e); }
+});
+
+// admin pin/unpin buttons
+document.addEventListener('DOMContentLoaded', () => {
+    const pinBtn = document.getElementById('pin-selected-date-btn');
+    const unpinBtn = document.getElementById('unpin-selected-date-btn');
+    if (pinBtn) pinBtn.addEventListener('click', async () => {
+        if (!isAdmin) return showToast('Mode admin requis', 'error');
+        if (selectedDates.length !== 1) return showToast('Sélectionnez exactement 1 date avant d\'épingler', 'error');
+        const date = selectedDates[0];
+        try {
+            const res = await fetch(`${SERVER_ORIGIN}/api/settings`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-ADMIN-TOKEN': localStorage.getItem('ADMIN_API_TOKEN') || ''
+                },
+                body: JSON.stringify({ selectedDate: date })
+            });
+            const j = await res.json();
+            if (!res.ok) throw new Error(j.error || 'Erreur serveur');
+            showToast('Date épinglée', 'success');
+        } catch (e) { console.error(e); showToast('Erreur en épinglant la date', 'error'); }
+    });
+    if (unpinBtn) unpinBtn.addEventListener('click', async () => {
+        if (!isAdmin) return showToast('Mode admin requis', 'error');
+        try {
+            const res = await fetch(`${SERVER_ORIGIN}/api/settings`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-ADMIN-TOKEN': localStorage.getItem('ADMIN_API_TOKEN') || ''
+                },
+                body: JSON.stringify({ selectedDate: null })
+            });
+            const j = await res.json();
+            if (!res.ok) throw new Error(j.error || 'Erreur serveur');
+            showToast('Date désépinglée', 'success');
+        } catch (e) { console.error(e); showToast('Erreur en désépinglant', 'error'); }
+    });
 });
 
 // Load settings (note, selectedDate) from backend and apply to UI
