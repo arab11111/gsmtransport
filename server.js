@@ -8,7 +8,12 @@ const adminSdk = require('firebase-admin');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
 let puppeteer;
 try {
   puppeteer = require('puppeteer-core');
@@ -27,22 +32,20 @@ app.use(express.static(path.join(__dirname)));
 // parse JSON bodies
 app.use(express.json());
 
-// Initialize Firebase Admin SDK for server-side Firestore updates
+// Initialize Firebase Admin SDK for server-side Firestore updates (safe: no crash if not configured)
+let adminDb = null;
 try {
   if (process.env.SERVICE_ACCOUNT_JSON) {
-    // SERVICE_ACCOUNT_JSON contains the JSON content of the service account
     const serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_JSON);
     adminSdk.initializeApp({ credential: adminSdk.credential.cert(serviceAccount) });
-  } else if (process.env.SERVICE_ACCOUNT_PATH) {
-    const serviceAccount = require(process.env.SERVICE_ACCOUNT_PATH);
-    adminSdk.initializeApp({ credential: adminSdk.credential.cert(serviceAccount) });
+    adminDb = adminSdk.firestore();
+    console.log('✅ Firebase connecté');
   } else {
-    adminSdk.initializeApp(); // use ADC or environment-provided credentials
+    console.log('⚠️ Firebase non configuré (mode local)');
   }
 } catch (e) {
-  console.warn('firebase-admin initialization warning:', e.message || e);
+  console.log('❌ Erreur Firebase:', e && e.message ? e.message : e);
 }
-const adminDb = adminSdk.firestore ? adminSdk.firestore() : null;
 
 // Helper: persist notifications to notifications.json (keep newest first, cap at 200)
 function persistNotification(obj){
@@ -168,29 +171,8 @@ server.listen(PORT, () => {
 
 // Générer un PDF côté serveur à partir de la page gsmexpress.html
 app.get('/generate-pdf/:id', async (req, res) => {
-  const id = req.params.id;
-  const filename = `reservation_${id}.pdf`;
-  const filePath = path.join(pdfsDir, filename);
-  try {
-    // Prefer explicit Chrome path via env CHROME_PATH to avoid large Chromium download during npm install
-    const defaultChrome = process.platform === 'win32'
-      ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-      : '/usr/bin/chromium';
-    const chromePath = process.env.CHROME_PATH || defaultChrome;
-    console.log('Using browser executable:', chromePath);
-    const launchOpts = { args: ['--no-sandbox', '--disable-setuid-sandbox'], executablePath: chromePath };
-    const browser = await puppeteer.launch(launchOpts);
-    const page = await browser.newPage();
-    const url = `${req.protocol}://${req.get('host')}/public/gsmexpress.html?reservationId=${encodeURIComponent(id)}`;
-    await page.goto(url, { waitUntil: 'networkidle0' });
-    await page.pdf({ path: filePath, format: 'A4' });
-    await browser.close();
-    io.emit('pdf_generated', { filename, url: `/pdfs/${filename}` });
-    res.json({ success: true, url: `/pdfs/${filename}` });
-  } catch (err) {
-    console.error('Erreur génération PDF:', err);
-    res.status(500).json({ error: err.message });
-  }
+  // Disabled: puppeteer/Chrome is not guaranteed on the host (breaks on Render).
+  return res.status(501).json({ error: 'PDF serveur désactivé temporairement (puppeteer supprimé)' });
 });
 
 // Server endpoint to update departures (batch). Optional admin token required via X-ADMIN-TOKEN.
