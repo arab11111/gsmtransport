@@ -228,6 +228,43 @@ footer {
     z-index: 20;
     box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
 }
+
+/* === Mobile / Smartphone styles === */
+@media (max-width: 600px) {
+    .menu-bar {
+        height: 56px;
+        padding: 0 12px;
+        gap: 8px;
+        justify-content: flex-end;
+        align-items: center;
+        backdrop-filter: blur(8px);
+    }
+    .logo-btn { padding: 8px 12px; font-size: 1em; margin-right: 8px; }
+    .menu-bar .logo-btn { display: none; }
+    .menu-bar button, .menu-bar a { padding: 8px 12px; font-size: 0.95em; }
+    .container {
+        flex-direction: column;
+        gap: 16px;
+        padding: 20px;
+        width: 94%;
+        max-width: 100%;
+        margin-top: 80px;
+    }
+    .calendar-section { min-width: auto; width: 100%; padding: 14px; }
+    .apps { grid-template-columns: 1fr; gap: 14px; }
+    h1 { font-size: 1.6rem; }
+    .subtitle { font-size: 1rem; }
+    .note { font-size: 0.98rem; padding: 12px; }
+    .card { padding: 16px; }
+    .card-icon { font-size: 1.9rem; }
+    .status { font-size: 0.96rem; padding: 10px 12px; }
+    footer { font-size: 0.92rem; padding: 8px 6px; position: fixed; left: 0; right: 0; }
+    body { padding-bottom: 64px; }
+    /* Modal sizing tweaks */
+    #client-auth-modal > div[style], #admin-code-modal > div[style] { min-width: auto; width: 92vw; padding: 1em; }
+    /* Make interactive controls easier to tap */
+    button, .menu-bar button, .card { touch-action: manipulation; }
+}
 </style>
 </head>
 
@@ -1164,4 +1201,4 @@ window.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 </body>
-</html>
+</html
