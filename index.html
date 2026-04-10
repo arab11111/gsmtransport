@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
 <style>
-/* ... tout ton CSS existant incha ... */
+/* ... tout ton CSS existant inchangé ... */
 * {
     margin: 0;
     padding: 0;
@@ -1073,6 +1073,15 @@ if (saveBtn) saveBtn.addEventListener('click', async () => {
     const note = document.getElementById('admin-note').value || '';
     try {
         await saveNoteToServer(note);
+        // persist also in /api/note so note.json on server is written
+        try {
+            await fetch(`${SERVER_ORIGIN}/api/note`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note, date: (selectedDates[0] || null) })
+            });
+        } catch (e) { console.warn('POST /api/note failed', e); }
+
         document.getElementById('display-note').textContent = note;
         document.getElementById('display-note').style.display = note ? '' : 'none';
         showToast('Note enregistrée', 'success');
@@ -1084,12 +1093,93 @@ if (deleteBtn) deleteBtn.addEventListener('click', async () => {
     if (!ok) return;
     try {
         await saveNoteToServer('');
+        try {
+            await fetch(`${SERVER_ORIGIN}/api/note`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note: '', date: null })
+            });
+        } catch (e) { console.warn('POST /api/note delete failed', e); }
+
         document.getElementById('display-note').textContent = '';
         document.getElementById('display-note').style.display = 'none';
         document.getElementById('admin-note').value = '';
         showToast('Note supprimée', 'success');
     } catch (err) { console.error('delete note failed', err); showToast('Échec suppression note', 'error'); }
 });
+
+// ==============================
+// NOTE (client) - load and realtime
+// ==============================
+async function loadNote() {
+    try {
+        const res = await fetch(`${SERVER_ORIGIN}/api/note`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data) return;
+
+        const display = document.getElementById('display-note');
+        display.textContent = data.note || '';
+        display.style.display = data.note ? '' : 'none';
+        const adminTextarea = document.getElementById('admin-note');
+        if (adminTextarea) adminTextarea.value = data.note || '';
+
+        // highlight date and append note under the date cell
+        if (data.date) {
+            document.querySelectorAll('td[data-date]').forEach(el => {
+                if (el.dataset.date === data.date) {
+                    el.style.background = 'red';
+                    el.style.color = 'white';
+                    // append a small note preview (avoid duplicates)
+                    if (!el.querySelector('.server-note')) {
+                        const noteDiv = document.createElement('div');
+                        noteDiv.className = 'server-note';
+                        noteDiv.innerText = data.note || '';
+                        noteDiv.style.fontSize = '12px';
+                        noteDiv.style.marginTop = '6px';
+                        el.appendChild(noteDiv);
+                    }
+                }
+            });
+        }
+    } catch (e) { console.warn('loadNote error', e); }
+}
+
+// realtime note updates
+socket.on('note_updated', (data) => {
+    try {
+        if (!data) return;
+        const display = document.getElementById('display-note');
+        display.textContent = data.note || '';
+        display.style.display = data.note ? '' : 'none';
+        const adminTextarea = document.getElementById('admin-note');
+        if (adminTextarea) adminTextarea.value = data.note || '';
+
+        // update highlighted date
+        document.querySelectorAll('td[data-date]').forEach(el => {
+            // remove previously added server-note and styles
+            if (el.querySelector('.server-note')) el.querySelector('.server-note').remove();
+            el.style.background = '';
+            el.style.color = '';
+        });
+        if (data.date) {
+            const el = document.querySelector(`td[data-date="${data.date}"]`);
+            if (el) {
+                el.style.background = 'red';
+                el.style.color = 'white';
+                const noteDiv = document.createElement('div');
+                noteDiv.className = 'server-note';
+                noteDiv.innerText = data.note || '';
+                noteDiv.style.fontSize = '12px';
+                noteDiv.style.marginTop = '6px';
+                el.appendChild(noteDiv);
+            }
+        }
+    } catch (e) { console.error('note_updated handler', e); }
+});
+
+// call loadNote once calendar rendered
+document.addEventListener('DOMContentLoaded', function(){ setTimeout(loadNote, 300); });
 
 function generatePDF(id) {
     fetch(`${SERVER_ORIGIN}/generate-pdf/${encodeURIComponent(id)}`)
@@ -1201,4 +1291,4 @@ window.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 </body>
-</html
+</html>
