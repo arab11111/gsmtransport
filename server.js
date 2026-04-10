@@ -228,6 +228,50 @@ app.post('/api/settings', (req, res) => {
 
 
 // ==============================
+// 📝 NOTE (persistante en JSON)
+// ==============================
+app.post('/api/note', (req, res) => {
+  try {
+    const { note, date } = req.body;
+
+    const data = {
+      note: note || '',
+      date: date || null
+    };
+
+    fs.writeFileSync(
+      path.join(__dirname, 'note.json'),
+      JSON.stringify(data, null, 2)
+    );
+
+    // envoyer aux clients en temps réel
+    io.emit('note_updated', data);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Erreur sauvegarde note:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/note', (req, res) => {
+  try {
+    const file = path.join(__dirname, 'note.json');
+
+    if (!fs.existsSync(file)) {
+      return res.json({ note: '', date: null });
+    }
+
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    res.json(data);
+  } catch (err) {
+    console.error('Erreur lecture note:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ==============================
 // 🚀 START SERVER
 // ==============================
 const PORT = process.env.PORT || 3002;
