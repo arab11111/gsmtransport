@@ -162,11 +162,11 @@ h1 {
     margin-bottom: 18px;
 }
 .card {
-    background: rgba(226, 59, 59, 0.16);
+    background: rgba(255,255,255,0.16);
     padding: 28px 20px 22px 20px;
     border-radius: 18px;
     text-decoration: none;
-    color: #da4848;
+    color: #fff;
     transition: 0.22s cubic-bezier(.4,0,.2,1);
     border: 1.5px solid rgba(255,255,255,0.18);
     box-shadow: 0 2px 16px rgba(0,0,0,0.10);
@@ -228,43 +228,6 @@ footer {
     z-index: 20;
     box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
 }
-
-/* === Mobile / Smartphone styles === */
-@media (max-width: 600px) {
-    .menu-bar {
-        height: 56px;
-        padding: 0 12px;
-        gap: 8px;
-        justify-content: flex-end;
-        align-items: center;
-        backdrop-filter: blur(8px);
-    }
-    .logo-btn { padding: 8px 12px; font-size: 1em; margin-right: 8px; }
-    .menu-bar .logo-btn { display: none; }
-    .menu-bar button, .menu-bar a { padding: 8px 12px; font-size: 0.95em; }
-    .container {
-        flex-direction: column;
-        gap: 16px;
-        padding: 20px;
-        width: 94%;
-        max-width: 100%;
-        margin-top: 80px;
-    }
-    .calendar-section { min-width: auto; width: 100%; padding: 14px; }
-    .apps { grid-template-columns: 1fr; gap: 14px; }
-    h1 { font-size: 1.6rem; }
-    .subtitle { font-size: 1rem; }
-    .note { font-size: 0.98rem; padding: 12px; }
-    .card { padding: 16px; }
-    .card-icon { font-size: 1.9rem; }
-    .status { font-size: 0.96rem; padding: 10px 12px; }
-    footer { font-size: 0.92rem; padding: 8px 6px; position: fixed; left: 0; right: 0; }
-    body { padding-bottom: 64px; }
-    /* Modal sizing tweaks */
-    #client-auth-modal > div[style], #admin-code-modal > div[style] { min-width: auto; width: 92vw; padding: 1em; }
-    /* Make interactive controls easier to tap */
-    button, .menu-bar button, .card { touch-action: manipulation; }
-}
 </style>
 </head>
 
@@ -275,21 +238,13 @@ footer {
 <div class="menu-bar">
     <button id="client-login-btn" class="login"><span style="font-size:1.1em;">🔑</span> Connecter</button>
     <button id="client-logout-btn" class="logout" style="display:none;"><span style="font-size:1.1em;">🚪</span> Déconnecter</button>
-    <span id="client-profile" style="display:inline-block;margin-left:12px;color:#fff;font-weight:700;"></span>
     <!-- Modal de connexion/inscription client -->
     <div id="client-auth-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,34,44,0.55);z-index:2000;align-items:center;justify-content:center;">
         <div style="background:#fffbe6;padding:2.2em 2.5em 2em 2.5em;border-radius:18px;box-shadow:0 8px 32px #0003;min-width:320px;max-width:95vw;">
             <h2 style="color:#1e40af;text-align:center;margin-bottom:1.2em;">Espace Client</h2>
             <form id="client-auth-form">
-                <div style="display:flex;gap:8px;margin-bottom:0.8em;">
-                    <input id="client-firstname" type="text" placeholder="Prénom" style="flex:1;padding:0.6em 0.9em;border-radius:8px;border:1.5px solid #b2b2b2;font-size:1.01em;">
-                    <input id="client-lastname" type="text" placeholder="Nom" style="flex:1;padding:0.6em 0.9em;border-radius:8px;border:1.5px solid #b2b2b2;font-size:1.01em;">
-                </div>
                 <input id="client-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:1em;padding:0.7em 1em;border-radius:8px;border:1.5px solid #b2b2b2;font-size:1.07em;">
                 <input id="client-password" type="password" placeholder="Mot de passe" required style="width:100%;margin-bottom:1.2em;padding:0.7em 1em;border-radius:8px;border:1.5px solid #b2b2b2;font-size:1.07em;">
-                <div style="text-align:right;margin-top:-0.6em;margin-bottom:0.8em;">
-                    <a href="#" id="client-forgot-btn" style="color:#1e40af;font-weight:700;text-decoration:none;">Mot de passe oublié ?</a>
-                </div>
                 <div id="client-auth-error" style="color:#b91c1c;font-size:0.98em;margin-bottom:0.7em;display:none;"></div>
                 <button type="submit" style="width:100%;background:#185a9d;color:#fff;padding:0.7em 0;border-radius:8px;font-weight:700;font-size:1.08em;border:none;">Connexion</button>
                 <button type="button" id="client-register-btn" style="width:100%;margin-top:0.7em;background:#43cea2;color:#222;padding:0.7em 0;border-radius:8px;font-weight:600;font-size:1.01em;border:none;">Créer un compte</button>
@@ -319,20 +274,6 @@ footer {
 
     <div class="calendar-section">
         <h3>🗓️ Départs</h3>
-        <div id="calendar-legend" style="margin-bottom:10px;display:flex;gap:12px;align-items:center;">
-            <div style="display:flex;gap:6px;align-items:center;color:#fff;font-size:0.95rem;">
-                <span style="width:14px;height:14px;background:#fee2e2;border-radius:4px;display:inline-block;border:1px solid rgba(0,0,0,0.08)"></span>
-                <span>Départ Algérie (rouge)</span>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center;color:#fff;font-size:0.95rem;">
-                <span style="width:14px;height:14px;background:#e0f2fe;border-radius:4px;display:inline-block;border:1px solid rgba(0,0,0,0.08)"></span>
-                <span>Départ France (bleu)</span>
-            </div>
-        </div>
-        <!-- Selected date (pinned by admin) -->
-        <div id="selected-date-block" style="display:none;margin:10px 0;color:#fff;font-weight:700;">
-            Date sélectionnée : <span id="selected-date-value">Aucune</span>
-        </div>
         <div id="calendar"></div>
         <div style="margin-top:10px;text-align:center;">
             <button id="prev-month" style="margin-right:10px;padding:4px 12px;border-radius:8px;background:#185a9d;color:#fff;border:none;">◀</button>
@@ -344,8 +285,6 @@ footer {
             <button id="mark-depart-btn" style="padding:6px 12px;border-radius:8px;background:#16a34a;color:#fff;border:none;font-weight:700;">Marquer comme départ</button>
             <button id="unmark-depart-btn" style="padding:6px 12px;border-radius:8px;background:#b91c1c;color:#fff;border:none;font-weight:700;">Retirer départ</button>
             <button id="clear-selection-btn" style="padding:6px 12px;border-radius:8px;background:#64748b;color:#fff;border:none;font-weight:600;">Annuler sélection</button>
-            <button id="pin-selected-date-btn" style="padding:6px 12px;border-radius:8px;background:#2563eb;color:#fff;border:none;font-weight:700;">Épingler date</button>
-            <button id="unpin-selected-date-btn" style="padding:6px 12px;border-radius:8px;background:#6b7280;color:#fff;border:none;font-weight:700;">Désépingler</button>
             <div id="admin-selection-info" style="display:inline-block;margin-left:12px;color:#fff;font-weight:600;">Aucune sélection</div>
         </div>
     </div>
@@ -423,6 +362,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 const departuresRef = db.collection('departures');
+const settingsRef = db.collection('settings').doc('site');
 
 // === GESTION AUTH CLIENT (Compat) ===
 const clientLoginBtn = document.getElementById('client-login-btn');
@@ -472,64 +412,23 @@ clientAuthForm.addEventListener('submit', function(e) {
 clientRegisterBtn.addEventListener('click', function() {
     const email = document.getElementById('client-email').value;
     const password = document.getElementById('client-password').value;
-    const firstname = document.getElementById('client-firstname').value.trim();
-    const lastname = document.getElementById('client-lastname').value.trim();
-    if (!email || !password || !firstname || !lastname) {
-        clientAuthError.textContent = 'Veuillez remplir prénom, nom, email et mot de passe.';
+    if (!email || !password) {
+        clientAuthError.textContent = 'Veuillez remplir email et mot de passe.';
         clientAuthError.style.display = 'block';
         return;
     }
     auth.createUserWithEmailAndPassword(email, password)
-        .then(async userCred => {
-            try {
-                // generate a simple unique code for the user
-                const userCode = 'GSM-' + Math.random().toString(36).substring(2,8).toUpperCase();
-                await userCred.user.sendEmailVerification();
-                // store profile in Firestore (client-side)
-                try {
-                    await db.collection('profiles').doc(userCred.user.uid).set({
-                        firstName: firstname,
-                        lastName: lastname,
-                        code: userCode,
-                        email: email,
-                        createdAt: Date.now()
-                    });
-                } catch (e) { console.warn('Erreur en sauvegardant le profil', e); }
-                clientVerifyEmail.textContent = 'Inscription réussie ! Vérifiez votre email pour valider votre compte.';
-                clientVerifyEmail.style.display = 'block';
-                clientAuthError.style.display = 'none';
-                auth.signOut();
-            } catch (e) {
-                console.error('registration flow', e);
-            }
+        .then(userCred => {
+            userCred.user.sendEmailVerification();
+            clientVerifyEmail.textContent = 'Inscription réussie ! Vérifiez votre email pour valider votre compte.';
+            clientVerifyEmail.style.display = 'block';
+            clientAuthError.style.display = 'none';
+            auth.signOut();
         })
         .catch(err => {
             clientAuthError.textContent = 'Erreur : ' + (err.message || 'Impossible de créer le compte');
             clientAuthError.style.display = 'block';
         });
-});
-
-// Mot de passe oublié -> envoi email réinitialisation
-document.addEventListener('DOMContentLoaded', () => {
-    const forgot = document.getElementById('client-forgot-btn');
-    if (!forgot) return;
-    forgot.addEventListener('click', async (ev) => {
-        ev.preventDefault();
-        let email = document.getElementById('client-email').value.trim();
-        if (!email) {
-            email = window.prompt('Entrez votre email pour recevoir le lien de réinitialisation :');
-            if (!email) return;
-        }
-        try {
-            await auth.sendPasswordResetEmail(email);
-            showToast('Email de réinitialisation envoyé', 'success');
-            // optionally open the auth modal so user knows to check email
-            showClientAuthModal();
-        } catch (err) {
-            console.error('reset password', err);
-            showToast('Erreur en envoyant l\'email de réinitialisation', 'error');
-        }
-    });
 });
 
 clientLogoutBtn.addEventListener('click', function() {
@@ -550,7 +449,6 @@ function setClientUI(connected) {
 
 auth.onAuthStateChanged(function(user) {
     setClientUI(!!user && user.emailVerified);
-    try { if (user && user.uid) refreshClientProfile(user.uid); else refreshClientProfile(null); } catch(e){}
 });
 
 // === GESTION MODE ADMIN PAR CODE ===
@@ -562,6 +460,7 @@ const adminCodeInput = document.getElementById('admin-code-input');
 const adminCodeError = document.getElementById('admin-code-error');
 const closeAdminCodeModal = document.getElementById('close-admin-code-modal');
 let isAdmin = false;
+let pendingNavigationTarget = null;
 
 function showAdminCodeModal() {
     adminCodeModal.style.display = 'flex';
@@ -573,6 +472,17 @@ function hideAdminCodeModal() {
 }
 adminBtn.addEventListener('click', showAdminCodeModal);
 closeAdminCodeModal.addEventListener('click', hideAdminCodeModal);
+
+// Require admin code before allowing navigation to certain pages
+const bagagesLink = document.getElementById('bagages-link');
+if (bagagesLink) {
+    bagagesLink.addEventListener('click', function(e) {
+        if (isAdmin) return; // already admin, allow normal navigation
+        e.preventDefault();
+        pendingNavigationTarget = bagagesLink.getAttribute('href') || 'bagages.html';
+        showAdminCodeModal();
+    });
+}
 
 adminCodeForm.addEventListener('submit', function(e) {
     e.preventDefault();
@@ -590,8 +500,12 @@ adminCodeForm.addEventListener('submit', function(e) {
                         else localStorage.removeItem('ADMIN_API_TOKEN');
                     }
                 } catch (e) { /* ignore prompt errors */ }
-                // if a redirect was requested (e.g., trying to open bagages), follow it
-                try { if (window.__pendingAdminRedirect) { const rd = window.__pendingAdminRedirect; window.__pendingAdminRedirect = null; window.location.href = rd; } } catch(e){}
+                // If a navigation was pending (user clicked a restricted link), go there now
+                if (pendingNavigationTarget) {
+                    const target = pendingNavigationTarget;
+                    pendingNavigationTarget = null;
+                    window.location.href = target;
+                }
     } else {
         adminCodeError.textContent = 'Code incorrect.';
         adminCodeError.style.display = 'block';
@@ -610,7 +524,6 @@ function setAdminUI(admin) {
         adminBtn.style.display = 'none';
         quitAdminBtn.style.display = '';
         document.getElementById('admin-note-section').style.display = '';
-        document.getElementById('display-note').style.display = '';
         notifDiv.style.display = '';
         listeDiv.style.display = '';
     } else {
@@ -626,6 +539,82 @@ function setAdminUI(admin) {
     updateAdminCalendarControls();
 }
 
+// --- Settings (admin note + adminSelectedDate) ---
+const displayNoteDiv = document.getElementById('display-note');
+const saveNoteBtn = document.getElementById('save-note-btn');
+const deleteNoteBtn = document.getElementById('delete-note-btn');
+
+function loadSettingsRealtime() {
+    try {
+        // keep Firestore listener for other settings if used, but primarily
+        // listen for socket updates for transient admin notes
+        try {
+            settingsRef.onSnapshot(doc => {
+                const data = doc.exists ? doc.data() : {};
+                adminSelectedDate = data && data.adminSelectedDate ? data.adminSelectedDate : null;
+                const note = data && data.adminNote ? data.adminNote : '';
+                if (note && note.trim()) {
+                    displayNoteDiv.style.display = '';
+                    displayNoteDiv.innerHTML = note.replace(/\n/g, '<br>');
+                } else {
+                    displayNoteDiv.style.display = 'none';
+                    displayNoteDiv.innerHTML = '';
+                }
+                renderCalendar(currentMonth, currentYear);
+            }, err => { console.error('Erreur loadSettingsRealtime', err); });
+        } catch (e) { /* ignore if settings collection not used */ }
+        // Listen for real-time settings broadcasts from server (transient, not persisted)
+        socket.on('settings_updated', payload => {
+            try {
+                adminSelectedDate = payload && payload.adminSelectedDate ? payload.adminSelectedDate : null;
+                const note = payload && typeof payload.adminNote === 'string' ? payload.adminNote : '';
+                if (note && note.trim()) {
+                    displayNoteDiv.style.display = '';
+                    displayNoteDiv.innerHTML = note.replace(/\n/g, '<br>');
+                } else {
+                    displayNoteDiv.style.display = 'none';
+                    displayNoteDiv.innerHTML = '';
+                }
+                renderCalendar(currentMonth, currentYear);
+            } catch (err) { console.error('settings_updated handler error', err); }
+        });
+    } catch (e) { console.error('loadSettingsRealtime error', e); }
+}
+
+function requireAdminOrAlert() {
+    if (!isAdmin) { alert('Vous devez entrer le code admin pour effectuer cette action'); return false; }
+    return true;
+}
+
+if (saveNoteBtn) {
+    saveNoteBtn.addEventListener('click', async () => {
+        if (!requireAdminOrAlert()) return;
+        const note = document.getElementById('admin-note').value || '';
+        // If a single date is selected, publish it as adminSelectedDate
+        const dateToPublish = (selectedDates.length === 1) ? selectedDates[0] : adminSelectedDate;
+        try {
+            // Do NOT persist the note in Firestore; emit to server for real-time broadcast only
+            socket.emit('update_settings', { adminNote: note, adminSelectedDate: dateToPublish });
+            alert('Note diffusée en temps réel.');
+        } catch (err) { console.error('emit update_settings error', err); alert('Erreur lors de l\'envoi de la note'); }
+    });
+}
+
+if (deleteNoteBtn) {
+    deleteNoteBtn.addEventListener('click', async () => {
+        if (!requireAdminOrAlert()) return;
+        try {
+            // Broadcast empty note to remove it from clients; do not save to Firestore
+            socket.emit('update_settings', { adminNote: '' });
+            document.getElementById('admin-note').value = '';
+            alert('Note supprimée (diffusion en temps réel).');
+        } catch (err) { console.error('delete note emit error', err); alert('Erreur lors de la suppression'); }
+    });
+}
+
+// start listening to settings
+loadSettingsRealtime();
+
 
 // === CALENDRIER SIMPLE (Firestone-backed) ===
 const calendarEl = document.getElementById('calendar');
@@ -637,6 +626,7 @@ let currentMonth = today.getMonth();
 let currentYear = today.getFullYear();
 let departDates = []; // will be loaded from Firestore
 let selectedDates = []; // admin selections (not immediately saved)
+let adminSelectedDate = null; // date set by admin via /api/settings (visible to all users)
 let departuresUnsubscribe = null; // Firestore realtime unsubscribe
 
 function renderCalendar(month, year) {
@@ -654,7 +644,12 @@ function renderCalendar(month, year) {
         const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
         const isDepart = departDates.includes(dateStr);
         const isSelected = selectedDates.includes(dateStr);
-        html += `<td data-date='${dateStr}' class='${isSelected ? 'selected' : ''}' style='padding:0.5em 0.2em;${isDepart ? "background:#fee2e2;color:#b91c1c;font-weight:700;border-radius:7px;" : ""}'>${date}</td>`;
+        const isAdminSelected = adminSelectedDate === dateStr;
+        // build style: depart (red) has priority, else adminSelected gets highlighted outline
+        let tdStyle = 'padding:0.5em 0.2em;';
+        if (isDepart) tdStyle += "background:#fee2e2;color:#b91c1c;font-weight:700;border-radius:7px;";
+        else if (isAdminSelected) tdStyle += 'outline:3px solid rgba(241,199,11,0.95);border-radius:7px;';
+        html += `<td data-date='${dateStr}' class='${isSelected ? 'selected' : ''}' style='${tdStyle}'>${date}</td>`;
         dayOfWeek++;
         if (dayOfWeek === 7 && date !== daysInMonth) { html += '</tr><tr>'; dayOfWeek = 0; }
     }
@@ -724,16 +719,19 @@ async function applySelection(active) {
     if (selectedDates.length === 0) return;
     try {
         // Call server API to perform batch update (server will write to Firestore)
+        const token = localStorage.getItem('ADMIN_API_TOKEN');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['X-ADMIN-TOKEN'] = token;
         const res = await fetch(`${SERVER_ORIGIN}/api/departures`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ dates: selectedDates, active: !!active })
         });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || 'Erreur serveur');
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || json.message || 'Erreur serveur');
         // Server will update Firestore; local realtime listener will refresh UI
         clearSelection();
-    } catch (err) { console.error('applySelection error', err); showToast('Erreur lors de la mise à jour des dates', 'error'); }
+    } catch (err) { console.error('applySelection error', err); alert('Erreur lors de la mise à jour des dates'); }
 }
 
 // admin control buttons
@@ -750,104 +748,12 @@ document.addEventListener('DOMContentLoaded', function() {
 // initial load
 loadDepartures();
 
-// Intercept links: require registration/verified profile for GSM Express
-(function(){
-    const gsmLink = document.getElementById('gsmexpress-link');
-    const bagagesLink = document.getElementById('bagages-link');
-    if (gsmLink) gsmLink.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const user = auth.currentUser;
-        if (!user) { showClientAuthModal(); showToast('Veuillez vous inscrire/connexion pour accéder à GSM Express','info'); return; }
-        if (!user.emailVerified) { showToast('Veuillez vérifier votre email avant d\'accéder à GSM Express','error'); showClientAuthModal(); return; }
-        try {
-            const doc = await db.collection('profiles').doc(user.uid).get();
-            const data = doc.exists ? doc.data() : null;
-            if (!data || !data.firstName || !data.lastName || !data.code) {
-                showClientAuthModal();
-                if (data) {
-                    document.getElementById('client-firstname').value = data.firstName || '';
-                    document.getElementById('client-lastname').value = data.lastName || '';
-                }
-                showToast('Complétez votre profil pour accéder à GSM Express', 'info');
-                return;
-            }
-            window.location.href = 'gsmexpress.html';
-        } catch (err) { console.error('gsm link check', err); showToast('Erreur lors de la vérification du profil', 'error'); }
-    });
-    if (bagagesLink) bagagesLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.__pendingAdminRedirect = 'bagages.html';
-        showAdminCodeModal();
-    });
-})();
-
-// Refresh client profile display in menu
-async function refreshClientProfile(uid) {
-    const el = document.getElementById('client-profile');
-    if (!el) return;
-    if (!uid) { el.textContent = ''; el.style.display = 'none'; return; }
-    try {
-        const doc = await db.collection('profiles').doc(uid).get();
-        if (doc.exists) {
-            const d = doc.data();
-            el.textContent = `${d.firstName || ''} ${d.lastName || ''} (${d.code || ''})`;
-            el.style.display = '';
-        } else { el.textContent = ''; el.style.display = 'none'; }
-    } catch (e) { console.warn('refreshClientProfile', e); }
-}
-
 // --- NOTIFICATIONS : version admin uniquement ---
-// Use current origin so deployed site connects to its own backend
-const SERVER_ORIGIN = window.location.origin;
+// Use explicit server origin on port 3002 for real-time backend
+const SERVER_ORIGIN = window.location.protocol + '//' + window.location.hostname + ':3002';
 const socket = io(SERVER_ORIGIN);
 const notifDiv = document.getElementById('notif-reservations');
 const listeDiv = document.getElementById('liste-reservations');
-
-// Toasts and confirm modal
-const toastContainer = document.createElement('div');
-toastContainer.id = 'toast-container';
-toastContainer.style = 'position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;max-width:320px;';
-document.body.appendChild(toastContainer);
-
-function showToast(msg, type='info', timeout=4000){
-    const el = document.createElement('div');
-    el.textContent = msg;
-    el.style = `padding:10px 14px;border-radius:10px;color:#fff;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,0.12);opacity:0;transform:translateY(-6px);transition:opacity 200ms,transform 200ms;`;
-    if(type==='success') el.style.background = 'linear-gradient(90deg,#16a34a,#059669)';
-    else if(type==='error') el.style.background = 'linear-gradient(90deg,#ef4444,#b91c1c)';
-    else el.style.background = 'linear-gradient(90deg,#2563eb,#1e40af)';
-    toastContainer.appendChild(el);
-    requestAnimationFrame(()=>{ el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
-    const id = setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(-6px)'; setTimeout(()=>el.remove(),220); }, timeout);
-    el.addEventListener('click', ()=>{ clearTimeout(id); el.remove(); });
-}
-
-// simple confirm modal returning Promise<boolean>
-const confirmModal = document.createElement('div');
-confirmModal.id = 'confirm-modal';
-confirmModal.style = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);z-index:100000;';
-confirmModal.innerHTML = `
-    <div style="background:#fff;padding:18px;border-radius:12px;min-width:300px;max-width:90vw;color:#111;box-shadow:0 8px 32px #0003;">
-        <div id="confirm-text" style="margin-bottom:12px;font-weight:600;"></div>
-        <div style="display:flex;gap:10px;justify-content:flex-end;">
-            <button id="confirm-no" style="padding:8px 12px;border-radius:8px;background:#888;color:#fff;border:none;">Non</button>
-            <button id="confirm-yes" style="padding:8px 12px;border-radius:8px;background:#1e40af;color:#fff;border:none;">Oui</button>
-        </div>
-    </div>`;
-document.body.appendChild(confirmModal);
-
-function showConfirm(message){
-    return new Promise(resolve => {
-        confirmModal.style.display = 'flex';
-        document.getElementById('confirm-text').textContent = message;
-        const yes = document.getElementById('confirm-yes');
-        const no = document.getElementById('confirm-no');
-        function cleanup(val){ confirmModal.style.display='none'; yes.removeEventListener('click', onYes); no.removeEventListener('click', onNo); resolve(val); }
-        function onYes(){ cleanup(true); }
-        function onNo(){ cleanup(false); }
-        yes.addEventListener('click', onYes); no.addEventListener('click', onNo);
-    });
-}
 
 function getNotifications() { return JSON.parse(localStorage.getItem('notifications') || '[]'); }
 function saveNotifications(list) { localStorage.setItem('notifications', JSON.stringify(list)); }
@@ -909,17 +815,6 @@ socket.on('pdf_generated', data => {
     }
 });
 
-// Receive any persisted notifications the server saved while this client was disconnected
-socket.on('pending_notifications', (arr) => {
-    try {
-        if (!Array.isArray(arr) || !arr.length) return;
-        // reverse so oldest first when injecting into local storage
-        arr.reverse().forEach(n => addNotification(n));
-        renderNotifications();
-        if (isAdmin && arr.length) showToast(`${arr.length} notification(s) reçue(s)`, 'info', 4000);
-    } catch (e) { console.error('pending_notifications handler error', e); }
-});
-
 
 // Listen for settings update from server and update UI
 socket.on('settings_updated', (payload) => {
@@ -932,93 +827,13 @@ socket.on('settings_updated', (payload) => {
         if (adminTextarea) adminTextarea.value = payload.note || '';
     }
     if (payload && payload.selectedDate !== undefined) {
-        // Optionally highlight selected date in calendar — simple reload
-        // You could implement a focused selection if needed
-        // For now, call loadDepartures() to refresh from Firestore/backend
-        try { loadDepartures(); } catch (e) { /* ignore */ }
-    }
-});
-
-// --- Selected date UI + admin pin/unpin handlers ---
-// add small CSS for pinned cell
-(function(){
-    const s = document.createElement('style');
-    s.textContent = '.pinned-selected{outline:3px solid rgba(6,78,150,0.85);border-radius:8px;}';
-    document.head.appendChild(s);
-})();
-
-const selectedDateBlock = document.getElementById('selected-date-block');
-const selectedDateValue = document.getElementById('selected-date-value');
-function updateSelectedDateUI(sd) {
-    if (!selectedDateBlock) return;
-    if (!sd) { selectedDateBlock.style.display = 'none'; selectedDateValue.textContent = 'Aucune'; }
-    else {
-        selectedDateBlock.style.display = '';
-        selectedDateValue.textContent = sd;
-    }
-    // highlight cell if in current month view
-    document.querySelectorAll('td[data-date]').forEach(td => td.classList.remove('pinned-selected'));
-    if (sd) {
-        const td = document.querySelector(`td[data-date="${sd}"]`);
-        if (td) td.classList.add('pinned-selected');
-    }
-}
-
-// fetch current settings on load
-(async function fetchInitialSettings(){
-    try {
-        const res = await fetch(`${SERVER_ORIGIN}/api/settings`);
-        if (!res.ok) return;
-        const j = await res.json();
-        if (j && j.selectedDate) updateSelectedDateUI(j.selectedDate);
-    } catch(e){ console.warn('fetch settings', e); }
-})();
-
-// also react to settings updates (keep existing note handling)
-socket.on('settings_updated', (payload) => {
-    try {
-        if (payload && payload.selectedDate !== undefined) updateSelectedDateUI(payload.selectedDate);
-    } catch (e) { console.error('settings_updated UI handler', e); }
-});
-
-// admin pin/unpin buttons
-document.addEventListener('DOMContentLoaded', () => {
-    const pinBtn = document.getElementById('pin-selected-date-btn');
-    const unpinBtn = document.getElementById('unpin-selected-date-btn');
-    if (pinBtn) pinBtn.addEventListener('click', async () => {
-        if (!isAdmin) return showToast('Mode admin requis', 'error');
-        if (selectedDates.length !== 1) return showToast('Sélectionnez exactement 1 date avant d\'épingler', 'error');
-        const date = selectedDates[0];
+        // Update adminSelectedDate so all clients see the admin-chosen date
         try {
-            const res = await fetch(`${SERVER_ORIGIN}/api/settings`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-ADMIN-TOKEN': localStorage.getItem('ADMIN_API_TOKEN') || ''
-                },
-                body: JSON.stringify({ selectedDate: date })
-            });
-            const j = await res.json();
-            if (!res.ok) throw new Error(j.error || 'Erreur serveur');
-            showToast('Date épinglée', 'success');
-        } catch (e) { console.error(e); showToast('Erreur en épinglant la date', 'error'); }
-    });
-    if (unpinBtn) unpinBtn.addEventListener('click', async () => {
-        if (!isAdmin) return showToast('Mode admin requis', 'error');
-        try {
-            const res = await fetch(`${SERVER_ORIGIN}/api/settings`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-ADMIN-TOKEN': localStorage.getItem('ADMIN_API_TOKEN') || ''
-                },
-                body: JSON.stringify({ selectedDate: null })
-            });
-            const j = await res.json();
-            if (!res.ok) throw new Error(j.error || 'Erreur serveur');
-            showToast('Date désépinglée', 'success');
-        } catch (e) { console.error(e); showToast('Erreur en désépinglant', 'error'); }
-    });
+            adminSelectedDate = payload.selectedDate || null;
+            // re-render calendar to show the admin selected date
+            renderCalendar(currentMonth, currentYear);
+        } catch (e) { /* ignore */ }
+    }
 });
 
 // Load settings (note, selectedDate) from backend and apply to UI
@@ -1038,6 +853,9 @@ async function loadSettings() {
         if (json.selectedDate !== undefined) {
             // optional: pre-select date in admin UI
             if (json.selectedDate) {
+                // make admin-selected date visible to all users
+                adminSelectedDate = json.selectedDate;
+                // for admin UI also pre-select
                 selectedDates = [json.selectedDate];
                 updateAdminCalendarControls();
                 renderCalendar(currentMonth, currentYear);
@@ -1069,226 +887,41 @@ async function saveNoteToServer(note) {
 const saveBtn = document.getElementById('save-note-btn');
 const deleteBtn = document.getElementById('delete-note-btn');
 if (saveBtn) saveBtn.addEventListener('click', async () => {
-    if (!isAdmin) { showToast('Activez le mode admin pour enregistrer.', 'error'); return; }
+    if (!isAdmin) return alert('Activez le mode admin pour enregistrer.');
     const note = document.getElementById('admin-note').value || '';
     try {
         await saveNoteToServer(note);
-        // persist also in /api/note so note.json on server is written
-        try {
-            await fetch(`${SERVER_ORIGIN}/api/note`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ note, date: (selectedDates[0] || null) })
-            });
-        } catch (e) { console.warn('POST /api/note failed', e); }
-
         document.getElementById('display-note').textContent = note;
         document.getElementById('display-note').style.display = note ? '' : 'none';
-        showToast('Note enregistrée', 'success');
-    } catch (err) { console.error('save note failed', err); showToast('Échec enregistrement note', 'error'); }
+        alert('Note enregistrée');
+    } catch (err) { console.error('save note failed', err); alert('Échec enregistrement note'); }
 });
 if (deleteBtn) deleteBtn.addEventListener('click', async () => {
-    if (!isAdmin) { showToast('Activez le mode admin pour supprimer.', 'error'); return; }
-    const ok = await showConfirm('Supprimer la note pour tous les clients ?');
-    if (!ok) return;
+    if (!isAdmin) return alert('Activez le mode admin pour supprimer.');
+    if (!confirm('Supprimer la note pour tous les clients ?')) return;
     try {
         await saveNoteToServer('');
-        try {
-            await fetch(`${SERVER_ORIGIN}/api/note`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ note: '', date: null })
-            });
-        } catch (e) { console.warn('POST /api/note delete failed', e); }
-
         document.getElementById('display-note').textContent = '';
         document.getElementById('display-note').style.display = 'none';
         document.getElementById('admin-note').value = '';
-        showToast('Note supprimée', 'success');
-    } catch (err) { console.error('delete note failed', err); showToast('Échec suppression note', 'error'); }
+        alert('Note supprimée');
+    } catch (err) { console.error('delete note failed', err); alert('Échec suppression note'); }
 });
-
-// ==============================
-// NOTE (client) - load and realtime
-// ==============================
-async function loadNote() {
-    try {
-        const res = await fetch(`${SERVER_ORIGIN}/api/note`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!data) return;
-
-        const display = document.getElementById('display-note');
-        display.textContent = data.note || '';
-        display.style.display = data.note ? '' : 'none';
-        const adminTextarea = document.getElementById('admin-note');
-        if (adminTextarea) adminTextarea.value = data.note || '';
-
-        // highlight date and append note under the date cell
-        if (data.date) {
-            document.querySelectorAll('td[data-date]').forEach(el => {
-                if (el.dataset.date === data.date) {
-                    el.style.background = 'red';
-                    el.style.color = 'white';
-                    // append a small note preview (avoid duplicates)
-                    if (!el.querySelector('.server-note')) {
-                        const noteDiv = document.createElement('div');
-                        noteDiv.className = 'server-note';
-                        noteDiv.innerText = data.note || '';
-                        noteDiv.style.fontSize = '12px';
-                        noteDiv.style.marginTop = '6px';
-                        el.appendChild(noteDiv);
-                    }
-                }
-            });
-        }
-    } catch (e) { console.warn('loadNote error', e); }
-}
-
-// realtime note updates
-socket.on('note_updated', (data) => {
-    try {
-        if (!data) return;
-        const display = document.getElementById('display-note');
-        display.textContent = data.note || '';
-        display.style.display = data.note ? '' : 'none';
-        const adminTextarea = document.getElementById('admin-note');
-        if (adminTextarea) adminTextarea.value = data.note || '';
-
-        // update highlighted date
-        document.querySelectorAll('td[data-date]').forEach(el => {
-            // remove previously added server-note and styles
-            if (el.querySelector('.server-note')) el.querySelector('.server-note').remove();
-            el.style.background = '';
-            el.style.color = '';
-        });
-        if (data.date) {
-            const el = document.querySelector(`td[data-date="${data.date}"]`);
-            if (el) {
-                el.style.background = 'red';
-                el.style.color = 'white';
-                const noteDiv = document.createElement('div');
-                noteDiv.className = 'server-note';
-                noteDiv.innerText = data.note || '';
-                noteDiv.style.fontSize = '12px';
-                noteDiv.style.marginTop = '6px';
-                el.appendChild(noteDiv);
-            }
-        }
-    } catch (e) { console.error('note_updated handler', e); }
-});
-
-// call loadNote once calendar rendered
-document.addEventListener('DOMContentLoaded', function(){ setTimeout(loadNote, 300); });
 
 function generatePDF(id) {
     fetch(`${SERVER_ORIGIN}/generate-pdf/${encodeURIComponent(id)}`)
         .then(r => r.json())
         .then(data => {
             if (data && data.url) window.open(data.url, '_blank');
-                else showToast('Erreur génération PDF', 'error');
-            }).catch(err => { console.error(err); showToast('Erreur génération PDF', 'error'); });
+            else alert('Erreur génération PDF');
+        }).catch(err => { console.error(err); alert('Erreur génération PDF'); });
 }
 
 window.addEventListener('DOMContentLoaded', function() {
     renderNotifications();
+    // Load global settings (note, selectedDate) on page load
+    try { loadSettings(); } catch (e) { console.warn('loadSettings call failed', e); }
 });
-</script>
-<script>
-(function(){
-    const style = document.createElement('style');
-    style.textContent = `
-        /* hide existing prev/next and admin control buttons (visual removal only) */
-        #prev-month, #next-month, #admin-calendar-controls { display: none !important; }
-        /* make date cells behave like buttons */
-        td[data-date] { cursor: pointer; }
-        td[data-date].dep-algeria { background: #fee2e2 !important; color: #b91c1c !important; font-weight:700 !important; border-radius:7px; }
-        td[data-date].dep-france { background: #e0f2fe !important; color: #1e40af !important; font-weight:700 !important; border-radius:7px; }
-        td[data-date]:focus { outline: 3px solid rgba(59,130,246,0.5); border-radius:6px; }
-    `;
-    document.head.appendChild(style);
-
-    // departMap: { 'YYYY-MM-DD' : 'algeria'|'france' }
-    let departMap = {};
-
-    async function loadServerDepartures(){
-        try{
-            const res = await fetch(`${SERVER_ORIGIN}/api/departures`);
-            if(!res.ok) return;
-            const json = await res.json();
-            departMap = {};
-            (json||[]).forEach(d => { if(d && d.date) departMap[d.date] = (d.country||'').toLowerCase(); });
-            applyDeparturesToCalendar();
-        }catch(e){ console.warn('loadServerDepartures error', e); }
-    }
-
-    function applyDeparturesToCalendar(){
-        document.querySelectorAll('td[data-date]').forEach(td => {
-            const date = td.getAttribute('data-date');
-            td.classList.remove('dep-algeria','dep-france');
-            td.removeAttribute('data-country');
-            const c = departMap[date];
-            if(c === 'algeria' || c === 'algérie' || c === 'algerie'){
-                td.classList.add('dep-algeria'); td.setAttribute('data-country','algeria'); td.title = `Départ Algérie — ${date}`;
-            } else if(c === 'france'){
-                td.classList.add('dep-france'); td.setAttribute('data-country','france'); td.title = `Départ France — ${date}`;
-            } else {
-                td.title = '';
-            }
-            td.setAttribute('role','button'); td.setAttribute('tabindex','0');
-        });
-    }
-
-    function nextStatusFor(date){
-        const cur = departMap[date];
-        if(!cur) return 'algeria';
-        if(cur === 'algeria') return 'france';
-        return null; // remove
-    }
-
-    async function saveDeparture(date, country){
-        try{
-            const token = localStorage.getItem('ADMIN_API_TOKEN');
-            const headers = { 'Content-Type': 'application/json' };
-            if(token) headers['X-ADMIN-TOKEN'] = token;
-            if(!country){
-                const res = await fetch(`${SERVER_ORIGIN}/api/departures/${encodeURIComponent(date)}`, { method: 'DELETE', headers });
-                if(!res.ok) throw new Error('delete failed');
-            } else {
-                const res = await fetch(`${SERVER_ORIGIN}/api/departures/single`, { method: 'POST', headers, body: JSON.stringify({ date, country }) });
-                if(!res.ok) throw new Error('save failed');
-            }
-            await loadServerDepartures();
-        }catch(e){ console.warn('saveDeparture error', e); showToast('Erreur sauvegarde date (voir console)','error'); }
-    }
-
-    // Click / keyboard handlers: only admin can change
-    calendarEl.addEventListener('click', function(e){
-        const td = e.target.closest('td[data-date]');
-        if(!td) return;
-        if(!isAdmin) return; // only admin can change
-        const date = td.getAttribute('data-date');
-        const next = nextStatusFor(date);
-        saveDeparture(date, next);
-    });
-
-    calendarEl.addEventListener('keydown', function(e){
-        if(e.key !== 'Enter' && e.key !== ' ') return;
-        const td = e.target.closest('td[data-date]');
-        if(!td) return;
-        if(!isAdmin) return;
-        const date = td.getAttribute('data-date');
-        const next = nextStatusFor(date);
-        saveDeparture(date, next);
-        e.preventDefault();
-    });
-
-    // initial load shortly after calendar is rendered
-    document.addEventListener('DOMContentLoaded', function(){ setTimeout(loadServerDepartures, 250); });
-
-    // refresh when server signals updates
-    try{ socket.on('departures_updated', () => loadServerDepartures()); }catch(e){}
-})();
 </script>
 </body>
 </html>
