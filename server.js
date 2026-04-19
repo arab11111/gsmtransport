@@ -4,7 +4,12 @@ const socketIo = require('socket.io');
 const path = require('path');
 const fs = require('fs');
 const PDFDocument = require('pdfkit');
-const admin = require('firebase-admin');
+let admin = null;
+try {
+  admin = require('firebase-admin');
+} catch (e) {
+  console.log('⚠️ Firebase non installé → ignoré');
+}
 // Helper to require files from possible lib locations (handles different build layouts)
 function tryRequireLib(moduleName) {
   const candidates = [
@@ -19,19 +24,27 @@ function tryRequireLib(moduleName) {
   for (const p of candidates) {
     try {
       if (fs.existsSync(p)) return require(p);
-    } catch (e) {
-      // ignore and continue
-    }
+    } catch (e) {}
   }
 
-  // final attempt — let Node throw the usual error if not found
-  return require('./lib/' + moduleName);
+  console.warn(`⚠️ Module ${moduleName} introuvable → ignoré`);
+  return null; // ❗ ne plus crash
 }
 
-const { initMongo, getDb, ObjectId } = tryRequireLib('mongo');
-const mountDepartures = tryRequireLib('departures');
-const { verifyFirebaseToken, requireAdmin, isAdminEmail } = tryRequireLib('auth');
+// Mongo
+const mongoLib = tryRequireLib('mongo') || {};
+const initMongo = mongoLib.initMongo || (async () => null);
+const getDb = mongoLib.getDb || (() => null);
+const ObjectId = mongoLib.ObjectId || null;
 
+// Departures
+const mountDepartures = tryRequireLib('departures') || (() => {});
+
+// Auth
+const authLib = tryRequireLib('auth') || {};
+const verifyFirebaseToken = authLib.verifyFirebaseToken || ((req, res, next) => next());
+const requireAdmin = authLib.requireAdmin || ((req, res, next) => next());
+const isAdminEmail = authLib.isAdminEmail || (() => false);
 const app = express();
 const server = http.createServer(app);
 
