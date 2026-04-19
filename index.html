@@ -248,6 +248,7 @@ footer {
                 <div id="client-auth-error" style="color:#b91c1c;font-size:0.98em;margin-bottom:0.7em;display:none;"></div>
                 <button type="submit" style="width:100%;background:#185a9d;color:#fff;padding:0.7em 0;border-radius:8px;font-weight:700;font-size:1.08em;border:none;">Connexion</button>
                 <button type="button" id="client-register-btn" style="width:100%;margin-top:0.7em;background:#43cea2;color:#222;padding:0.7em 0;border-radius:8px;font-weight:600;font-size:1.01em;border:none;">Créer un compte</button>
+                <button type="button" id="client-forgot-btn" style="width:100%;margin-top:0.7em;background:#f59e0b;color:#111;padding:0.7em 0;border-radius:8px;font-weight:600;font-size:1.01em;border:none;">Mot de passe oublié</button>
                 <button type="button" id="close-client-auth-modal" style="width:100%;margin-top:0.7em;background:#888;color:#fff;padding:0.7em 0;border-radius:8px;font-weight:600;font-size:1.01em;border:none;">Annuler</button>
             </form>
             <div id="client-verify-email" style="display:none;color:#1e40af;font-size:1.05em;margin-top:1em;text-align:center;"></div>
@@ -371,6 +372,7 @@ const clientAuthModal = document.getElementById('client-auth-modal');
 const clientAuthForm = document.getElementById('client-auth-form');
 const clientAuthError = document.getElementById('client-auth-error');
 const clientRegisterBtn = document.getElementById('client-register-btn');
+const clientForgotBtn = document.getElementById('client-forgot-btn');
 const closeClientAuthModal = document.getElementById('close-client-auth-modal');
 const clientVerifyEmail = document.getElementById('client-verify-email');
 
@@ -431,6 +433,27 @@ clientRegisterBtn.addEventListener('click', function() {
         });
 });
 
+if (clientForgotBtn) {
+    clientForgotBtn.addEventListener('click', async function() {
+        const email = document.getElementById('client-email').value;
+        if (!email) {
+            clientAuthError.textContent = 'Veuillez entrer votre email pour réinitialiser le mot de passe.';
+            clientAuthError.style.display = 'block';
+            return;
+        }
+        try {
+            await auth.sendPasswordResetEmail(email);
+            clientVerifyEmail.textContent = 'Un email de réinitialisation a été envoyé. Vérifiez votre boîte.';
+            clientVerifyEmail.style.display = 'block';
+            clientAuthError.style.display = 'none';
+            clientAuthForm.reset();
+        } catch (err) {
+            clientAuthError.textContent = 'Erreur en envoyant l\'email de réinitialisation : ' + (err.message || '');
+            clientAuthError.style.display = 'block';
+        }
+    });
+}
+
 clientLogoutBtn.addEventListener('click', function() {
     auth.signOut().then(() => {
         setClientUI(false);
@@ -447,8 +470,33 @@ function setClientUI(connected) {
     }
 }
 
-auth.onAuthStateChanged(function(user) {
+auth.onAuthStateChanged(async function(user) {
     setClientUI(!!user && user.emailVerified);
+    try {
+        if (user && user.emailVerified) {
+            const token = await user.getIdToken();
+            // attach token to socket and connect
+            socket.auth = { token };
+            if (!socket.connected) socket.connect();
+            // check admin status on server
+            try {
+                const res = await fetch(`${SERVER_ORIGIN}/api/auth/check`, { method: 'GET', headers: { 'Authorization': 'Bearer ' + token } });
+                const j = await res.json().catch(() => ({}));
+                if (res.ok && j.isAdmin) {
+                    isAdmin = true;
+                    setAdminUI(true);
+                } else {
+                    isAdmin = false;
+                    setAdminUI(false);
+                }
+            } catch (e) { console.warn('admin check failed', e); }
+        } else {
+            // disconnect socket on sign-out or unverified
+            try { socket.disconnect(); } catch (e) {}
+            isAdmin = false;
+            setAdminUI(false);
+        }
+    } catch (e) { console.warn('auth state change token error', e); }
 });
 
 // === GESTION MODE ADMIN PAR CODE ===
@@ -484,30 +532,39 @@ if (bagagesLink) {
     });
 }
 
-adminCodeForm.addEventListener('submit', function(e) {
+adminCodeForm.addEventListener('submit', async function(e) {
     e.preventDefault();
-    const code = adminCodeInput.value.trim();
-    if (code === 'GSM2026') {
-        hideAdminCodeModal();
-        isAdmin = true;
-                setAdminUI(true);
-                // Prompt for API admin token (optional) to use with server endpoints
-                try {
-                    const stored = localStorage.getItem('ADMIN_API_TOKEN');
-                    const token = window.prompt('Entrez le token ADMIN pour les API (laisser vide si non requis):', stored || '');
-                    if (token !== null) {
-                        if (token) localStorage.setItem('ADMIN_API_TOKEN', token);
-                        else localStorage.removeItem('ADMIN_API_TOKEN');
-                    }
-                } catch (e) { /* ignore prompt errors */ }
-                // If a navigation was pending (user clicked a restricted link), go there now
-                if (pendingNavigationTarget) {
-                    const target = pendingNavigationTarget;
-                    pendingNavigationTarget = null;
-                    window.location.href = target;
-                }
-    } else {
-        adminCodeError.textContent = 'Code incorrect.';
+    try {
+        // Require Firebase authenticated user
+        const user = auth.currentUser;
+        if (!user || !user.emailVerified) {
+            adminCodeError.textContent = 'Vous devez être connecté et avoir vérifié votre email.';
+            adminCodeError.style.display = 'block';
+            return;
+        }
+
+        const token = await user.getIdToken();
+        const res = await fetch(`${SERVER_ORIGIN}/api/auth/check`, {
+            method: 'GET',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.isAdmin) {
+            hideAdminCodeModal();
+            isAdmin = true;
+            setAdminUI(true);
+            if (pendingNavigationTarget) {
+                const target = pendingNavigationTarget;
+                pendingNavigationTarget = null;
+                window.location.href = target;
+            }
+        } else {
+            adminCodeError.textContent = 'Accès admin refusé.';
+            adminCodeError.style.display = 'block';
+        }
+    } catch (err) {
+        console.error('admin auth check error', err);
+        adminCodeError.textContent = 'Erreur lors de la vérification admin.';
         adminCodeError.style.display = 'block';
     }
 });
@@ -593,10 +650,14 @@ if (saveNoteBtn) {
         // If a single date is selected, publish it as adminSelectedDate
         const dateToPublish = (selectedDates.length === 1) ? selectedDates[0] : adminSelectedDate;
         try {
-            // Do NOT persist the note in Firestore; emit to server for real-time broadcast only
-            socket.emit('update_settings', { adminNote: note, adminSelectedDate: dateToPublish });
+            // Persist note via server endpoint (/api/note) which will broadcast note_updated
+            await fetch(`${SERVER_ORIGIN}/api/note`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note, date: dateToPublish })
+            });
             alert('Note diffusée en temps réel.');
-        } catch (err) { console.error('emit update_settings error', err); alert('Erreur lors de l\'envoi de la note'); }
+        } catch (err) { console.error('save note error', err); alert('Erreur lors de l\'envoi de la note'); }
     });
 }
 
@@ -604,8 +665,12 @@ if (deleteNoteBtn) {
     deleteNoteBtn.addEventListener('click', async () => {
         if (!requireAdminOrAlert()) return;
         try {
-            // Broadcast empty note to remove it from clients; do not save to Firestore
-            socket.emit('update_settings', { adminNote: '' });
+            // Remove note via server endpoint which will broadcast note_updated
+            await fetch(`${SERVER_ORIGIN}/api/note`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note: '', date: null })
+            });
             document.getElementById('admin-note').value = '';
             alert('Note supprimée (diffusion en temps réel).');
         } catch (err) { console.error('delete note emit error', err); alert('Erreur lors de la suppression'); }
@@ -616,7 +681,7 @@ if (deleteNoteBtn) {
 loadSettingsRealtime();
 
 
-// === CALENDRIER SIMPLE (Firestone-backed) ===
+// === CALENDRIER (nouveau, temps réel via socket) ===
 const calendarEl = document.getElementById('calendar');
 const monthLabel = document.getElementById('month-label');
 const prevBtn = document.getElementById('prev-month');
@@ -624,12 +689,16 @@ const nextBtn = document.getElementById('next-month');
 const today = new Date();
 let currentMonth = today.getMonth();
 let currentYear = today.getFullYear();
-let departDates = []; // will be loaded from Firestore
-let selectedDates = []; // admin selections (not immediately saved)
-let adminSelectedDate = null; // date set by admin via /api/settings (visible to all users)
-let departuresUnsubscribe = null; // Firestore realtime unsubscribe
+let departDates = []; // dates marked as departures (YYYY-MM-DD)
+let selectedDates = []; // admin selections
+let adminSelectedDate = null;
+
+function formatDateObj(year, month, day) {
+    return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+}
 
 function renderCalendar(month, year) {
+    if (!calendarEl) return;
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
@@ -638,18 +707,18 @@ function renderCalendar(month, year) {
     const days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
     for (let d of days) html += `<th style='color:#1e40af;'>${d}</th>`;
     html += '</tr></thead><tbody><tr>';
-    let dayOfWeek = (firstDay + 6) % 7; // Lundi=0
+    let dayOfWeek = (firstDay + 6) % 7;
     for (let i = 0; i < dayOfWeek; i++) html += '<td></td>';
     for (let date = 1; date <= daysInMonth; date++) {
-        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
+        const dateStr = formatDateObj(year, month, date);
         const isDepart = departDates.includes(dateStr);
         const isSelected = selectedDates.includes(dateStr);
         const isAdminSelected = adminSelectedDate === dateStr;
-        // build style: depart (red) has priority, else adminSelected gets highlighted outline
+        let tdClass = isSelected ? 'selected' : '';
         let tdStyle = 'padding:0.5em 0.2em;';
         if (isDepart) tdStyle += "background:#fee2e2;color:#b91c1c;font-weight:700;border-radius:7px;";
         else if (isAdminSelected) tdStyle += 'outline:3px solid rgba(241,199,11,0.95);border-radius:7px;';
-        html += `<td data-date='${dateStr}' class='${isSelected ? 'selected' : ''}' style='${tdStyle}'>${date}</td>`;
+        html += `<td data-date='${dateStr}' class='${tdClass}' style='${tdStyle}'>${date}</td>`;
         dayOfWeek++;
         if (dayOfWeek === 7 && date !== daysInMonth) { html += '</tr><tr>'; dayOfWeek = 0; }
     }
@@ -667,24 +736,12 @@ function changeMonth(delta) {
 
 prevBtn.addEventListener('click', () => { changeMonth(-1); clearSelection(); });
 nextBtn.addEventListener('click', () => { changeMonth(1); clearSelection(); });
-renderCalendar(currentMonth, currentYear);
 
-// Firestore helpers: realtime listener so all clients see updates
-async function loadDepartures() {
-    try {
-        if (typeof departuresUnsubscribe === 'function') return;
-        departuresUnsubscribe = departuresRef.where('active','==',true)
-            .onSnapshot(snapshot => {
-                departDates = snapshot.docs.map(d => d.id);
-                renderCalendar(currentMonth, currentYear);
-            }, err => { console.error('Erreur loadDepartures (onSnapshot)', err); });
-    } catch (err) { console.error('Erreur loadDepartures', err); }
-}
-
+// click to select date(s) (admin only)
 calendarEl.addEventListener('click', (e) => {
     const td = e.target.closest('td[data-date]');
     if (!td) return;
-    if (!isAdmin) return; // only admin can select
+    if (!isAdmin) { alert('Accès refusé : vous devez activer le mode admin pour sélectionner une date.'); return; }
     const date = td.getAttribute('data-date');
     const idx = selectedDates.indexOf(date);
     if (idx === -1) selectedDates.push(date);
@@ -697,44 +754,51 @@ function updateAdminCalendarControls() {
     const controls = document.getElementById('admin-calendar-controls');
     const info = document.getElementById('admin-selection-info');
     if (!controls) return;
-    if (isAdmin) controls.style.display = 'block';
-    else controls.style.display = 'none';
-    if (selectedDates.length === 0) {
-        info.textContent = 'Aucune sélection';
-    } else if (selectedDates.length === 1) {
-        info.textContent = selectedDates[0];
-    } else {
-        info.textContent = `${selectedDates.length} dates sélectionnées`;
-    }
+    controls.style.display = isAdmin ? 'block' : 'none';
+    if (selectedDates.length === 0) info.textContent = 'Aucune sélection';
+    else if (selectedDates.length === 1) info.textContent = selectedDates[0];
+    else info.textContent = `${selectedDates.length} dates sélectionnées`;
 }
 
 function clearSelection() {
     selectedDates = [];
-    // remove selected class from any cells currently in DOM
     document.querySelectorAll('td.selected').forEach(td => td.classList.remove('selected'));
     updateAdminCalendarControls();
 }
 
+// send selection to server via socket
 async function applySelection(active) {
-    if (selectedDates.length === 0) return;
+    if (selectedDates.length === 0) return alert('Aucune date sélectionnée');
     try {
-        // Call server API to perform batch update (server will write to Firestore)
-        const token = localStorage.getItem('ADMIN_API_TOKEN');
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['X-ADMIN-TOKEN'] = token;
-        const res = await fetch(`${SERVER_ORIGIN}/api/departures`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ dates: selectedDates, active: !!active })
-        });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(json.error || json.message || 'Erreur serveur');
-        // Server will update Firestore; local realtime listener will refresh UI
+        // send to server via protected REST endpoint so server updates storage and broadcasts
+        try {
+            const headers = { 'Content-Type': 'application/json' };
+            const user = auth.currentUser;
+            if (user) {
+                try {
+                    const tk = await user.getIdToken();
+                    headers['Authorization'] = 'Bearer ' + tk;
+                } catch (e) { /* ignore token error */ }
+            }
+            await fetch(`${SERVER_ORIGIN}/api/departures`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ dates: selectedDates, active: !!active })
+            });
+        } catch (e) { console.warn('failed to POST /api/departures', e); }
+        // prepare a simple admin note when a single date is selected and persist via /api/note
+        const note = (selectedDates.length === 1) ? `Départ prévu le ${selectedDates[0]}` : (selectedDates.length > 1 ? `Départs prévus: ${selectedDates.join(', ')}` : '');
+        try {
+            await fetch(`${SERVER_ORIGIN}/api/note`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note, date: selectedDates.length === 1 ? selectedDates[0] : null })
+            });
+        } catch (e) { console.warn('failed to save note after selection', e); }
         clearSelection();
-    } catch (err) { console.error('applySelection error', err); alert('Erreur lors de la mise à jour des dates'); }
+    } catch (err) { console.error('applySelection error', err); alert('Erreur lors de l\'envoi'); }
 }
 
-// admin control buttons
 document.addEventListener('DOMContentLoaded', function() {
     const markBtn = document.getElementById('mark-depart-btn');
     const unmarkBtn = document.getElementById('unmark-depart-btn');
@@ -743,17 +807,70 @@ document.addEventListener('DOMContentLoaded', function() {
     if (unmarkBtn) unmarkBtn.addEventListener('click', () => applySelection(false));
     if (clearBtn) clearBtn.addEventListener('click', () => clearSelection());
     updateAdminCalendarControls();
+    // initial render
+    renderCalendar(currentMonth, currentYear);
+    // initial load: ask server for current departures
+    try {
+        fetch(`${SERVER_ORIGIN}/api/departures`).then(r => r.json()).then(data => {
+            if (Array.isArray(data)) { departDates = data; renderCalendar(currentMonth, currentYear); }
+        }).catch(() => {});
+    } catch (e) { /* ignore */ }
 });
 
-// initial load
-loadDepartures();
+// --- MOBILE: balayage (swipe) pour changer le mois sur les petits écrans ---
+function enableCalendarSwipe() {
+    if (!calendarEl) return;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    const HORIZONTAL_THRESHOLD = 50; // px minimal pour considérer un swipe
+    const VERTICAL_TOLERANCE = 100; // px maximal vertical pour ignorer le geste
+
+    calendarEl.addEventListener('touchstart', function(ev) {
+        const t = ev.touches[0];
+        touchStartX = t.clientX;
+        touchStartY = t.clientY;
+        touchEndX = touchStartX;
+    }, { passive: true });
+
+    calendarEl.addEventListener('touchmove', function(ev) {
+        const t = ev.touches[0];
+        touchEndX = t.clientX;
+    }, { passive: true });
+
+    calendarEl.addEventListener('touchend', function(ev) {
+        const dx = touchEndX - touchStartX;
+        const dy = (ev.changedTouches && ev.changedTouches[0]) ? (ev.changedTouches[0].clientY - touchStartY) : 0;
+        if (Math.abs(dx) > HORIZONTAL_THRESHOLD && Math.abs(dy) < VERTICAL_TOLERANCE) {
+            if (dx < 0) {
+                // swipe gauche -> mois suivant
+                changeMonth(1);
+            } else {
+                // swipe droite -> mois précédent
+                changeMonth(-1);
+            }
+            clearSelection();
+        }
+    });
+}
+
 
 // --- NOTIFICATIONS : version admin uniquement ---
 // Use explicit server origin on port 3002 for real-time backend
 const SERVER_ORIGIN = window.location.protocol + '//' + window.location.hostname + ':3002';
-const socket = io(SERVER_ORIGIN);
+const socket = io(SERVER_ORIGIN, { autoConnect: false });
 const notifDiv = document.getElementById('notif-reservations');
 const listeDiv = document.getElementById('liste-reservations');
+
+// Listen for departures updates from server and refresh calendar
+socket.on('departures_updated', payload => {
+    try {
+        if (payload && Array.isArray(payload.dates)) {
+            departDates = payload.dates;
+            renderCalendar(currentMonth, currentYear);
+        }
+    } catch (e) { console.error('departures_updated handler error', e); }
+});
 
 function getNotifications() { return JSON.parse(localStorage.getItem('notifications') || '[]'); }
 function saveNotifications(list) { localStorage.setItem('notifications', JSON.stringify(list)); }
@@ -818,7 +935,7 @@ socket.on('pdf_generated', data => {
 
 // Listen for settings update from server and update UI
 socket.on('settings_updated', (payload) => {
-    // payload may contain { note, selectedDate }
+        // payload may contain { note, selectedDate }
     if (payload && payload.note !== undefined) {
         const display = document.getElementById('display-note');
         display.textContent = payload.note || '';
@@ -827,59 +944,63 @@ socket.on('settings_updated', (payload) => {
         if (adminTextarea) adminTextarea.value = payload.note || '';
     }
     if (payload && payload.selectedDate !== undefined) {
-        // Update adminSelectedDate so all clients see the admin-chosen date
         try {
             adminSelectedDate = payload.selectedDate || null;
-            // re-render calendar to show the admin selected date
             renderCalendar(currentMonth, currentYear);
         } catch (e) { /* ignore */ }
     }
 });
 
-// Load settings (note, selectedDate) from backend and apply to UI
-async function loadSettings() {
+// Listen for note updates (persisted) from note.js module
+socket.on('note_updated', payload => {
     try {
-        const res = await fetch(`${SERVER_ORIGIN}/api/settings`);
+        const display = document.getElementById('display-note');
+        display.textContent = payload.note || '';
+        display.style.display = payload.note ? '' : 'none';
+        const adminTextarea = document.getElementById('admin-note');
+        if (adminTextarea) adminTextarea.value = payload.note || '';
+        if (payload.date) {
+            adminSelectedDate = payload.date;
+            // if adminSelectedDate is present, mark it visually
+            selectedDates = [payload.date];
+            updateAdminCalendarControls();
+            renderCalendar(currentMonth, currentYear);
+        } else {
+            adminSelectedDate = null;
+            renderCalendar(currentMonth, currentYear);
+        }
+    } catch (e) { console.error('note_updated handler error', e); }
+});
+
+// Load persisted admin note (from note.js) and apply to UI
+async function loadNote() {
+    try {
+        const res = await fetch(`${SERVER_ORIGIN}/api/note`);
         if (!res.ok) return;
         const json = await res.json();
         if (!json) return;
-        if (json.note !== undefined) {
-            const display = document.getElementById('display-note');
-            display.textContent = json.note || '';
-            display.style.display = json.note ? '' : 'none';
-            const adminTextarea = document.getElementById('admin-note');
-            if (adminTextarea) adminTextarea.value = json.note || '';
+        const display = document.getElementById('display-note');
+        display.textContent = json.note || '';
+        display.style.display = json.note ? '' : 'none';
+        const adminTextarea = document.getElementById('admin-note');
+        if (adminTextarea) adminTextarea.value = json.note || '';
+        if (json.date) {
+            adminSelectedDate = json.date;
+            selectedDates = [json.date];
+            updateAdminCalendarControls();
+            renderCalendar(currentMonth, currentYear);
         }
-        if (json.selectedDate !== undefined) {
-            // optional: pre-select date in admin UI
-            if (json.selectedDate) {
-                // make admin-selected date visible to all users
-                adminSelectedDate = json.selectedDate;
-                // for admin UI also pre-select
-                selectedDates = [json.selectedDate];
-                updateAdminCalendarControls();
-                renderCalendar(currentMonth, currentYear);
-            }
-        }
-    } catch (err) { console.warn('loadSettings failed', err); }
+    } catch (err) { console.warn('loadNote failed', err); }
 }
 
-// Save note (admin) via POST /api/settings
-async function saveNoteToServer(note) {
+// Save note (admin) via POST /api/note
+async function saveNoteToServer(note, date) {
     try {
-        const token = localStorage.getItem('ADMIN_API_TOKEN');
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['X-ADMIN-TOKEN'] = token;
-        const res = await fetch(`${SERVER_ORIGIN}/api/settings`, {
+        await fetch(`${SERVER_ORIGIN}/api/note`, {
             method: 'POST',
-            headers,
-            body: JSON.stringify({ note })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ note, date: date || null })
         });
-        if (!res.ok) {
-            const body = await res.json().catch(() => ({}));
-            throw new Error(body.error || 'Server error');
-        }
-        return await res.json();
     } catch (err) { throw err; }
 }
 
@@ -920,7 +1041,9 @@ function generatePDF(id) {
 window.addEventListener('DOMContentLoaded', function() {
     renderNotifications();
     // Load global settings (note, selectedDate) on page load
-    try { loadSettings(); } catch (e) { console.warn('loadSettings call failed', e); }
+    try { loadNote(); } catch (e) { console.warn('loadNote call failed', e); }
+    // activer le balayage sur mobile si l'appareil supporte le tactile
+    try { if ('ontouchstart' in window || navigator.maxTouchPoints > 0) enableCalendarSwipe(); } catch (e) { /* ignore */ }
 });
 </script>
 </body>
