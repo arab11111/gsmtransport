@@ -9,7 +9,7 @@
   <style>
     body {
       font-family: 'Inter', Arial, sans-serif;
-      background-image: linear-gradient(120deg, rgba(107,139,235,0.55) 0%, rgba(223,156,236,0.55) 100%), url('polo1.png');
+      background-image: linear-gradient(120deg, rgba(107,139,235,0.55) 0%, rgba(223,156,236,0.55) 100%), url('image/polo1.png');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -170,8 +170,21 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io();
+    // Use same real-time backend as the main site (port 3002)
+    const SERVER_ORIGIN = window.location.protocol + '//' + window.location.hostname + ':3002';
+    const socket = io(SERVER_ORIGIN);
     const notif = document.getElementById('notif');
+    // helper to show confirmation/toast to user
+    function showClientNotif(message, success = true, timeout = 5000) {
+      try {
+        notif.style.display = 'block';
+        notif.style.background = success ? '#e6ffef' : '#ffe6e6';
+        notif.style.color = success ? '#0f5132' : '#7f1d1d';
+        notif.style.border = success ? '1px solid #8ef0b3' : '1px solid #f5c2c7';
+        notif.innerHTML = `${success ? '✔️' : '⚠️'} ${message}`;
+        if (timeout > 0) setTimeout(() => { try { notif.style.display = 'none'; } catch(e){} }, timeout);
+      } catch(e) { console.warn('showClientNotif error', e); }
+    }
     // --- NOTIFICATIONS : version propre, unique, sans admin ---
     // Zone d'affichage notifications (ajoutée dynamiquement)
     let notifDiv = document.getElementById('notif-reservations');
@@ -549,13 +562,24 @@
         document.getElementById('prix').value = '';
         document.getElementById('qrZone').style.display = 'none';
       };
-      // Réserver (submit)
+        // Réserver (submit)
       document.getElementById('reservationForm').onsubmit = async function (e) {
         e.preventDefault();
         const data = getFormData();
-        // Emit to server so it generates the PDF and notifies the admin
-        socket.emit('new_booking', data);
-        // Persist booking via REST (optional — will fail gracefully if Firestore not initialized)
+        // Ensure socket is connected then emit to server so it generates the PDF and notifies the admin
+        let emittedViaSocket = false;
+        try {
+          if (!socket.connected) {
+            try { await new Promise((res, rej) => { socket.connect(); socket.once('connect', res); socket.once('connect_error', rej); setTimeout(res, 1500); }); } catch(e) { /* ignore */ }
+          }
+          if (socket.connected) {
+            try {
+              socket.emit('new_booking', data);
+              emittedViaSocket = true;
+            } catch (e) { console.warn('socket emit threw', e); }
+          }
+        } catch (e) { console.warn('socket connection/emit sequence failed', e); }
+        // Persist booking via REST (optional — server will still generate/emit when socket receives new_booking)
         try {
           const res = await fetch('/api/bookings', {
             method: 'POST',
@@ -573,6 +597,22 @@
         }
         // Show QR locally to the user
         showQr(data);
+        // Show confirmation badge based on how we delivered
+        try {
+          if (emittedViaSocket) {
+            showClientNotif('Réservation transmise au serveur (socket).', true);
+          } else if (typeof res !== 'undefined' && res && res.ok) {
+            showClientNotif('Réservation transmise via backup REST.', true);
+          } else {
+            showClientNotif('Réservation enregistrée localement mais non transmise (connexion indisponible).', false, 8000);
+            // fallback: persist locally for retry
+            try {
+              const q = JSON.parse(localStorage.getItem('pendingBookings')||'[]');
+              q.push({ data, at: new Date().toISOString() });
+              localStorage.setItem('pendingBookings', JSON.stringify(q));
+            } catch (e) { console.warn('failed to store pending booking', e); }
+          }
+        } catch(e) { console.warn('post-submit notify error', e); }
         // Reset form after a short delay and rotate bagage number
         setTimeout(() => {
           document.getElementById('reservationForm').reset();
