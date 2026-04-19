@@ -509,6 +509,8 @@ const adminCodeError = document.getElementById('admin-code-error');
 const closeAdminCodeModal = document.getElementById('close-admin-code-modal');
 let isAdmin = false;
 let pendingNavigationTarget = null;
+// Restore admin mode if previously activated via GSM code in this session
+try { if (sessionStorage.getItem('gsm_admin') === '1') { isAdmin = true; setAdminUI(true); } } catch (e) { /* ignore */ }
 
 function showAdminCodeModal() {
     adminCodeModal.style.display = 'flex';
@@ -535,7 +537,22 @@ if (bagagesLink) {
 adminCodeForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     try {
-        // Require Firebase authenticated user
+        const code = (adminCodeInput && adminCodeInput.value) ? adminCodeInput.value.trim() : '';
+        // Allow admin mode with the GSM code without Firebase authentication
+        if (code === 'GSM2026') {
+            hideAdminCodeModal();
+            isAdmin = true;
+            try { sessionStorage.setItem('gsm_admin', '1'); } catch (e) {}
+            setAdminUI(true);
+            if (pendingNavigationTarget) {
+                const target = pendingNavigationTarget;
+                pendingNavigationTarget = null;
+                window.location.href = target;
+            }
+            return;
+        }
+
+        // Fallback to existing Firebase-based admin check
         const user = auth.currentUser;
         if (!user || !user.emailVerified) {
             adminCodeError.textContent = 'Vous devez être connecté et avoir vérifié votre email.';
@@ -552,6 +569,7 @@ adminCodeForm.addEventListener('submit', async function(e) {
         if (res.ok && json.isAdmin) {
             hideAdminCodeModal();
             isAdmin = true;
+            try { sessionStorage.setItem('gsm_admin', '1'); } catch (e) {}
             setAdminUI(true);
             if (pendingNavigationTarget) {
                 const target = pendingNavigationTarget;
@@ -571,6 +589,7 @@ adminCodeForm.addEventListener('submit', async function(e) {
 
 quitAdminBtn.addEventListener('click', function() {
     isAdmin = false;
+    try { sessionStorage.removeItem('gsm_admin'); } catch (e) {}
     setAdminUI(false);
 });
 
