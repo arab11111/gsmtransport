@@ -5,9 +5,32 @@ const path = require('path');
 const fs = require('fs');
 const PDFDocument = require('pdfkit');
 const admin = require('firebase-admin');
-const { initMongo, getDb, ObjectId } = require('./lib/mongo');
-const mountDepartures = require('./lib/departures');
-const { verifyFirebaseToken, requireAdmin, isAdminEmail } = require('./lib/auth');
+// Helper to require files from possible lib locations (handles different build layouts)
+function tryRequireLib(moduleName) {
+  const candidates = [
+    path.join(__dirname, 'lib', moduleName + '.js'),
+    path.join(__dirname, 'lib', moduleName),
+    path.join(__dirname, '..', 'lib', moduleName + '.js'),
+    path.join(__dirname, '..', 'lib', moduleName),
+    path.join(process.cwd(), 'lib', moduleName + '.js'),
+    path.join(process.cwd(), 'lib', moduleName)
+  ];
+
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) return require(p);
+    } catch (e) {
+      // ignore and continue
+    }
+  }
+
+  // final attempt — let Node throw the usual error if not found
+  return require('./lib/' + moduleName);
+}
+
+const { initMongo, getDb, ObjectId } = tryRequireLib('mongo');
+const mountDepartures = tryRequireLib('departures');
+const { verifyFirebaseToken, requireAdmin, isAdminEmail } = tryRequireLib('auth');
 
 const app = express();
 const server = http.createServer(app);
