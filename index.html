@@ -255,6 +255,21 @@ footer {
         </div>
     </div>
 
+    <!-- Admin Panel Modal (dates + note) -->
+    <div id="admin-panel-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,34,44,0.6);z-index:3000;align-items:center;justify-content:center;">
+        <div style="background:#fff;padding:1.6em;border-radius:12px;min-width:320px;max-width:720px;">
+            <h3 style="margin-top:0;color:#1e40af;">Panneau Admin — Dates & Notes</h3>
+            <label style="font-weight:700;display:block;margin-top:8px;color:#111;">Note publique</label>
+            <textarea id="admin-panel-note" rows="4" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc;margin-top:6px;"></textarea>
+            <label style="font-weight:700;display:block;margin-top:10px;color:#111;">Date (YYYY-MM-DD)</label>
+            <input id="admin-panel-date" type="date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc;margin-top:6px;" />
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+                <button id="admin-panel-save" style="background:#1e40af;color:#fff;padding:8px 14px;border-radius:8px;border:none;font-weight:700;">Enregistrer</button>
+                <button id="admin-panel-close" style="background:#888;color:#fff;padding:8px 14px;border-radius:8px;border:none;font-weight:700;">Fermer</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal code admin GSM -->
     <div id="admin-code-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,34,44,0.55);z-index:2000;align-items:center;justify-content:center;">
         <div style="background:#fffbe6;padding:2.2em 2.5em 2em 2.5em;border-radius:18px;box-shadow:0 8px 32px #0003;min-width:320px;max-width:95vw;">
@@ -269,6 +284,7 @@ footer {
     </div>
     <button id="adminBtn" class="login" style="background:linear-gradient(90deg,#d80824,#444);color:#fff;">GSM</button>
     <button id="quit-admin-btn" class="logout" style="display:none;background:linear-gradient(90deg,#888,#444);color:#fff;">Quitter mode admin</button>
+    <button id="open-admin-panel-btn" class="login" style="display:none;margin-left:8px;background:linear-gradient(90deg,#1e40af,#0ea5e9);color:#fff;">Panneau Admin</button>
 </div>
 
 <div class="container">
@@ -281,13 +297,7 @@ footer {
             <span id="month-label" style="font-weight:600;"></span>
             <button id="next-month" style="margin-left:10px;padding:4px 12px;border-radius:8px;background:#185a9d;color:#fff;border:none;">▶</button>
         </div>
-        <!-- Admin calendar controls (visible only in admin mode) -->
-        <div id="admin-calendar-controls" style="display:none;margin-top:8px;text-align:center;gap:8px;">
-            <button id="mark-depart-btn" style="padding:6px 12px;border-radius:8px;background:#16a34a;color:#fff;border:none;font-weight:700;">Marquer comme départ</button>
-            <button id="unmark-depart-btn" style="padding:6px 12px;border-radius:8px;background:#b91c1c;color:#fff;border:none;font-weight:700;">Retirer départ</button>
-            <button id="clear-selection-btn" style="padding:6px 12px;border-radius:8px;background:#64748b;color:#fff;border:none;font-weight:600;">Annuler sélection</button>
-            <div id="admin-selection-info" style="display:inline-block;margin-left:12px;color:#fff;font-weight:600;">Aucune sélection</div>
-        </div>
+        <!-- Admin calendar controls removed — gestion via panneau admin -->
     </div>
 
     <div>
@@ -318,17 +328,9 @@ footer {
         </div>
 
         <!-- Zone de note admin -->
-        <div id="admin-note-section" style="display:none;margin-bottom:18px;">
-            <label for="admin-note" style="font-weight:600;color:#fff;">Note pour les clients :</label><br>
-            <textarea id="admin-note" rows="3" style="width:100%;border-radius:8px;padding:8px;margin-top:6px;font-size:1em;"></textarea>
-            <div style="margin-top:8px;display:flex;gap:10px;">
-                <button id="save-note-btn" style="padding:8px 18px;border-radius:8px;background:#185a9d;color:#fff;font-weight:600;border:none;">Enregistrer la note</button>
-                <button id="delete-note-btn" style="padding:8px 18px;border-radius:8px;background:#888;color:#fff;font-weight:600;border:none;">Supprimer la note</button>
-            </div>
-        </div>
+        <!-- Admin note section removed — use Admin Panel (bouton Admin Panel) -->
 
-        <!-- Affichage de la note admin (pour tous) -->
-        <div id="display-note" class="note" style="display:none;"></div>
+        <!-- Affichage de la note admin (déplacé vers panneau admin) -->
 
         <div class="status">
             <span class="dot"></span>
@@ -510,7 +512,7 @@ const closeAdminCodeModal = document.getElementById('close-admin-code-modal');
 let isAdmin = false;
 let pendingNavigationTarget = null;
 // Restore admin mode if previously activated via GSM code in this session
-try { if (sessionStorage.getItem('gsm_admin') === '1') { isAdmin = true; setAdminUI(true); } } catch (e) { /* ignore */ }
+try { if (sessionStorage.getItem('gsm_code')) { isAdmin = true; setAdminUI(true); } } catch (e) { /* ignore */ }
 
 function showAdminCodeModal() {
     adminCodeModal.style.display = 'flex';
@@ -542,7 +544,7 @@ adminCodeForm.addEventListener('submit', async function(e) {
         if (code === 'GSM2026') {
             hideAdminCodeModal();
             isAdmin = true;
-            try { sessionStorage.setItem('gsm_admin', '1'); } catch (e) {}
+            try { sessionStorage.setItem('gsm_code', code); } catch (e) {}
             setAdminUI(true);
             if (pendingNavigationTarget) {
                 const target = pendingNavigationTarget;
@@ -569,7 +571,7 @@ adminCodeForm.addEventListener('submit', async function(e) {
         if (res.ok && json.isAdmin) {
             hideAdminCodeModal();
             isAdmin = true;
-            try { sessionStorage.setItem('gsm_admin', '1'); } catch (e) {}
+            try { sessionStorage.setItem('gsm_code', '1'); } catch (e) {}
             setAdminUI(true);
             if (pendingNavigationTarget) {
                 const target = pendingNavigationTarget;
@@ -589,7 +591,7 @@ adminCodeForm.addEventListener('submit', async function(e) {
 
 quitAdminBtn.addEventListener('click', function() {
     isAdmin = false;
-    try { sessionStorage.removeItem('gsm_admin'); } catch (e) {}
+    try { sessionStorage.removeItem('gsm_code'); } catch (e) {}
     setAdminUI(false);
 });
 
@@ -599,17 +601,27 @@ function setAdminUI(admin) {
     if (admin) {
         adminBtn.style.display = 'none';
         quitAdminBtn.style.display = '';
-        document.getElementById('admin-note-section').style.display = '';
+        const panelBtn = document.getElementById('open-admin-panel-btn'); if (panelBtn) panelBtn.style.display = '';
         notifDiv.style.display = '';
         listeDiv.style.display = '';
+        // Ensure socket is connected so admin receives booking notifications
+        try {
+            if (!socket.connected) socket.connect();
+        } catch (e) { console.warn('socket connect error', e); }
     } else {
         adminBtn.style.display = '';
         quitAdminBtn.style.display = 'none';
-        document.getElementById('admin-note-section').style.display = 'none';
+        const panelBtn = document.getElementById('open-admin-panel-btn'); if (panelBtn) panelBtn.style.display = 'none';
         if (controls) controls.style.display = 'none';
         notifDiv.style.display = 'none';
         listeDiv.style.display = 'none';
         clearSelection();
+        // If not admin and user isn't authenticated, disconnect socket to reduce open connections
+        try {
+            if (!auth || !auth.currentUser) {
+                if (socket.connected) socket.disconnect();
+            }
+        } catch (e) { /* ignore */ }
     }
     // ensure calendar controls reflect current admin state
     updateAdminCalendarControls();
@@ -664,35 +676,15 @@ function requireAdminOrAlert() {
 
 if (saveNoteBtn) {
     saveNoteBtn.addEventListener('click', async () => {
-        if (!requireAdminOrAlert()) return;
-        const note = document.getElementById('admin-note').value || '';
-        // If a single date is selected, publish it as adminSelectedDate
-        const dateToPublish = (selectedDates.length === 1) ? selectedDates[0] : adminSelectedDate;
-        try {
-            // Persist note via server endpoint (/api/note) which will broadcast note_updated
-            await fetch(`${SERVER_ORIGIN}/api/note`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ note, date: dateToPublish })
-            });
-            alert('Note diffusée en temps réel.');
-        } catch (err) { console.error('save note error', err); alert('Erreur lors de l\'envoi de la note'); }
+        // legacy save button removed; use Admin Panel instead
+        return;
     });
 }
 
 if (deleteNoteBtn) {
     deleteNoteBtn.addEventListener('click', async () => {
-        if (!requireAdminOrAlert()) return;
-        try {
-            // Remove note via server endpoint which will broadcast note_updated
-            await fetch(`${SERVER_ORIGIN}/api/note`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ note: '', date: null })
-            });
-            document.getElementById('admin-note').value = '';
-            alert('Note supprimée (diffusion en temps réel).');
-        } catch (err) { console.error('delete note emit error', err); alert('Erreur lors de la suppression'); }
+        // legacy delete button removed; use Admin Panel instead
+        return;
     });
 }
 
@@ -760,13 +752,9 @@ nextBtn.addEventListener('click', () => { changeMonth(1); clearSelection(); });
 calendarEl.addEventListener('click', (e) => {
     const td = e.target.closest('td[data-date]');
     if (!td) return;
-    if (!isAdmin) { alert('Accès refusé : vous devez activer le mode admin pour sélectionner une date.'); return; }
-    const date = td.getAttribute('data-date');
-    const idx = selectedDates.indexOf(date);
-    if (idx === -1) selectedDates.push(date);
-    else selectedDates.splice(idx, 1);
-    td.classList.toggle('selected');
-    updateAdminCalendarControls();
+    if (!isAdmin) { alert('Accès refusé : activez le mode admin pour modifier les dates.'); return; }
+    // Admin mode: instruct user to use the Admin Panel instead of inline calendar controls
+    alert('Utilisez le panneau admin (bouton "Panneau Admin") pour ajouter/supprimer des dates.');
 });
 
 function updateAdminCalendarControls() {
@@ -790,29 +778,25 @@ async function applySelection(active) {
     if (selectedDates.length === 0) return alert('Aucune date sélectionnée');
     try {
         // send to server via protected REST endpoint so server updates storage and broadcasts
-        try {
-            const headers = { 'Content-Type': 'application/json' };
-            const user = auth.currentUser;
-            if (user) {
-                try {
-                    const tk = await user.getIdToken();
-                    headers['Authorization'] = 'Bearer ' + tk;
-                } catch (e) { /* ignore token error */ }
-            }
-            await fetch(`${SERVER_ORIGIN}/api/departures`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ dates: selectedDates, active: !!active })
-            });
-        } catch (e) { console.warn('failed to POST /api/departures', e); }
+            try {
+                const headers = { 'Content-Type': 'application/json' };
+                const user = auth.currentUser;
+                if (user) {
+                    try {
+                        const tk = await user.getIdToken();
+                        headers['Authorization'] = 'Bearer ' + tk;
+                    } catch (e) { /* ignore token error */ }
+                }
+                await fetch(`${SERVER_ORIGIN}/api/dates`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ dates: selectedDates, active: !!active })
+                });
+            } catch (e) { console.warn('failed to POST /api/dates', e); }
         // prepare a simple admin note when a single date is selected and persist via /api/note
         const note = (selectedDates.length === 1) ? `Départ prévu le ${selectedDates[0]}` : (selectedDates.length > 1 ? `Départs prévus: ${selectedDates.join(', ')}` : '');
         try {
-            await fetch(`${SERVER_ORIGIN}/api/note`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ note, date: selectedDates.length === 1 ? selectedDates[0] : null })
-            });
+            await saveNoteToServer(note, selectedDates.length === 1 ? selectedDates[0] : null);
         } catch (e) { console.warn('failed to save note after selection', e); }
         clearSelection();
     } catch (err) { console.error('applySelection error', err); alert('Erreur lors de l\'envoi'); }
@@ -822,15 +806,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const markBtn = document.getElementById('mark-depart-btn');
     const unmarkBtn = document.getElementById('unmark-depart-btn');
     const clearBtn = document.getElementById('clear-selection-btn');
-    if (markBtn) markBtn.addEventListener('click', () => applySelection(true));
-    if (unmarkBtn) unmarkBtn.addEventListener('click', () => applySelection(false));
-    if (clearBtn) clearBtn.addEventListener('click', () => clearSelection());
+    // admin calendar inline buttons removed — use Admin Panel modal
+    if (markBtn) markBtn.style.display = 'none';
+    if (unmarkBtn) unmarkBtn.style.display = 'none';
+    if (clearBtn) clearBtn.style.display = 'none';
     updateAdminCalendarControls();
     // initial render
     renderCalendar(currentMonth, currentYear);
     // initial load: ask server for current departures
     try {
-        fetch(`${SERVER_ORIGIN}/api/departures`).then(r => r.json()).then(data => {
+        fetch(`${SERVER_ORIGIN}/api/dates`).then(r => r.json()).then(data => {
             if (Array.isArray(data)) { departDates = data; renderCalendar(currentMonth, currentYear); }
         }).catch(() => {});
     } catch (e) { /* ignore */ }
@@ -955,13 +940,7 @@ socket.on('pdf_generated', data => {
 // Listen for settings update from server and update UI
 socket.on('settings_updated', (payload) => {
         // payload may contain { note, selectedDate }
-    if (payload && payload.note !== undefined) {
-        const display = document.getElementById('display-note');
-        display.textContent = payload.note || '';
-        display.style.display = payload.note ? '' : 'none';
-        const adminTextarea = document.getElementById('admin-note');
-        if (adminTextarea) adminTextarea.value = payload.note || '';
-    }
+    // Settings updates are now handled via the Admin Panel; keep calendar selectedDate in sync if provided
     if (payload && payload.selectedDate !== undefined) {
         try {
             adminSelectedDate = payload.selectedDate || null;
@@ -998,15 +977,9 @@ async function loadNote() {
         if (!res.ok) return;
         const json = await res.json();
         if (!json) return;
-        const display = document.getElementById('display-note');
-        display.textContent = json.note || '';
-        display.style.display = json.note ? '' : 'none';
-        const adminTextarea = document.getElementById('admin-note');
-        if (adminTextarea) adminTextarea.value = json.note || '';
+        // Notes are managed via Admin Panel. Keep adminSelectedDate for calendar visuals.
         if (json.date) {
             adminSelectedDate = json.date;
-            selectedDates = [json.date];
-            updateAdminCalendarControls();
             renderCalendar(currentMonth, currentYear);
         }
     } catch (err) { console.warn('loadNote failed', err); }
@@ -1015,9 +988,25 @@ async function loadNote() {
 // Save note (admin) via POST /api/note
 async function saveNoteToServer(note, date) {
     try {
+        const headers = { 'Content-Type': 'application/json' };
+        const user = auth.currentUser;
+        if (user) {
+            try {
+                const tk = await user.getIdToken();
+                headers['Authorization'] = 'Bearer ' + tk;
+            } catch (e) { /* ignore token error */ }
+        }
+        // If admin used GSM code, attach it for server-side acceptance
+        try {
+            const gsm = sessionStorage.getItem('gsm_code');
+            if (gsm) headers['X-GSM-ADMIN'] = gsm;
+        } catch (e) {}
+        // Attempt to save via protected endpoint; if admin is using GSM code without Firebase
+        // the server may reject (server expects authenticated admin). This function still
+        // performs the POST so authenticated admins continue to work.
         await fetch(`${SERVER_ORIGIN}/api/note`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ note, date: date || null })
         });
     } catch (err) { throw err; }
@@ -1063,6 +1052,35 @@ window.addEventListener('DOMContentLoaded', function() {
     try { loadNote(); } catch (e) { console.warn('loadNote call failed', e); }
     // activer le balayage sur mobile si l'appareil supporte le tactile
     try { if ('ontouchstart' in window || navigator.maxTouchPoints > 0) enableCalendarSwipe(); } catch (e) { /* ignore */ }
+});
+
+// --- Admin Panel interactions ---
+const openAdminPanelBtn = document.getElementById('open-admin-panel-btn');
+const adminPanelModal = document.getElementById('admin-panel-modal');
+const adminPanelClose = document.getElementById('admin-panel-close');
+const adminPanelSave = document.getElementById('admin-panel-save');
+if (openAdminPanelBtn) openAdminPanelBtn.addEventListener('click', () => {
+    if (!isAdmin) return alert('Activez le mode admin pour ouvrir le panneau.');
+    if (adminPanelModal) adminPanelModal.style.display = 'flex';
+});
+if (adminPanelClose) adminPanelClose.addEventListener('click', () => { if (adminPanelModal) adminPanelModal.style.display = 'none'; });
+if (adminPanelSave) adminPanelSave.addEventListener('click', async () => {
+    try {
+        const note = document.getElementById('admin-panel-note').value || '';
+        const date = document.getElementById('admin-panel-date').value || null;
+        // Try saving note via existing helper (may require authentication on server)
+        await saveNoteToServer(note, date);
+        // Try saving date via protected endpoint (accepts GSM code via header)
+        try {
+            const headers = { 'Content-Type': 'application/json' };
+            const gsm = sessionStorage.getItem('gsm_code'); if (gsm) headers['X-GSM-ADMIN'] = gsm;
+            await fetch(`${SERVER_ORIGIN}/api/dates/single`, { method: 'POST', headers, body: JSON.stringify({ date: date, active: true }) });
+        } catch (e) { console.warn('failed to POST /api/dates/single', e); }
+        // Also emit transient settings update so connected clients see it immediately
+        try { socket.emit('settings_updated', { note, selectedDate: date }); } catch(e) {}
+        alert('Enregistré (si autorisé). Le changement sera diffusé en temps réel.');
+        if (adminPanelModal) adminPanelModal.style.display = 'none';
+    } catch (e) { console.error(e); alert('Échec enregistrement. Vérifiez les logs serveur.'); }
 });
 </script>
 </body>
