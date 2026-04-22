@@ -862,8 +862,10 @@ function enableCalendarSwipe() {
 
 
 // --- NOTIFICATIONS : version admin uniquement ---
-// Use explicit server origin on port 3002 for real-time backend
-const SERVER_ORIGIN = window.location.protocol + '//' + window.location.hostname + ':3002';
+// Determine server origin: use localhost:3002 during local dev, otherwise use current origin (works on Render)
+const SERVER_ORIGIN = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? (window.location.protocol + '//' + window.location.hostname + ':3002')
+    : window.location.origin;
 const socket = io(SERVER_ORIGIN, { autoConnect: false });
 
 // Start realtime settings handling once socket is available
@@ -881,6 +883,24 @@ socket.on('departures_updated', payload => {
             renderCalendar(currentMonth, currentYear);
         }
     } catch (e) { console.error('departures_updated handler error', e); }
+});
+
+// Merge pending notifications sent by server (JSON array)
+socket.on('pending_notifications', list => {
+    try {
+        if (!Array.isArray(list) || list.length === 0) return;
+        const cur = JSON.parse(localStorage.getItem('notifications') || '[]');
+        // prepend new items while avoiding duplicates by timestamp+bagage_numero
+        const seen = new Set(cur.map(n => (n.bagage_numero || '') + '|' + (n.createdAt || n.receivedAt || '')));
+        const merged = [...list.filter(n => {
+            const key = (n.bagage_numero || '') + '|' + (n.createdAt || n.receivedAt || '');
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        }), ...cur];
+        localStorage.setItem('notifications', JSON.stringify(merged));
+        renderNotifications();
+    } catch (e) { console.warn('pending_notifications handler error', e); }
 });
 
 function getNotifications() { return JSON.parse(localStorage.getItem('notifications') || '[]'); }
