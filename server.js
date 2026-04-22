@@ -427,14 +427,118 @@ app.get('/api/auth/check', verifyFirebaseToken, (req, res) => {
   }
 });
 
-// load modular route handlers
+// ===== NOTE endpoints (moved inline so server.js is authoritative) =====
 try {
-  require('./note')(app, io);
-} catch (e) { console.warn('Could not load note module', e); }
+  const noteFile = path.join(__dirname, 'note.json');
 
+  app.post('/api/note', verifyFirebaseToken, requireAdmin, (req, res) => {
+    try {
+      const { note, date } = req.body || {};
+      const data = { note: note || '', date: date || null };
+      fs.writeFileSync(noteFile, JSON.stringify(data, null, 2));
+
+      // notify clients
+      try { io.emit('note_updated', data); } catch (e) { console.warn('emit note_updated failed', e); }
+      try { io.emit('settings_updated', { note: data.note, selectedDate: data.date || null }); } catch (e) {}
+
+      return res.json({ success: true, settings: data });
+    } catch (err) {
+      console.error('Erreur sauvegarde note:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/note', (req, res) => {
+    try {
+      if (!fs.existsSync(noteFile)) return res.json({ note: '', date: null });
+      const data = JSON.parse(fs.readFileSync(noteFile, 'utf8'));
+      return res.json(data);
+    } catch (err) {
+      console.error('Erreur lecture note:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+} catch (e) { console.warn('note endpoints setup failed', e); }
+
+// ===== DATES endpoints (moved inline) =====
 try {
-  require('./date')(app, io);
-} catch (e) { console.warn('Could not load date module', e); }
+  const datesFile = path.join(__dirname, 'dates.json');
+  const settingsFile = path.join(__dirname, 'settings.json');
+
+  function readDates(){
+    try { if (!fs.existsSync(datesFile)) return []; return JSON.parse(fs.readFileSync(datesFile,'utf8')||'[]'); } catch(e){ return []; }
+  }
+  function writeDates(dates){ try{ fs.writeFileSync(datesFile, JSON.stringify(dates, null, 2)); } catch(e){ console.error('writeDates error', e); } }
+
+  app.get('/api/dates', (req, res) => {
+    try { return res.json(readDates()); } catch (e) { return res.status(500).json({ error: e.message }); }
+  });
+
+  app.post('/api/dates', verifyFirebaseToken, requireAdmin, (req, res) => {
+    try {
+      const { dates, active } = req.body;
+      if (!Array.isArray(dates)) return res.status(400).json({ error: 'dates must be array' });
+      let cur = readDates();
+      const set = new Set(cur);
+      if (active) dates.forEach(d => set.add(d)); else dates.forEach(d => set.delete(d));
+      const next = Array.from(set).sort();
+      writeDates(next);
+      try { io.emit('departures_updated', { dates: next }); } catch (e) { console.warn('emit departures_updated failed', e); }
+      return res.json({ success: true, dates: next });
+    } catch (e) { return res.status(500).json({ error: e.message }); }
+  });
+
+  app.post('/api/dates/single', verifyFirebaseToken, requireAdmin, (req, res) => {
+    try {
+      const { date, active } = req.body;
+      if (!date) return res.status(400).json({ error: 'date required' });
+      let cur = readDates();
+      const set = new Set(cur);
+      if (active) set.add(date); else set.delete(date);
+      const next = Array.from(set).sort();
+      writeDates(next);
+      try { io.emit('departures_updated', { dates: next }); } catch (e) { console.warn('emit departures_updated failed', e); }
+
+      // persist selectedDate into settings.json and broadcast
+      try {
+        let settings = {};
+        if (fs.existsSync(settingsFile)) {
+          try { settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8')||'{}'); } catch(e){ settings = {}; }
+        }
+        settings.selectedDate = active ? date : null;
+        fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
+        try { io.emit('settings_updated', settings); } catch (e) { console.warn('emit settings_updated failed', e); }
+      } catch (e) { console.warn('failed to persist settings selectedDate', e); }
+
+      return res.json({ success: true, dates: next });
+    } catch (e) { return res.status(500).json({ error: e.message }); }
+  });
+
+  app.delete('/api/dates/:date', verifyFirebaseToken, requireAdmin, (req, res) => {
+    try {
+      const date = decodeURIComponent(req.params.date);
+      let cur = readDates();
+      const next = cur.filter(d => d !== date);
+      writeDates(next);
+      try { io.emit('departures_updated', { dates: next }); } catch (e) { console.warn('emit departures_updated failed', e); }
+
+      // if removed date was selected, clear selectedDate in settings
+      try {
+        if (fs.existsSync(settingsFile)) {
+          const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8')||'{}');
+          if (settings.selectedDate === date) {
+            settings.selectedDate = null;
+            fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
+            try { io.emit('settings_updated', settings); } catch(e){}
+          }
+        }
+      } catch (e) { console.warn('failed to update settings on date delete', e); }
+
+      return res.json({ success: true, dates: next });
+    } catch (e) { return res.status(500).json({ error: e.message }); }
+  });
+
+} catch (e) { console.warn('dates endpoints setup failed', e); }
 
 try {
   mountDepartures(app, io);
@@ -555,6 +659,8 @@ app.post('/api/bookings', async (req, res) => {
     // If we reached here and have savedId (mongo or firestore), still persist in JSON list for fallback
     list.unshift(booking);
     fs.writeFileSync(file, JSON.stringify(list, null, 2));
+    // Emit immediate booking notification so admin sees reservation quickly
+    try { io.emit('booking_notification', booking); } catch (e) { console.warn('emit immediate booking_notification failed', e); }
 
     // Generate PDF and emit notification in all cases (non-blocking)
     (async () => {
