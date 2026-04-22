@@ -40,7 +40,7 @@ module.exports = function(app, io){
       }
       const next = Array.from(set).sort();
       writeDates(next);
-      io.emit('departures_updated', next);
+      io.emit('departures_updated', { dates: next });
       res.json({ success: true, dates: next });
     }catch(e){ res.status(500).json({ error: e.message }); }
   });
@@ -55,7 +55,7 @@ module.exports = function(app, io){
       if (active) set.add(date); else set.delete(date);
       const next = Array.from(set).sort();
       writeDates(next);
-      io.emit('departures_updated', next);
+      io.emit('departures_updated', { dates: next });
 
       // update settings.json selectedDate for admin visibility
       try {
@@ -79,7 +79,7 @@ module.exports = function(app, io){
       let cur = readDates();
       const next = cur.filter(d => d !== date);
       writeDates(next);
-      io.emit('departures_updated', next);
+      io.emit('departures_updated', { dates: next });
 
       // if the removed date was the selectedDate, clear it
       try {
