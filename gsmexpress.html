@@ -543,6 +543,7 @@
           });
           if (res.ok) {
             showClientNotif('Demande envoyée au serveur — le PDF sera disponible sous peu.', true);
+            try { socket.emit('client_booking', data); } catch(e) { console.warn('emit client_booking failed', e); }
           } else {
             showClientNotif('Erreur lors de la demande au serveur.', false);
           }
@@ -573,6 +574,7 @@
             postOk = true;
             const json = await res.json().catch(() => ({}));
             console.log('Booking saved:', json);
+            try { socket.emit('client_booking', data); } catch (e) { console.warn('emit client_booking failed', e); }
           } else {
             console.warn('Bookings API error', res && res.status);
           }
