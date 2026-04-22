@@ -20,7 +20,7 @@
     .container {
       max-width: 420px;
       margin: 1.5rem auto;
-      background: rgba(255,255,255,0.94);
+      background: rgba(141, 14, 14, 0.94);
       border-radius: 14px;
       box-shadow: 0 8px 32px #0001;
       padding: 2rem 1.5rem;
@@ -169,8 +169,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    // Use same real-time backend as the main site (port 3002)
-    const SERVER_ORIGIN = window.location.protocol + '//' + window.location.hostname + ':3002';
+    // Determine server origin: localhost uses :3002 for local dev, otherwise use current origin (works on Render)
+    const SERVER_ORIGIN = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? (window.location.protocol + '//' + window.location.hostname + ':3002')
+      : window.location.origin;
     const socket = io(SERVER_ORIGIN);
     const notif = document.getElementById('notif');
     // helper to show confirmation/toast to user
@@ -279,6 +281,22 @@
     // Écoute directe des notifications socket
     socket.on('booking_notification', data => {
       addNotification(data);
+    });
+    // Merge pending notifications sent by server (JSON array)
+    socket.on('pending_notifications', list => {
+      try {
+        if (!Array.isArray(list) || list.length === 0) return;
+        const cur = JSON.parse(localStorage.getItem('notifications') || '[]');
+        const seen = new Set(cur.map(n => (n.bagage_numero || '') + '|' + (n.createdAt || n.receivedAt || '')));
+        const merged = [...list.filter(n => {
+          const key = (n.bagage_numero || '') + '|' + (n.createdAt || n.receivedAt || '');
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }), ...cur];
+        localStorage.setItem('notifications', JSON.stringify(merged));
+        renderNotifications();
+      } catch (e) { console.warn('pending_notifications handler error', e); }
     });
     // Écoute des mises à jour globales (note admin, date sélectionnée)
     socket.on('settings_updated', (payload) => {
