@@ -261,7 +261,7 @@ footer {
             <h3 style="margin-top:0;color:#1e40af;">Panneau Admin — Dates & Notes</h3>
             <label style="font-weight:700;display:block;margin-top:8px;color:#111;">Note publique</label>
             <textarea id="admin-panel-note" rows="4" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc;margin-top:6px;"></textarea>
-            <label style="font-weight:700;display:block;margin-top:10px;color:#111;">Date (YYYY-MM-DD)</label>
+            <label style="font-weight:700;display:block;margin-top:10px;color:#111;">Date (facultatif, YYYY-MM-DD)</label>
             <input id="admin-panel-date" type="date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc;margin-top:6px;" />
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
                 <button id="admin-panel-save" style="background:#1e40af;color:#fff;padding:8px 14px;border-radius:8px;border:none;font-weight:700;">Enregistrer</button>
@@ -289,15 +289,9 @@ footer {
 
 <div class="container">
 
-    <div class="calendar-section">
-        <h3>🗓️ Départs</h3>
-        <div id="calendar"></div>
-        <div style="margin-top:10px;text-align:center;">
-            <button id="prev-month" style="margin-right:10px;padding:4px 12px;border-radius:8px;background:#185a9d;color:#fff;border:none;">◀</button>
-            <span id="month-label" style="font-weight:600;"></span>
-            <button id="next-month" style="margin-left:10px;padding:4px 12px;border-radius:8px;background:#185a9d;color:#fff;border:none;">▶</button>
-        </div>
-        <!-- Admin calendar controls removed — gestion via panneau admin -->
+    <div class="calendar-section" id="public-date-section">
+        <h3>🗓️ Prochain départ</h3>
+        <div id="public-selected-date" style="font-size:1.15rem;font-weight:700;color:#f1c70b;text-align:center;padding:12px 8px;border-radius:8px;background:rgba(255,255,255,0.04);">Aucune date définie</div>
     </div>
 
     <div>
@@ -310,6 +304,9 @@ footer {
                 <li>Pour toute question ou suivi, contactez-nous directement sur <b>WhatsApp</b> !</li>
             </ul>
         </div>
+
+        <!-- Affichage public de la note admin -->
+        <div id="display-note" class="note" style="display:none;margin-top:12px;"></div>
 
         <h1>📦 GSM Transport</h1>
         <div class="subtitle">France ⇄ Algérie</div>
@@ -632,38 +629,43 @@ const displayNoteDiv = document.getElementById('display-note');
 const saveNoteBtn = document.getElementById('save-note-btn');
 const deleteNoteBtn = document.getElementById('delete-note-btn');
 
+function displaySelectedDate(dateStr) {
+    const el = document.getElementById('public-selected-date');
+    if (!el) return;
+    if (dateStr) {
+        el.textContent = dateStr;
+        try { localStorage.setItem('selectedDate', dateStr); } catch (e) {}
+    } else {
+        el.textContent = 'Aucune date définie';
+        try { localStorage.removeItem('selectedDate'); } catch (e) {}
+    }
+}
+
 function loadSettingsRealtime() {
     try {
-        // keep Firestore listener for other settings if used, but primarily
-        // listen for socket updates for transient admin notes
-        try {
-            settingsRef.onSnapshot(doc => {
-                const data = doc.exists ? doc.data() : {};
-                adminSelectedDate = data && data.adminSelectedDate ? data.adminSelectedDate : null;
-                const note = data && data.adminNote ? data.adminNote : '';
-                if (note && note.trim()) {
-                    displayNoteDiv.style.display = '';
-                    displayNoteDiv.innerHTML = note.replace(/\n/g, '<br>');
-                } else {
-                    displayNoteDiv.style.display = 'none';
-                    displayNoteDiv.innerHTML = '';
+        // Fetch current settings from server (no DB required)
+        (async () => {
+            try {
+                const res = await fetch('/api/settings');
+                if (res.ok) {
+                    const data = await res.json();
+                    const date = data && (data.selectedDate || data.adminSelectedDate) ? (data.selectedDate || data.adminSelectedDate) : null;
+                    const note = data && (data.note || data.adminNote) ? (data.note || data.adminNote) : '';
+                    if (note && note.trim()) { displayNoteDiv.style.display = ''; displayNoteDiv.innerHTML = note.replace(/\n/g,'<br>'); }
+                    else { displayNoteDiv.style.display = 'none'; displayNoteDiv.innerHTML = ''; }
+                    displaySelectedDate(date);
                 }
-                renderCalendar(currentMonth, currentYear);
-            }, err => { console.error('Erreur loadSettingsRealtime', err); });
-        } catch (e) { /* ignore if settings collection not used */ }
-        // Listen for real-time settings broadcasts from server (transient, not persisted)
+            } catch (e) { console.warn('failed to fetch /api/settings', e); }
+        })();
+
+        // Listen for server broadcasts and persist date in localStorage for clients
         socket.on('settings_updated', payload => {
             try {
-                adminSelectedDate = payload && payload.adminSelectedDate ? payload.adminSelectedDate : null;
-                const note = payload && typeof payload.adminNote === 'string' ? payload.adminNote : '';
-                if (note && note.trim()) {
-                    displayNoteDiv.style.display = '';
-                    displayNoteDiv.innerHTML = note.replace(/\n/g, '<br>');
-                } else {
-                    displayNoteDiv.style.display = 'none';
-                    displayNoteDiv.innerHTML = '';
-                }
-                renderCalendar(currentMonth, currentYear);
+                const date = payload && (payload.selectedDate || payload.adminSelectedDate) ? (payload.selectedDate || payload.adminSelectedDate) : null;
+                const note = payload && (payload.note || payload.adminNote) ? (payload.note || payload.adminNote) : '';
+                if (note && note.trim()) { displayNoteDiv.style.display = ''; displayNoteDiv.innerHTML = note.replace(/\n/g,'<br>'); }
+                else { displayNoteDiv.style.display = 'none'; displayNoteDiv.innerHTML = ''; }
+                displaySelectedDate(date);
             } catch (err) { console.error('settings_updated handler error', err); }
         });
     } catch (e) { console.error('loadSettingsRealtime error', e); }
@@ -688,8 +690,7 @@ if (deleteNoteBtn) {
     });
 }
 
-// start listening to settings
-loadSettingsRealtime();
+// start listening to settings (will be invoked after socket initialization)
 
 
 // === CALENDRIER (nouveau, temps réel via socket) ===
@@ -745,17 +746,18 @@ function changeMonth(delta) {
     renderCalendar(currentMonth, currentYear);
 }
 
-prevBtn.addEventListener('click', () => { changeMonth(-1); clearSelection(); });
-nextBtn.addEventListener('click', () => { changeMonth(1); clearSelection(); });
+if (prevBtn) prevBtn.addEventListener('click', () => { changeMonth(-1); clearSelection(); });
+if (nextBtn) nextBtn.addEventListener('click', () => { changeMonth(1); clearSelection(); });
 
 // click to select date(s) (admin only)
-calendarEl.addEventListener('click', (e) => {
-    const td = e.target.closest('td[data-date]');
-    if (!td) return;
-    if (!isAdmin) { alert('Accès refusé : activez le mode admin pour modifier les dates.'); return; }
-    // Admin mode: instruct user to use the Admin Panel instead of inline calendar controls
-    alert('Utilisez le panneau admin (bouton "Panneau Admin") pour ajouter/supprimer des dates.');
-});
+if (calendarEl) {
+    calendarEl.addEventListener('click', (e) => {
+        const td = e.target.closest && e.target.closest('td[data-date]');
+        if (!td) return;
+        if (!isAdmin) { alert('Accès refusé : activez le mode admin pour modifier les dates.'); return; }
+        alert('Utilisez le panneau admin (bouton "Panneau Admin") pour ajouter/supprimer des dates.');
+    });
+}
 
 function updateAdminCalendarControls() {
     const controls = document.getElementById('admin-calendar-controls');
@@ -863,6 +865,11 @@ function enableCalendarSwipe() {
 // Use explicit server origin on port 3002 for real-time backend
 const SERVER_ORIGIN = window.location.protocol + '//' + window.location.hostname + ':3002';
 const socket = io(SERVER_ORIGIN, { autoConnect: false });
+
+// Start realtime settings handling once socket is available
+loadSettingsRealtime();
+
+// (admin save handled by panel listener further below)
 const notifDiv = document.getElementById('notif-reservations');
 const listeDiv = document.getElementById('liste-reservations');
 
@@ -1066,21 +1073,29 @@ if (openAdminPanelBtn) openAdminPanelBtn.addEventListener('click', () => {
 if (adminPanelClose) adminPanelClose.addEventListener('click', () => { if (adminPanelModal) adminPanelModal.style.display = 'none'; });
 if (adminPanelSave) adminPanelSave.addEventListener('click', async () => {
     try {
+        if (!isAdmin) return alert('Activez le mode admin pour enregistrer.');
         const note = document.getElementById('admin-panel-note').value || '';
         const date = document.getElementById('admin-panel-date').value || null;
-        // Try saving note via existing helper (may require authentication on server)
-        await saveNoteToServer(note, date);
-        // Try saving date via protected endpoint (accepts GSM code via header)
-        try {
-            const headers = { 'Content-Type': 'application/json' };
-            const gsm = sessionStorage.getItem('gsm_code'); if (gsm) headers['X-GSM-ADMIN'] = gsm;
-            await fetch(`${SERVER_ORIGIN}/api/dates/single`, { method: 'POST', headers, body: JSON.stringify({ date: date, active: true }) });
-        } catch (e) { console.warn('failed to POST /api/dates/single', e); }
-        // Also emit transient settings update so connected clients see it immediately
-        try { socket.emit('settings_updated', { note, selectedDate: date }); } catch(e) {}
-        alert('Enregistré (si autorisé). Le changement sera diffusé en temps réel.');
+        // Call unified server endpoint which persists settings.json and broadcasts
+        const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ note: note, selectedDate: date || undefined })
+        });
+        if (!res.ok) {
+            const j = await res.json().catch(() => ({}));
+            throw new Error(j.error || res.statusText || 'Erreur serveur');
+        }
+        const json = await res.json().catch(() => ({}));
+        // Update UI immediately for this client
+        if (json && json.settings) {
+            displayNoteDiv.style.display = json.settings.note ? '' : 'none';
+            displayNoteDiv.innerHTML = json.settings.note ? json.settings.note.replace(/\n/g,'<br>') : '';
+            displaySelectedDate(json.settings.selectedDate || null);
+        }
+        alert('Enregistré. La date et la note ont été diffusées.');
         if (adminPanelModal) adminPanelModal.style.display = 'none';
-    } catch (e) { console.error(e); alert('Échec enregistrement. Vérifiez les logs serveur.'); }
+    } catch (e) { console.error(e); alert('Échec enregistrement. Voir console.'); }
 });
 </script>
 </body>
