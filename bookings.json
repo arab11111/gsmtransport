@@ -1,0 +1,17 @@
+[
+  {
+    "bagage_numero": "TEST-123",
+    "exp_nom": "Test",
+    "exp_prenom": "User",
+    "exp_tel": "+331234",
+    "dest_nom": "Dest",
+    "dest_prenom": "User",
+    "dest_tel": "+213456",
+    "pays_dest": "Alg�rie",
+    "destination": "Alger",
+    "nb_bagages": 1,
+    "poids": 5,
+    "prix": 20,
+    "createdAt": "2026-04-22T17:25:10.601Z"
+  }
+]
