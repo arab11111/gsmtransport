@@ -166,7 +166,6 @@
     </form>
     <div class="qr-section" id="qrZone"></div>
   </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -417,26 +416,9 @@
       }
       window.location.href = '/index.html';
     };
-    function generateAndDownloadPdf(data) {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(16);
-      doc.text('Confirmation de Réservation', 15, 18);
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      let y = 32;
-      doc.text(`Numéro: ${data.bagage_numero}`, 15, y); y += 10;
-      doc.text(`Expéditeur: ${data.exp_nom} ${data.exp_prenom}`, 15, y); y += 10;
-      doc.text(`Destinataire: ${data.dest_nom} ${data.dest_prenom}`, 15, y); y += 10;
-      doc.text(`Téléphone expéditeur: ${data.exp_tel}`, 15, y); y += 10;
-      doc.text(`Téléphone destinataire: ${data.dest_tel}`, 15, y); y += 10;
-      doc.text(`Pays: ${data.pays_dest}`, 15, y); y += 10;
-      doc.text(`Destination: ${data.destination}${data.region ? ' / ' + data.region : ''}`, 15, y); y += 10;
-      doc.text(`Bagages: ${data.nb_bagages} | Poids: ${data.poids} kg | Prix: ${data.prix} €`, 15, y); y += 10;
-      if (data.notes) { doc.text(`Note: ${data.notes}`, 15, y); y += 10; }
-      doc.save(`reservation_${data.bagage_numero}.pdf`);
-    }
+    // Génération PDF côté client supprimée.
+    // La génération s'effectue maintenant exclusivement sur le serveur qui émettra
+    // l'événement `pdf_generated` contenant { filename, url }.
     function sendBellNotification(data) {
       try {
         socket.emit('bell_notification', {
@@ -550,10 +532,23 @@
         const data = getFormData();
         showQr(data);
       };
-      // PDF
-      document.getElementById('btnPdf').onclick = function () {
+      // PDF: demander la génération côté serveur (le serveur créera le PDF et émettra `pdf_generated`)
+      document.getElementById('btnPdf').onclick = async function () {
         const data = getFormData();
-        generateAndDownloadPdf(data);
+        try {
+          const res = await fetch('/api/bookings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          if (res.ok) {
+            showClientNotif('Demande envoyée au serveur — le PDF sera disponible sous peu.', true);
+          } else {
+            showClientNotif('Erreur lors de la demande au serveur.', false);
+          }
+        } catch (e) {
+          showClientNotif('Erreur réseau lors de la demande PDF.', false);
+        }
       };
       // Nettoyer
       document.getElementById('btnReset').onclick = function () {
@@ -566,46 +561,32 @@
       document.getElementById('reservationForm').onsubmit = async function (e) {
         e.preventDefault();
         const data = getFormData();
-        // Ensure socket is connected then emit to server so it generates the PDF and notifies the admin
-        let emittedViaSocket = false;
-        try {
-          if (!socket.connected) {
-            try { await new Promise((res, rej) => { socket.connect(); socket.once('connect', res); socket.once('connect_error', rej); setTimeout(res, 1500); }); } catch(e) { /* ignore */ }
-          }
-          if (socket.connected) {
-            try {
-              socket.emit('new_booking', data);
-              emittedViaSocket = true;
-            } catch (e) { console.warn('socket emit threw', e); }
-          }
-        } catch (e) { console.warn('socket connection/emit sequence failed', e); }
-        // Persist booking via REST (optional — server will still generate/emit when socket receives new_booking)
+        // Envoi unique via REST : le serveur générera le PDF et diffusera la notification
+        let postOk = false;
         try {
           const res = await fetch('/api/bookings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
           });
-          if (res.ok) {
+          if (res && res.ok) {
+            postOk = true;
             const json = await res.json().catch(() => ({}));
             console.log('Booking saved:', json);
           } else {
-            console.warn('Bookings API error', res.status);
+            console.warn('Bookings API error', res && res.status);
           }
         } catch (err) {
           console.warn('Could not save booking to /api/bookings:', err);
         }
         // Show QR locally to the user
         showQr(data);
-        // Show confirmation badge based on how we delivered
+        // Notify client UI
         try {
-          if (emittedViaSocket) {
-            showClientNotif('Réservation transmise au serveur (socket).', true);
-          } else if (typeof res !== 'undefined' && res && res.ok) {
-            showClientNotif('Réservation transmise via backup REST.', true);
+          if (postOk) {
+            showClientNotif('Réservation envoyée au serveur. Le PDF sera disponible bientôt.', true);
           } else {
             showClientNotif('Réservation enregistrée localement mais non transmise (connexion indisponible).', false, 8000);
-            // fallback: persist locally for retry
             try {
               const q = JSON.parse(localStorage.getItem('pendingBookings')||'[]');
               q.push({ data, at: new Date().toISOString() });
