@@ -31,11 +31,10 @@ function tryRequireLib(moduleName) {
   return null; // ❗ ne plus crash
 }
 
-// Mongo
-const mongoLib = tryRequireLib('mongo') || {};
-const initMongo = mongoLib.initMongo || (async () => null);
-const getDb = mongoLib.getDb || (() => null);
-const ObjectId = mongoLib.ObjectId || null;
+// Mongo removed — rely on Firebase (Firestore) and JSON fallback
+const initMongo = async () => null;
+const getDb = () => null;
+const ObjectId = null;
 
 // Departures
 const mountDepartures = tryRequireLib('departures') || (() => {});
@@ -91,15 +90,12 @@ async function saveNotification(data) {
   };
 
   try {
-    // ✅ MongoDB primary
-    const mongo = getDb();
-    if (mongo) {
-      await mongo.collection('notifications').insertOne(payload);
-      console.log('✅ Notification sauvegardée MongoDB');
-    } else if (adminDb) {
-      // Firestore fallback if configured
+    // Firestore (preferred) — or fallback to JSON persistence
+    if (adminDb) {
       await adminDb.collection('notifications').add(payload);
       console.log('✅ Notification sauvegardée Firestore');
+    } else {
+      console.log('⚠️ Aucun DB configuré, notification persistée en JSON seulement');
     }
 
     // ✅ fallback JSON (always keep JSON persistence)
@@ -217,17 +213,7 @@ io.on('connection', async (socket) => {
 
   // 🔥 Charger anciennes réservations Firestore si disponible (envoi au client connecté)
   try {
-    const mongo = getDb();
-    if (mongo) {
-      const list = await mongo
-        .collection('bookings')
-        .find()
-        .sort({ createdAt: -1 })
-        .limit(20)
-        .toArray();
-
-      if (list.length) socket.emit('pending_notifications', list);
-    } else if (adminDb) {
+    if (adminDb) {
       const snap = await adminDb
         .collection('bookings')
         .orderBy('createdAt', 'desc')
@@ -359,6 +345,16 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Clients may emit a lightweight booking notification event to quickly
+  // inform the server to broadcast to admins (useful as a realtime ACK).
+  socket.on('client_booking', async (data) => {
+    try {
+      const payload = { ...(data || {}), createdAt: new Date().toISOString(), read: false };
+      try { persistNotification({ ...payload, type: 'booking' }); } catch (e) { console.warn('persistNotification failed', e); }
+      try { io.emit('booking_notification', payload); } catch (e) { console.warn('emit booking_notification failed', e); }
+    } catch (e) { console.warn('client_booking handler error', e); }
+  });
+
   socket.on('disconnect', () => {
     console.log('Client déconnecté:', socket.id);
   });
@@ -387,28 +383,32 @@ app.get('/api/settings', (req, res) => {
 
 
 // POST
-app.post('/api/settings', verifyFirebaseToken, requireAdmin, (req, res) => {
+// Allow simple site settings updates without requiring Firebase/MongoDB.
+// When `selectedDate` is not provided by the client, generate it server-side
+// (YYYY-MM-DD) so admin can simply click "Enregistrer" to publish a date.
+app.post('/api/settings', (req, res) => {
   try {
-    const { note, selectedDate } = req.body;
+    const { note } = req.body || {};
+    const providedDate = req.body && req.body.selectedDate;
+    const generatedDate = providedDate || new Date().toISOString().slice(0, 10);
 
     const file = path.join(__dirname, 'settings.json');
 
     let cur = {};
     if (fs.existsSync(file)) {
-      try {
-        cur = JSON.parse(fs.readFileSync(file, 'utf8'));
-      } catch {}
+      try { cur = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { cur = {}; }
     }
 
     const next = {
       ...cur,
       ...(note !== undefined ? { note } : {}),
-      ...(selectedDate !== undefined ? { selectedDate } : {})
+      selectedDate: generatedDate
     };
 
     fs.writeFileSync(file, JSON.stringify(next, null, 2));
 
-    io.emit('settings_updated', next);
+    // Broadcast to connected clients so they can store in localStorage / display
+    try { io.emit('settings_updated', next); } catch (e) { console.warn('emit settings_updated failed', e); }
 
     res.json({ success: true, settings: next });
 
