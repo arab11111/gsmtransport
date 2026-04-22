@@ -550,10 +550,147 @@ app.post('/api/bookings', async (req, res) => {
     list.unshift(booking);
     fs.writeFileSync(file, JSON.stringify(list, null, 2));
 
+    // After saving booking, also generate PDF and emit realtime notification so admin receives it
+    try {
+      const id = booking.bagage_numero || Date.now();
+      const filename = `reservation_${id}.pdf`;
+      const filePath = path.join(pdfsDir, filename);
+
+      const stream = fs.createWriteStream(filePath);
+      const doc = new PDFDocument({ size: 'A4', margin: 40 });
+      doc.pipe(stream);
+
+      doc.fontSize(18).text('Réservation Bagage', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12).text(`Numéro: ${id}`);
+      if (booking.exp_nom || booking.exp_prenom) doc.text(`Expéditeur: ${booking.exp_nom || ''} ${booking.exp_prenom || ''}`);
+      if (booking.dest_nom || booking.dest_prenom) doc.text(`Destinataire: ${booking.dest_nom || ''} ${booking.dest_prenom || ''}`);
+      if (booking.exp_tel) doc.text(`Téléphone exp: ${booking.exp_tel}`);
+      if (booking.dest_tel) doc.text(`Téléphone dest: ${booking.dest_tel}`);
+      if (booking.pays_dest || booking.destination) doc.text(`Destination: ${booking.pays_dest || ''} ${booking.destination || ''}`);
+      if (booking.nb_bagages) doc.text(`Bagages: ${booking.nb_bagages}`);
+      if (booking.poids) doc.text(`Poids: ${booking.poids} kg`);
+      if (booking.prix) doc.text(`Prix: ${booking.prix} €`);
+      if (booking.notes) { doc.moveDown(); doc.text(`Note: ${booking.notes}`); }
+
+      doc.end();
+
+      stream.on('finish', async () => {
+        const pdfLink = `/pdfs/${filename}`;
+
+        const payload = { ...booking, pdfLink, createdAt: booking.createdAt };
+
+        // persist notification JSON fallback
+        persistNotification({ ...payload, type: 'booking' });
+
+        // try saving booking to DB if available
+        try {
+          const mongo = getDb();
+          if (mongo) await mongo.collection('bookings').insertOne(payload);
+          else if (adminDb) await adminDb.collection('bookings').add(payload);
+        } catch (e) { console.warn('save booking in background failed', e); }
+
+        // emit to connected clients (admin will show it)
+        try { io.emit('booking_notification', payload); } catch (e) { console.warn('emit booking_notification failed', e); }
+        try { io.emit('pdf_generated', { filename, url: pdfLink }); } catch (e) { /* ignore */ }
+      });
+    } catch (e) {
+      console.warn('post /api/bookings: pdf generation failed', e);
+    }
+
     res.json({ success: true, source: 'json' });
 
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ==============================
+// 📄 RE-GÉNÉRER PDF (admin/UI)
+// ==============================
+app.get('/generate-pdf/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    let booking = null;
+
+    // Try MongoDB by bagage_numero or _id
+    try {
+      const mongo = getDb();
+      if (mongo) {
+        booking = await mongo.collection('bookings').findOne({ bagage_numero: id }) || null;
+        if (!booking) {
+          try { booking = await mongo.collection('bookings').findOne({ _id: ObjectId(id) }); } catch(e) { /* ignore invalid ObjectId */ }
+        }
+      }
+    } catch (e) { console.warn('generate-pdf mongo lookup failed', e); }
+
+    // Try Firestore
+    if (!booking && adminDb) {
+      try {
+        const docRef = adminDb.collection('bookings').doc(id);
+        const doc = await docRef.get();
+        if (doc.exists) booking = { id: doc.id, ...doc.data() };
+        else {
+          const q = await adminDb.collection('bookings').where('bagage_numero', '==', id).limit(1).get();
+          if (!q.empty) booking = { id: q.docs[0].id, ...q.docs[0].data() };
+        }
+      } catch (e) { console.warn('generate-pdf firestore lookup failed', e); }
+    }
+
+    // Fallback JSON file
+    if (!booking) {
+      const file = path.join(__dirname, 'bookings.json');
+      if (fs.existsSync(file)) {
+        const list = JSON.parse(fs.readFileSync(file, 'utf8') || '[]');
+        booking = list.find(b => (b && (b.bagage_numero === id || (b.id && String(b.id) === String(id)))));
+      }
+    }
+
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+    const filename = `reservation_${booking.bagage_numero || booking.id || id}.pdf`;
+    const filePath = path.join(pdfsDir, filename);
+
+    const stream = fs.createWriteStream(filePath);
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    doc.pipe(stream);
+
+    doc.fontSize(18).text('Réservation Bagage', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).text(`Numéro: ${booking.bagage_numero || booking.id || id}`);
+    if (booking.exp_nom || booking.exp_prenom) doc.text(`Expéditeur: ${booking.exp_nom || ''} ${booking.exp_prenom || ''}`);
+    if (booking.dest_nom || booking.dest_prenom) doc.text(`Destinataire: ${booking.dest_nom || ''} ${booking.dest_prenom || ''}`);
+    if (booking.exp_tel) doc.text(`Téléphone exp: ${booking.exp_tel}`);
+    if (booking.dest_tel) doc.text(`Téléphone dest: ${booking.dest_tel}`);
+    if (booking.pays_dest || booking.destination) doc.text(`Destination: ${booking.pays_dest || ''} ${booking.destination || ''}`);
+    if (booking.nb_bagages) doc.text(`Bagages: ${booking.nb_bagages}`);
+    if (booking.poids) doc.text(`Poids: ${booking.poids} kg`);
+    if (booking.prix) doc.text(`Prix: ${booking.prix} €`);
+    if (booking.notes) { doc.moveDown(); doc.text(`Note: ${booking.notes}`); }
+
+    doc.end();
+
+    stream.on('finish', async () => {
+      const pdfLink = `/pdfs/${filename}`;
+
+      // Persist a lightweight notification for admin UIs
+      try { persistNotification({ ...booking, pdfLink, type: 'pdf_regen', createdAt: new Date().toISOString() }); } catch (e) { console.warn('persistNotification failed', e); }
+
+      // Emit realtime event so admin panels refresh
+      try { io.emit('pdf_generated', { filename, url: pdfLink }); } catch (e) { console.warn('emit pdf_generated failed', e); }
+
+      return res.json({ filename, url: pdfLink });
+    });
+
+    stream.on('error', (err) => {
+      console.error('generate-pdf stream error', err);
+      return res.status(500).json({ error: err.message });
+    });
+
+  } catch (err) {
+    console.error('generate-pdf error', err);
     res.status(500).json({ error: err.message });
   }
 });
