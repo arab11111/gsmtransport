@@ -943,8 +943,7 @@ function renderNotifications() {
             <span style=\"color:#64748b;\">Tél. expéditeur: ${n.exp_tel} – Tél. destinataire: ${n.dest_tel}</span>
             ${n.notes ? `<div style='margin-top:0.5em;color:#555;'>Note: ${n.notes}</div>` : ''}
             <div style='margin-top:0.7em;'>
-                <a href="/pdfs/reservation_${n.bagage_numero}.pdf" target="_blank" style="color:#2563eb;font-weight:700;text-decoration:underline;font-size:1.08em;">Télécharger PDF</a>
-                <button onclick="generatePDF('${n.bagage_numero}')" style="margin-left:0.8em;background:#1e40af;color:#fff;border:none;padding:0.25em 0.6em;border-radius:7px;cursor:pointer;font-weight:600;font-size:0.95em;">Générer PDF côté serveur</button>
+                <a href="${SERVER_ORIGIN}/pdfs/reservation_${n.bagage_numero}.pdf" target="_blank" style="color:#2563eb;font-weight:700;text-decoration:underline;font-size:1.08em;">Télécharger PDF</a>
                 ${n.read ? '<span style="color:#16a34a;margin-left:1em;">(Lue)</span>' : '<span style="color:#d97706;margin-left:1em;">(Non lue)</span>'}
                 <button onclick="deleteNotification(${idx})" style="margin-left:1em;background:#e11d48;color:#fff;border:none;padding:0.2em 0.7em;border-radius:7px;cursor:pointer;font-weight:600;font-size:0.95em;">Supprimer</button>
             </div>
@@ -953,14 +952,20 @@ function renderNotifications() {
 }
 
 // socket handlers
+
 socket.on('booking_notification', data => { if (isAdmin) addNotification(data); });
+
 socket.on('pdf_generated', data => {
-    const adminNotifPanel = document.getElementById('admin-notif-panel');
-    if (isAdmin && adminNotifPanel) {
-        adminNotifPanel.style.display = 'block';
-        adminNotifPanel.innerHTML = `<b>PDF généré:</b> <a href='${data.url}' target='_blank' style='color:#2563eb;'>${data.filename}</a>`;
-        setTimeout(() => { adminNotifPanel.style.display = 'none'; }, 8000);
-    }
+    try {
+        if (!data || !data.url) return;
+        const adminNotifPanel = document.getElementById('admin-notif-panel');
+        if (isAdmin && adminNotifPanel) {
+            const url = data.url && data.url.startsWith('http') ? data.url : (SERVER_ORIGIN + data.url);
+            adminNotifPanel.style.display = 'block';
+            adminNotifPanel.innerHTML = `<b>PDF généré:</b> <a href='${url}' target='_blank' style='color:#2563eb;'>${data.filename}</a>`;
+            setTimeout(() => { adminNotifPanel.style.display = 'none'; }, 8000);
+        }
+    } catch (e) { /* ignore */ }
 });
 
 
@@ -1064,14 +1069,7 @@ if (deleteBtn) deleteBtn.addEventListener('click', async () => {
     } catch (err) { console.error('delete note failed', err); alert('Échec suppression note'); }
 });
 
-function generatePDF(id) {
-    fetch(`${SERVER_ORIGIN}/generate-pdf/${encodeURIComponent(id)}`)
-        .then(r => r.json())
-        .then(data => {
-            if (data && data.url) window.open(data.url, '_blank');
-            else alert('Erreur génération PDF');
-        }).catch(err => { console.error(err); alert('Erreur génération PDF'); });
-}
+// Server-side PDF generation has been disabled; client no longer triggers it.
 
 window.addEventListener('DOMContentLoaded', function() {
     renderNotifications();
