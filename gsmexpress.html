@@ -271,7 +271,7 @@
           <span style=\\\"color:#64748b;\\\">Tél. expéditeur: ${n.exp_tel} – Tél. destinataire: ${n.dest_tel}</span>
           ${n.notes ? `<div style='margin-top:0.5em;color:#555;'>Note: ${n.notes}</div>` : ''}
           <div style='margin-top:0.7em;'>
-            <a href=\"${n.pdfLink || ('/pdfs/reservation_' + n.bagage_numero + '.pdf')}\" target=\"_blank\" style=\"color:#2563eb;font-weight:700;text-decoration:underline;font-size:1.08em;\">Télécharger PDF</a>
+            <a href=\"${n.pdfLink || (SERVER_ORIGIN + '/pdfs/reservation_' + n.bagage_numero + '.pdf')}\" target=\"_blank\" style=\"color:#2563eb;font-weight:700;text-decoration:underline;font-size:1.08em;\">Télécharger PDF</a>
             ${n.read ? '<span style=\\\"color:#16a34a;margin-left:1em;\\\">(Lue)</span>' : '<span style=\\\"color:#d97706;margin-left:1em;\\\">(Non lue)</span>'}
             <button onclick=\"deleteNotification(${idx})\" style=\"margin-left:1em;background:#e11d48;color:#fff;border:none;padding:0.2em 0.7em;border-radius:7px;cursor:pointer;font-weight:600;font-size:0.95em;\">Supprimer</button>
           </div>
@@ -631,7 +631,10 @@
           if (!payload || !payload.url) return;
           const curNum = document.getElementById('bagage_numero') ? document.getElementById('bagage_numero').value : '';
           if (payload.filename && curNum && payload.filename.includes(curNum)) {
-            notif.innerHTML = `PDF prêt : <a href="${payload.url}" target="_blank" style="color:#1e40af;font-weight:700;">Télécharger le reçu</a>`;
+            const fullUrl = (payload.url && payload.url.startsWith('http')) ? payload.url : (SERVER_ORIGIN + payload.url);
+            notif.innerHTML = `PDF prêt : <a href="${fullUrl}" target="_blank" style="color:#1e40af;font-weight:700;">Télécharger le reçu</a> <button id="notif-download" style="margin-left:0.6em;background:#1e40af;color:#fff;border:none;padding:0.2em 0.6em;border-radius:6px;cursor:pointer;font-weight:700;">Télécharger</button>`;
+            const dlBtn = notif.querySelector('#notif-download');
+            if (dlBtn) dlBtn.addEventListener('click', () => window.open(fullUrl, '_blank'));
             notif.style.display = 'block';
           }
         } catch (e) { console.warn('pdf_generated handler error', e); }
