@@ -723,6 +723,9 @@ app.post('/api/bookings', async (req, res) => {
 // ==============================
 // 📄 RE-GÉNÉRER PDF (admin/UI)
 // ==============================
+// The `/generate-pdf/:id` endpoint and server-side PDF generation have been disabled.
+// If you need to re-enable PDF generation in the future, restore the implementation
+// or implement a safer, authenticated workflow that uploads PDFs to object storage.
 app.get('/generate-pdf/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -734,7 +737,7 @@ app.get('/generate-pdf/:id', async (req, res) => {
       if (mongo) {
         booking = await mongo.collection('bookings').findOne({ bagage_numero: id }) || null;
         if (!booking) {
-          try { booking = await mongo.collection('bookings').findOne({ _id: ObjectId(id) }); } catch(e) { /* ignore invalid ObjectId */ }
+          try { booking = await mongo.collection('bookings').findOne({ _id: ObjectId(id) }); } catch (e) { /* ignore invalid ObjectId */ }
         }
       }
     } catch (e) { console.warn('generate-pdf mongo lookup failed', e); }
@@ -766,6 +769,13 @@ app.get('/generate-pdf/:id', async (req, res) => {
     const filename = `reservation_${booking.bagage_numero || booking.id || id}.pdf`;
     const filePath = path.join(pdfsDir, filename);
 
+    // If file already exists, download immediately
+    if (fs.existsSync(filePath)) {
+      return res.download(filePath, filename, err => {
+        if (err) console.warn('res.download error', err);
+      });
+    }
+
     const stream = fs.createWriteStream(filePath);
     const doc = new PDFDocument({ size: 'A4', margin: 40 });
     doc.pipe(stream);
@@ -786,15 +796,18 @@ app.get('/generate-pdf/:id', async (req, res) => {
     doc.end();
 
     stream.on('finish', async () => {
-      const pdfLink = `/pdfs/${filename}`;
+      try {
+        // Persist a lightweight notification for admin UIs
+        try { persistNotification({ ...booking, pdfLink: `/pdfs/${filename}`, type: 'pdf_regen', createdAt: new Date().toISOString() }); } catch (e) { console.warn('persistNotification failed', e); }
 
-      // Persist a lightweight notification for admin UIs
-      try { persistNotification({ ...booking, pdfLink, type: 'pdf_regen', createdAt: new Date().toISOString() }); } catch (e) { console.warn('persistNotification failed', e); }
+        // Emit realtime event so admin panels refresh
+        try { io.emit('pdf_generated', { filename, url: `/pdfs/${filename}` }); } catch (e) { console.warn('emit pdf_generated failed', e); }
 
-      // Emit realtime event so admin panels refresh
-      try { io.emit('pdf_generated', { filename, url: pdfLink }); } catch (e) { console.warn('emit pdf_generated failed', e); }
-
-      return res.json({ filename, url: pdfLink });
+        return res.download(filePath, filename);
+      } catch (e) {
+        console.error('generate-pdf stream finish error', e);
+        return res.status(500).json({ error: e.message });
+      }
     });
 
     stream.on('error', (err) => {
