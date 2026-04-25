@@ -228,6 +228,54 @@ footer {
     z-index: 20;
     box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
 }
+
+/* Mobile-first responsive tweaks (smartphone transport style) */
+@media (max-width: 640px) {
+    body {
+        background: linear-gradient(180deg,#021226 0%, #002b36 100%);
+        padding: 12px 8px 80px 8px;
+    }
+    .menu-bar {
+        height: 64px;
+        padding: 0 12px;
+        gap: 10px;
+        align-items: center;
+    }
+    .logo-btn {
+        padding: 8px 14px;
+        font-size: 1rem;
+        border-radius: 12px;
+        margin-right: 8px;
+    }
+    .menu-bar button, .menu-bar a {
+        padding: 10px 12px;
+        font-size: 0.95rem;
+    }
+    .container {
+        flex-direction: column;
+        gap: 14px;
+        padding: 18px;
+        border-radius: 14px;
+        width: 100%;
+        max-width: 100%;
+        margin-top: 78px;
+    }
+    .calendar-section { min-width: auto; width: 100%; }
+    .apps { grid-template-columns: 1fr; }
+    h1 { font-size: 1.9rem; letter-spacing: 0.6px; }
+    .subtitle { font-size: 1rem; }
+    .note { font-size: 1rem; padding: 12px; }
+    .menu-bar .login, .menu-bar .logout, .menu-bar .whatsapp { padding: 10px 12px; }
+    button, .menu-bar button, .menu-bar a { touch-action: manipulation; }
+    .menu-bar { backdrop-filter: blur(8px); }
+    .container, .calendar-section, .note { background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); }
+    .logo-btn { background: linear-gradient(90deg,#ffd54f,#ffb300); color: #042029; box-shadow: 0 6px 20px rgba(0,0,0,0.45); }
+    .btn, .menu-bar button, .menu-bar a { border-radius: 12px; }
+    .apps > * { box-shadow: 0 8px 30px rgba(0,0,0,0.55); border-radius: 12px; }
+    .notif, #notif-reservations { font-size: 1rem; padding: 12px; border-radius: 12px; }
+    footer { font-size: 0.95rem; padding: 12px 0; }
+}
+</style>
 </style>
 </head>
 
@@ -943,7 +991,7 @@ function renderNotifications() {
             <span style=\"color:#64748b;\">Tél. expéditeur: ${n.exp_tel} – Tél. destinataire: ${n.dest_tel}</span>
             ${n.notes ? `<div style='margin-top:0.5em;color:#555;'>Note: ${n.notes}</div>` : ''}
             <div style='margin-top:0.7em;'>
-                <a href="${SERVER_ORIGIN}/pdfs/reservation_${n.bagage_numero}.pdf" target="_blank" style="color:#2563eb;font-weight:700;text-decoration:underline;font-size:1.08em;">Télécharger PDF</a>
+                <a href="${SERVER_ORIGIN}/generate-pdf/${encodeURIComponent(n.bagage_numero)}" target="_blank" style="color:#2563eb;font-weight:700;text-decoration:underline;font-size:1.08em;">Télécharger PDF</a>
                 ${n.read ? '<span style="color:#16a34a;margin-left:1em;">(Lue)</span>' : '<span style="color:#d97706;margin-left:1em;">(Non lue)</span>'}
                 <button onclick="deleteNotification(${idx})" style="margin-left:1em;background:#e11d48;color:#fff;border:none;padding:0.2em 0.7em;border-radius:7px;cursor:pointer;font-weight:600;font-size:0.95em;">Supprimer</button>
             </div>
