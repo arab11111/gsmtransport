@@ -238,7 +238,9 @@ io.on('connection', async (socket) => {
 
         doc.pipe(stream);
 
-        doc.fontSize(18).text('Réservation Bagage', { align: 'center' });
+        doc.fontSize(20).text('GSM Transport', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(16).text('Réservation Bagage', { align: 'center' });
         doc.moveDown();
 
         doc.fontSize(12).text(`Numéro: ${data.bagage_numero}`);
@@ -292,7 +294,9 @@ io.on('connection', async (socket) => {
 
       doc.pipe(stream);
 
-      doc.fontSize(18).text('Réservation Bagage', { align: 'center' });
+      doc.fontSize(20).text('GSM Transport', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(16).text('Réservation Bagage', { align: 'center' });
       doc.moveDown();
 
       doc.fontSize(12).text(`Numéro: ${data.bagage_numero}`);
@@ -336,8 +340,6 @@ io.on('connection', async (socket) => {
 
         // 🔔 envoyer à tous les clients
         io.emit('booking_notification', payload);
-
-        io.emit('pdf_generated', { filename, url: pdfLink });
       });
 
     } catch (err) {
@@ -404,57 +406,9 @@ app.post('/api/settings', (req, res) => {
       ...(note !== undefined ? { note } : {}),
       selectedDate: generatedDate
     };
-
-    fs.writeFileSync(file, JSON.stringify(next, null, 2));
-
-    // Broadcast to connected clients so they can store in localStorage / display
-    try { io.emit('settings_updated', next); } catch (e) { console.warn('emit settings_updated failed', e); }
-
-    res.json({ success: true, settings: next });
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Auth check endpoint: verifies token and returns isAdmin flag
-app.get('/api/auth/check', verifyFirebaseToken, (req, res) => {
-  try {
-    const isAdmin = isAdminEmail(req.user && req.user.email);
-    res.json({ isAdmin: !!isAdmin, user: req.user });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ===== NOTE endpoints (moved inline so server.js is authoritative) =====
-try {
-  const noteFile = path.join(__dirname, 'note.json');
-
-  app.post('/api/note', verifyFirebaseToken, requireAdmin, (req, res) => {
-    try {
-      const { note, date } = req.body || {};
-      const data = { note: note || '', date: date || null };
-      fs.writeFileSync(noteFile, JSON.stringify(data, null, 2));
-
-      // notify clients
-      try { io.emit('note_updated', data); } catch (e) { console.warn('emit note_updated failed', e); }
-      try { io.emit('settings_updated', { note: data.note, selectedDate: data.date || null }); } catch (e) {}
-
-      return res.json({ success: true, settings: data });
-    } catch (err) {
-      console.error('Erreur sauvegarde note:', err);
-      return res.status(500).json({ error: err.message });
-    }
-  });
-
-  app.get('/api/note', (req, res) => {
-    try {
-      if (!fs.existsSync(noteFile)) return res.json({ note: '', date: null });
-      const data = JSON.parse(fs.readFileSync(noteFile, 'utf8'));
-      return res.json(data);
-    } catch (err) {
-      console.error('Erreur lecture note:', err);
+        // PDF generation moved to admin-only `/generate-pdf/:id` to avoid clients
+        // receiving download links automatically. Admins can regenerate/download
+        // PDFs via the admin UI which calls `/generate-pdf/:id`.
       return res.status(500).json({ error: err.message });
     }
   });
@@ -673,7 +627,9 @@ app.post('/api/bookings', async (req, res) => {
         const doc = new PDFDocument({ size: 'A4', margin: 40 });
         doc.pipe(stream);
 
-        doc.fontSize(18).text('Réservation Bagage', { align: 'center' });
+        doc.fontSize(20).text('GSM Transport', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(16).text('Réservation Bagage', { align: 'center' });
         doc.moveDown();
         doc.fontSize(12).text(`Numéro: ${id}`);
         if (booking.exp_nom || booking.exp_prenom) doc.text(`Expéditeur: ${booking.exp_nom || ''} ${booking.exp_prenom || ''}`);
@@ -723,10 +679,8 @@ app.post('/api/bookings', async (req, res) => {
 // ==============================
 // 📄 RE-GÉNÉRER PDF (admin/UI)
 // ==============================
-// The `/generate-pdf/:id` endpoint and server-side PDF generation have been disabled.
-// If you need to re-enable PDF generation in the future, restore the implementation
-// or implement a safer, authenticated workflow that uploads PDFs to object storage.
-app.get('/generate-pdf/:id', async (req, res) => {
+// Admin-only endpoint: generate and download PDF for a booking
+app.get('/generate-pdf/:id', requireAdmin, async (req, res) => {
   try {
     const id = req.params.id;
     let booking = null;
@@ -737,7 +691,7 @@ app.get('/generate-pdf/:id', async (req, res) => {
       if (mongo) {
         booking = await mongo.collection('bookings').findOne({ bagage_numero: id }) || null;
         if (!booking) {
-          try { booking = await mongo.collection('bookings').findOne({ _id: ObjectId(id) }); } catch (e) { /* ignore invalid ObjectId */ }
+          try { booking = await mongo.collection('bookings').findOne({ _id: ObjectId(id) }); } catch(e) { /* ignore invalid ObjectId */ }
         }
       }
     } catch (e) { console.warn('generate-pdf mongo lookup failed', e); }
@@ -769,18 +723,13 @@ app.get('/generate-pdf/:id', async (req, res) => {
     const filename = `reservation_${booking.bagage_numero || booking.id || id}.pdf`;
     const filePath = path.join(pdfsDir, filename);
 
-    // If file already exists, download immediately
-    if (fs.existsSync(filePath)) {
-      return res.download(filePath, filename, err => {
-        if (err) console.warn('res.download error', err);
-      });
-    }
-
     const stream = fs.createWriteStream(filePath);
     const doc = new PDFDocument({ size: 'A4', margin: 40 });
     doc.pipe(stream);
 
-    doc.fontSize(18).text('Réservation Bagage', { align: 'center' });
+    doc.fontSize(20).text('GSM Transport', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(16).text('Réservation Bagage', { align: 'center' });
     doc.moveDown();
     doc.fontSize(12).text(`Numéro: ${booking.bagage_numero || booking.id || id}`);
     if (booking.exp_nom || booking.exp_prenom) doc.text(`Expéditeur: ${booking.exp_nom || ''} ${booking.exp_prenom || ''}`);
@@ -797,26 +746,34 @@ app.get('/generate-pdf/:id', async (req, res) => {
 
     stream.on('finish', async () => {
       try {
+        const pdfLink = `/pdfs/${filename}`;
+
         // Persist a lightweight notification for admin UIs
-        try { persistNotification({ ...booking, pdfLink: `/pdfs/${filename}`, type: 'pdf_regen', createdAt: new Date().toISOString() }); } catch (e) { console.warn('persistNotification failed', e); }
+        try { persistNotification({ ...booking, pdfLink, type: 'pdf_regen', createdAt: new Date().toISOString() }); } catch (e) { console.warn('persistNotification failed', e); }
 
         // Emit realtime event so admin panels refresh
-        try { io.emit('pdf_generated', { filename, url: `/pdfs/${filename}` }); } catch (e) { console.warn('emit pdf_generated failed', e); }
+        try { io.emit('pdf_generated', { filename, url: pdfLink }); } catch (e) { console.warn('emit pdf_generated failed', e); }
 
-        return res.download(filePath, filename);
-      } catch (e) {
-        console.error('generate-pdf stream finish error', e);
-        return res.status(500).json({ error: e.message });
+        // Send file to client for immediate download
+        return res.download(filePath, filename, (err) => {
+          if (err) {
+            console.error('res.download error', err);
+            try { if (!res.headersSent) res.status(500).end(); } catch (e) { /* ignore */ }
+          }
+        });
+      } catch (err) {
+        console.error('generate-pdf finish error', err);
+        if (!res.headersSent) return res.status(500).json({ error: err.message });
       }
     });
 
     stream.on('error', (err) => {
       console.error('generate-pdf stream error', err);
-      return res.status(500).json({ error: err.message });
+      if (!res.headersSent) return res.status(500).json({ error: err.message });
     });
 
   } catch (err) {
     console.error('generate-pdf error', err);
-    res.status(500).json({ error: err.message });
+    if (!res.headersSent) res.status(500).json({ error: err.message });
   }
 });
