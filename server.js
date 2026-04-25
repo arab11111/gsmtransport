@@ -406,13 +406,16 @@ app.post('/api/settings', (req, res) => {
       ...(note !== undefined ? { note } : {}),
       selectedDate: generatedDate
     };
-        // PDF generation moved to admin-only `/generate-pdf/:id` to avoid clients
-        // receiving download links automatically. Admins can regenerate/download
-        // PDFs via the admin UI which calls `/generate-pdf/:id`.
-      return res.status(500).json({ error: err.message });
-    }
-  });
-} catch (e) { console.warn('note endpoints setup failed', e); }
+
+    fs.writeFileSync(file, JSON.stringify(next, null, 2));
+    try { io.emit('settings_updated', next); } catch (e) { /* ignore */ }
+
+    return res.json(next);
+  } catch (err) {
+    console.error('POST /api/settings error', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
 
 // ===== DATES endpoints (moved inline) =====
 try {
