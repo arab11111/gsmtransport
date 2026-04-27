@@ -327,6 +327,13 @@
       renderNotifications();
       // Charger les settings globaux (note admin, selectedDate) au chargement
       try { loadSettings(); } catch (e) { console.warn('loadSettings failed', e); }
+      // Préremplir un numéro de bagage charmant (avec matricule si présent)
+      try {
+        const bagInput = document.getElementById('bagage_numero');
+        if (bagInput && !bagInput.value) bagInput.value = generateBagageNumero();
+        const btnReset = document.getElementById('btnReset');
+        if (btnReset) btnReset.addEventListener('click', () => { try { if (bagInput) bagInput.value = generateBagageNumero(); } catch(e){} });
+      } catch (e) { console.warn('failed to prefill bagage numero', e); }
     });
     // ...reste du JS existant (formulaire, PDF, QR, etc.)...
     function generateBagageNumero() {
@@ -335,12 +342,23 @@
       const m = String(date.getMonth() + 1).padStart(2, '0');
       const d = String(date.getDate()).padStart(2, '0');
       const rand = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+      // If a matricule exists (stored on registration), include it for clearer tracing
+      try {
+        const matricule = localStorage.getItem('gsm_matricule');
+        if (matricule) return `${matricule}/BAG-${y}${m}${d}-${rand}`;
+      } catch (e) { /* ignore localStorage errors */ }
       return `BAG-${y}${m}${d}-${rand}`;
     }
     function calculerPrix(poids) {
       if (!poids || isNaN(poids)) return '';
       poids = parseFloat(poids);
-      if (poids <= 25) {
+      // Nouvelle règle de tarification :
+      // - poids > 20 kg : tarif = 3 € / kg
+      // - poids < 10 kg : tarif = 4 € / kg
+      // - sinon (10 <= poids <= 20) : tarif = 3.5 € / kg
+      if (poids > 20) {
+        return (poids * 3).toFixed(2);
+      } else if (poids < 10) {
         return (poids * 4).toFixed(2);
       } else {
         return (poids * 3.5).toFixed(2);
