@@ -3,6 +3,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
 const fs = require('fs');
+const fsp = fs.promises;
 const PDFDocument = require('pdfkit');
 let admin = null;
 try {
@@ -108,7 +109,11 @@ async function saveNotification(data) {
 
 // 📁 dossier PDF
 const pdfsDir = path.join(__dirname, 'pdfs');
-if (!fs.existsSync(pdfsDir)) fs.mkdirSync(pdfsDir);
+
+// ensure pdfs directory exists (async, non-blocking)
+(async () => {
+  try { await fsp.mkdir(pdfsDir, { recursive: true }); } catch (e) { /* ignore */ }
+})();
 
 // 📁 middlewares
 app.use('/pdfs', express.static(pdfsDir));
@@ -119,18 +124,18 @@ app.use(express.json());
 // ==============================
 // 🔔 Notifications JSON
 // ==============================
-function persistNotification(obj){
+async function persistNotification(obj){
   try{
     const file = path.join(__dirname, 'notifications.json');
     let arr = [];
 
-    if (fs.existsSync(file)){
+    try{
+      await fsp.access(file);
       try{
-        arr = JSON.parse(fs.readFileSync(file,'utf8')||'[]');
-      }catch(e){
-        arr = [];
-      }
-    }
+        const raw = await fsp.readFile(file, 'utf8');
+        arr = JSON.parse(raw || '[]');
+      } catch(e){ arr = []; }
+    } catch(e){ arr = []; }
 
     arr.unshift({
       ...obj,
@@ -140,7 +145,7 @@ function persistNotification(obj){
 
     if (arr.length > 200) arr = arr.slice(0,200);
 
-    fs.writeFileSync(file, JSON.stringify(arr, null, 2));
+    await fsp.writeFile(file, JSON.stringify(arr, null, 2));
   }catch(e){
     console.error('persistNotification error', e);
   }
@@ -158,25 +163,24 @@ app.get('/', (req, res) => {
 // ==============================
 // 📄 UPLOAD PDF
 // ==============================
-app.post('/upload-pdf', (req, res) => {
+app.post('/upload-pdf', async (req, res) => {
   const filename = req.query.filename || `file_${Date.now()}.pdf`;
   const filePath = path.join(pdfsDir, path.basename(filename));
 
   const chunks = [];
   req.on('data', chunk => chunks.push(chunk));
 
-  req.on('end', () => {
-    fs.writeFileSync(filePath, Buffer.concat(chunks));
+  req.on('end', async () => {
+    try {
+      await fsp.writeFile(filePath, Buffer.concat(chunks));
 
-    res.json({
-      success: true,
-      url: `/pdfs/${path.basename(filename)}`
-    });
+      res.json({ success: true, url: `/pdfs/${path.basename(filename)}` });
 
-    io.emit('pdf_generated', {
-      filename: path.basename(filename),
-      url: `/pdfs/${path.basename(filename)}`
-    });
+      try { io.emit('pdf_generated', { filename: path.basename(filename), url: `/pdfs/${path.basename(filename)}` }); } catch(e){}
+    } catch (err) {
+      console.error('upload-pdf write error', err);
+      try { if (!res.headersSent) res.status(500).json({ error: err.message }); } catch(e){}
+    }
   });
 });
 
@@ -205,10 +209,12 @@ io.on('connection', async (socket) => {
   // 🔔 envoyer anciennes notifications (JSON fallback)
   try {
     const notifFile = path.join(__dirname, 'notifications.json');
-    if (fs.existsSync(notifFile)) {
-      const list = JSON.parse(fs.readFileSync(notifFile, 'utf8') || '[]');
-      if (list.length) socket.emit('pending_notifications', list);
-    }
+    try {
+      await fsp.access(notifFile);
+      const raw = await fsp.readFile(notifFile, 'utf8');
+      const list = JSON.parse(raw || '[]');
+      if (list && list.length) socket.emit('pending_notifications', list);
+    } catch (e) { /* no notifications file or read error */ }
   } catch (e) {}
 
   // 🔥 Charger anciennes réservations Firestore si disponible (envoi au client connecté)
@@ -231,7 +237,9 @@ io.on('connection', async (socket) => {
   async function generatePDF(data) {
     return new Promise((resolve, reject) => {
       try {
-        const filename = `reservation_${data.bagage_numero}.pdf`;
+        const sanitize = s => (s || '').toString().replace(/[^a-zA-Z0-9-_.]/g, '_');
+        const safeNum = sanitize(data.bagage_numero || data.id || Date.now());
+        const filename = `reservation_${safeNum}.pdf`;
         const filePath = path.join(pdfsDir, filename);
         const stream = fs.createWriteStream(filePath);
         const doc = new PDFDocument({ size: 'A4', margin: 40 });
@@ -242,6 +250,12 @@ io.on('connection', async (socket) => {
         doc.moveDown();
         doc.fontSize(16).text('Réservation Bagage', { align: 'center' });
         doc.moveDown();
+        // Matricule: prefer explicit field, otherwise try to parse from bagage_numero (format: MATRICULE/BAG-...)
+        let matricule = data.matricule || '';
+        if (!matricule && data.bagage_numero && data.bagage_numero.includes('/')) matricule = data.bagage_numero.split('/')[0];
+        if (matricule) {
+          doc.fontSize(12).text(`Matricule: ${matricule}`);
+        }
 
         doc.fontSize(12).text(`Numéro: ${data.bagage_numero}`);
         doc.text(`Expéditeur: ${data.exp_nom} ${data.exp_prenom}`);
@@ -286,7 +300,9 @@ io.on('connection', async (socket) => {
     console.log('Nouvelle réservation:', data);
 
     try {
-      const filename = `reservation_${data.bagage_numero}.pdf`;
+      const sanitize = s => (s || '').toString().replace(/[^a-zA-Z0-9-_.]/g, '_');
+      const safeNum = sanitize(data.bagage_numero || data.id || Date.now());
+      const filename = `reservation_${safeNum}.pdf`;
       const filePath = path.join(pdfsDir, filename);
 
       const stream = fs.createWriteStream(filePath);
@@ -298,6 +314,12 @@ io.on('connection', async (socket) => {
       doc.moveDown();
       doc.fontSize(16).text('Réservation Bagage', { align: 'center' });
       doc.moveDown();
+
+      let matricule = data.matricule || '';
+      if (!matricule && data.bagage_numero && data.bagage_numero.includes('/')) matricule = data.bagage_numero.split('/')[0];
+      if (matricule) {
+        doc.fontSize(12).text(`Matricule: ${matricule}`);
+      }
 
       doc.fontSize(12).text(`Numéro: ${data.bagage_numero}`);
       doc.text(`Expéditeur: ${data.exp_nom} ${data.exp_prenom}`);
@@ -368,15 +390,17 @@ io.on('connection', async (socket) => {
 // ==============================
 
 // GET
-app.get('/api/settings', (req, res) => {
+app.get('/api/settings', async (req, res) => {
   try {
     const file = path.join(__dirname, 'settings.json');
 
-    if (fs.existsSync(file)) {
-      return res.json(JSON.parse(fs.readFileSync(file, 'utf8')));
+    try {
+      await fsp.access(file);
+      const raw = await fsp.readFile(file, 'utf8');
+      return res.json(JSON.parse(raw || '{}'));
+    } catch (e) {
+      return res.json({ note: '', selectedDate: null });
     }
-
-    res.json({ note: '', selectedDate: null });
 
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -388,7 +412,7 @@ app.get('/api/settings', (req, res) => {
 // Allow simple site settings updates without requiring Firebase/MongoDB.
 // When `selectedDate` is not provided by the client, generate it server-side
 // (YYYY-MM-DD) so admin can simply click "Enregistrer" to publish a date.
-app.post('/api/settings', (req, res) => {
+app.post('/api/settings', async (req, res) => {
   try {
     const { note } = req.body || {};
     const providedDate = req.body && req.body.selectedDate;
@@ -397,9 +421,7 @@ app.post('/api/settings', (req, res) => {
     const file = path.join(__dirname, 'settings.json');
 
     let cur = {};
-    if (fs.existsSync(file)) {
-      try { cur = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { cur = {}; }
-    }
+    try { await fsp.access(file); const raw = await fsp.readFile(file,'utf8'); cur = JSON.parse(raw||'{}'); } catch(e){ cur = {}; }
 
     const next = {
       ...cur,
@@ -407,7 +429,7 @@ app.post('/api/settings', (req, res) => {
       selectedDate: generatedDate
     };
 
-    fs.writeFileSync(file, JSON.stringify(next, null, 2));
+    await fsp.writeFile(file, JSON.stringify(next, null, 2));
     try { io.emit('settings_updated', next); } catch (e) { /* ignore */ }
 
     return res.json(next);
@@ -417,53 +439,51 @@ app.post('/api/settings', (req, res) => {
   }
 });
 
-// ===== DATES endpoints (moved inline) =====
-try {
+  // ===== DATES endpoints (moved inline) =====
+  try {
   const datesFile = path.join(__dirname, 'dates.json');
   const settingsFile = path.join(__dirname, 'settings.json');
 
-  function readDates(){
-    try { if (!fs.existsSync(datesFile)) return []; return JSON.parse(fs.readFileSync(datesFile,'utf8')||'[]'); } catch(e){ return []; }
+  async function readDates(){
+    try { await fsp.access(datesFile); const raw = await fsp.readFile(datesFile, 'utf8'); return JSON.parse(raw || '[]'); } catch(e){ return []; }
   }
-  function writeDates(dates){ try{ fs.writeFileSync(datesFile, JSON.stringify(dates, null, 2)); } catch(e){ console.error('writeDates error', e); } }
+  async function writeDates(dates){ try{ await fsp.writeFile(datesFile, JSON.stringify(dates, null, 2)); } catch(e){ console.error('writeDates error', e); } }
 
-  app.get('/api/dates', (req, res) => {
-    try { return res.json(readDates()); } catch (e) { return res.status(500).json({ error: e.message }); }
+  app.get('/api/dates', async (req, res) => {
+    try { const d = await readDates(); return res.json(d); } catch (e) { return res.status(500).json({ error: e.message }); }
   });
 
-  app.post('/api/dates', verifyFirebaseToken, requireAdmin, (req, res) => {
+  app.post('/api/dates', verifyFirebaseToken, requireAdmin, async (req, res) => {
     try {
       const { dates, active } = req.body;
       if (!Array.isArray(dates)) return res.status(400).json({ error: 'dates must be array' });
-      let cur = readDates();
+      let cur = await readDates();
       const set = new Set(cur);
       if (active) dates.forEach(d => set.add(d)); else dates.forEach(d => set.delete(d));
       const next = Array.from(set).sort();
-      writeDates(next);
+      await writeDates(next);
       try { io.emit('departures_updated', { dates: next }); } catch (e) { console.warn('emit departures_updated failed', e); }
       return res.json({ success: true, dates: next });
     } catch (e) { return res.status(500).json({ error: e.message }); }
   });
 
-  app.post('/api/dates/single', verifyFirebaseToken, requireAdmin, (req, res) => {
+  app.post('/api/dates/single', verifyFirebaseToken, requireAdmin, async (req, res) => {
     try {
       const { date, active } = req.body;
       if (!date) return res.status(400).json({ error: 'date required' });
-      let cur = readDates();
+      let cur = await readDates();
       const set = new Set(cur);
       if (active) set.add(date); else set.delete(date);
       const next = Array.from(set).sort();
-      writeDates(next);
+      await writeDates(next);
       try { io.emit('departures_updated', { dates: next }); } catch (e) { console.warn('emit departures_updated failed', e); }
 
       // persist selectedDate into settings.json and broadcast
       try {
         let settings = {};
-        if (fs.existsSync(settingsFile)) {
-          try { settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8')||'{}'); } catch(e){ settings = {}; }
-        }
+        try { await fsp.access(settingsFile); const raw = await fsp.readFile(settingsFile,'utf8'); settings = JSON.parse(raw||'{}'); } catch(e){ settings = {}; }
         settings.selectedDate = active ? date : null;
-        fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
+        await fsp.writeFile(settingsFile, JSON.stringify(settings, null, 2));
         try { io.emit('settings_updated', settings); } catch (e) { console.warn('emit settings_updated failed', e); }
       } catch (e) { console.warn('failed to persist settings selectedDate', e); }
 
@@ -471,24 +491,17 @@ try {
     } catch (e) { return res.status(500).json({ error: e.message }); }
   });
 
-  app.delete('/api/dates/:date', verifyFirebaseToken, requireAdmin, (req, res) => {
+  app.delete('/api/dates/:date', verifyFirebaseToken, requireAdmin, async (req, res) => {
     try {
       const date = decodeURIComponent(req.params.date);
-      let cur = readDates();
+      let cur = await readDates();
       const next = cur.filter(d => d !== date);
-      writeDates(next);
+      await writeDates(next);
       try { io.emit('departures_updated', { dates: next }); } catch (e) { console.warn('emit departures_updated failed', e); }
 
       // if removed date was selected, clear selectedDate in settings
       try {
-        if (fs.existsSync(settingsFile)) {
-          const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8')||'{}');
-          if (settings.selectedDate === date) {
-            settings.selectedDate = null;
-            fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
-            try { io.emit('settings_updated', settings); } catch(e){}
-          }
-        }
+        try { await fsp.access(settingsFile); const raw = await fsp.readFile(settingsFile,'utf8'); const settings = JSON.parse(raw||'{}'); if (settings.selectedDate === date) { settings.selectedDate = null; await fsp.writeFile(settingsFile, JSON.stringify(settings, null, 2)); try { io.emit('settings_updated', settings); } catch(e){} } } catch (e) { /* ignore no settings file */ }
       } catch (e) { console.warn('failed to update settings on date delete', e); }
 
       return res.json({ success: true, dates: next });
@@ -532,12 +545,14 @@ app.get('/api/notifications', async (req, res) => {
     // fallback JSON
     const file = path.join(__dirname, 'notifications.json');
 
-    if (fs.existsSync(file)) {
-      const list = JSON.parse(fs.readFileSync(file, 'utf8') || '[]');
+    try {
+      await fsp.access(file);
+      const raw = await fsp.readFile(file, 'utf8');
+      const list = JSON.parse(raw || '[]');
       return res.json(list);
+    } catch (e) {
+      return res.json([]);
     }
-
-    res.json([]);
 
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -608,22 +623,21 @@ app.post('/api/bookings', async (req, res) => {
     // 📁 FALLBACK JSON
     const file = path.join(__dirname, 'bookings.json');
     let list = [];
-
-    if (fs.existsSync(file)) {
-      list = JSON.parse(fs.readFileSync(file, 'utf8') || '[]');
-    }
+    try { await fsp.access(file); const raw = await fsp.readFile(file,'utf8'); list = JSON.parse(raw||'[]'); } catch(e){ list = []; }
 
     // If we reached here and have savedId (mongo or firestore), still persist in JSON list for fallback
     list.unshift(booking);
-    fs.writeFileSync(file, JSON.stringify(list, null, 2));
+    try { await fsp.writeFile(file, JSON.stringify(list, null, 2)); } catch(e){ console.warn('write bookings.json failed', e); }
     // Emit immediate booking notification so admin sees reservation quickly
     try { io.emit('booking_notification', booking); } catch (e) { console.warn('emit immediate booking_notification failed', e); }
 
     // Generate PDF and emit notification in all cases (non-blocking)
     (async () => {
       try {
+        const sanitize = s => (s || '').toString().replace(/[^a-zA-Z0-9-_.]/g, '_');
         const id = booking.bagage_numero || savedId || Date.now();
-        const filename = `reservation_${id}.pdf`;
+        const safeId = sanitize(id);
+        const filename = `reservation_${safeId}.pdf`;
         const filePath = path.join(pdfsDir, filename);
 
         const stream = fs.createWriteStream(filePath);
@@ -634,6 +648,11 @@ app.post('/api/bookings', async (req, res) => {
         doc.moveDown();
         doc.fontSize(16).text('Réservation Bagage', { align: 'center' });
         doc.moveDown();
+
+        let matricule = booking.matricule || '';
+        if (!matricule && booking.bagage_numero && booking.bagage_numero.includes('/')) matricule = booking.bagage_numero.split('/')[0];
+        if (matricule) doc.fontSize(12).text(`Matricule: ${matricule}`);
+
         doc.fontSize(12).text(`Numéro: ${id}`);
         if (booking.exp_nom || booking.exp_prenom) doc.text(`Expéditeur: ${booking.exp_nom || ''} ${booking.exp_prenom || ''}`);
         if (booking.dest_nom || booking.dest_prenom) doc.text(`Destinataire: ${booking.dest_nom || ''} ${booking.dest_prenom || ''}`);
@@ -715,10 +734,12 @@ app.get('/generate-pdf/:id', requireAdmin, async (req, res) => {
     // Fallback JSON file
     if (!booking) {
       const file = path.join(__dirname, 'bookings.json');
-      if (fs.existsSync(file)) {
-        const list = JSON.parse(fs.readFileSync(file, 'utf8') || '[]');
+      try {
+        await fsp.access(file);
+        const raw = await fsp.readFile(file, 'utf8');
+        const list = JSON.parse(raw || '[]');
         booking = list.find(b => (b && (b.bagage_numero === id || (b.id && String(b.id) === String(id)))));
-      }
+      } catch (e) { /* no bookings file */ }
     }
 
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
