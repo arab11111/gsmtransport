@@ -37,8 +37,8 @@ body {
     justify-content: flex-end;
     gap: 18px;
     padding: 0 40px;
-    background: rgba(30, 34, 44, 0.65);
-    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    background: rgba(199, 209, 235, 0.65);
+    box-shadow: 0 4px 24px rgba(253, 215, 0, 0.1);
     backdrop-filter: blur(12px);
     z-index: 100;
     animation: navfade 1s cubic-bezier(.4,0,.2,1);
@@ -134,7 +134,7 @@ h1 {
     margin-bottom: 7px;
     font-weight: 800;
     letter-spacing: 1px;
-    text-shadow: 0 2px 12px rgba(0,0,0,0.13);
+    text-shadow: 0 2px 12px rgba(255, 0, 0, 0.13);
 }
 .subtitle {
     opacity: 0.85;
@@ -271,7 +271,7 @@ footer {
     .container, .calendar-section, .note { background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); }
     .logo-btn { background: linear-gradient(90deg,#ffd54f,#ffb300); color: #042029; box-shadow: 0 6px 20px rgba(0,0,0,0.45); }
     .btn, .menu-bar button, .menu-bar a { border-radius: 12px; }
-    .apps > * { box-shadow: 0 8px 30px rgba(236,170,27,0.55); border-radius: 12px; }
+    .apps > * { box-shadow: 0 8px 30px rgba(236, 170, 27, 0.55); border-radius: 12px; }
     .notif, #notif-reservations { font-size: 1rem; padding: 12px; border-radius: 12px; }
     footer { font-size: 0.95rem; padding: 12px 0; }
 }
@@ -288,8 +288,8 @@ footer {
     <button id="client-logout-btn" class="logout" style="display:none;"><span style="font-size:1.1em;">🚪</span> Déconnecter</button>
     <!-- Modal de connexion/inscription client -->
     <div id="client-auth-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,34,44,0.55);z-index:2000;align-items:center;justify-content:center;">
-        <div style="background:#fffbe6;padding:2.2em 2.5em 2em 2.5em;border-radius:18px;box-shadow:0 8px 32px #0003;min-width:320px;max-width:95vw;">
-            <h2 style="color:#1e40af;text-align:center;margin-bottom:1.2em;">Espace Client</h2>
+        <div style="background:linear-gradient(135deg,#ffffff 0%,#f3f8ff 100%);padding:2.4em 2.6em;border-radius:18px;box-shadow:0 12px 40px rgba(2,6,23,0.14);min-width:320px;max-width:95vw;border:1px solid rgba(30,58,138,0.06);backdrop-filter: blur(6px);">
+            <h2 style="color:#0f172a;text-align:center;margin-bottom:0.8em;display:flex;align-items:center;gap:12px;justify-content:center;font-size:1.25rem;"><span style="display:inline-block;background:linear-gradient(90deg,#43cea2,#185a9d);color:#fff;border-radius:50%;width:36px;height:36px;line-height:36px;text-align:center;font-weight:800;box-shadow:0 4px 18px rgba(6,10,28,0.12);">🔑</span> Espace Client</h2>
             <form id="client-auth-form">
                 <input id="client-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:1em;padding:0.7em 1em;border-radius:8px;border:1.5px solid #b2b2b2;font-size:1.07em;">
                 <input id="client-password" type="password" placeholder="Mot de passe" required style="width:100%;margin-bottom:1.2em;padding:0.7em 1em;border-radius:8px;border:1.5px solid #b2b2b2;font-size:1.07em;">
@@ -467,12 +467,24 @@ clientRegisterBtn.addEventListener('click', function() {
         return;
     }
     auth.createUserWithEmailAndPassword(email, password)
-        .then(userCred => {
-            userCred.user.sendEmailVerification();
-            clientVerifyEmail.textContent = 'Inscription réussie ! Vérifiez votre email pour valider votre compte.';
-            clientVerifyEmail.style.display = 'block';
-            clientAuthError.style.display = 'none';
-            auth.signOut();
+        .then(async userCred => {
+            try {
+                // Générer une matricule unique et mémoriser côté serveur (Firestore) et localStorage
+                const user = userCred.user;
+                const matricule = `GSM-${new Date().getFullYear()}-${Math.floor(100000 + Math.random()*900000)}`;
+                try { await db.collection('users').doc(user.uid).set({ email: email, matricule: matricule }); } catch (e) { console.warn('failed to save user matricule', e); }
+                try { localStorage.setItem('gsm_matricule', matricule); } catch (e) { /* ignore */ }
+                user.sendEmailVerification();
+                clientVerifyEmail.textContent = 'Inscription réussie ! Matricule: ' + matricule + '. Vérifiez votre email pour valider votre compte.';
+                clientVerifyEmail.style.display = 'block';
+                clientAuthError.style.display = 'none';
+                // sign out to enforce email verification before next login
+                auth.signOut();
+            } catch (errInner) {
+                console.error('register then error', errInner);
+                clientAuthError.textContent = 'Erreur interne lors de l\'inscription.';
+                clientAuthError.style.display = 'block';
+            }
         })
         .catch(err => {
             clientAuthError.textContent = 'Erreur : ' + (err.message || 'Impossible de créer le compte');
