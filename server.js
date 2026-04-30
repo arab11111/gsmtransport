@@ -110,6 +110,8 @@ async function saveNotification(data) {
 // 📁 dossier PDF
 const pdfsDir = path.join(__dirname, 'pdfs');
 
+// protect against duplicated PDF generation (in-memory de-dup)
+const generatedPdfs = new Set();
 // ensure pdfs directory exists (async, non-blocking)
 (async () => {
   try { await fsp.mkdir(pdfsDir, { recursive: true }); } catch (e) { /* ignore */ }
@@ -280,94 +282,7 @@ io.on('connection', async (socket) => {
     });
   }
 
-  async function saveNotificationWithPDF(data) {
-    const pdfLink = await generatePDF(data);
-
-    const payload = {
-      ...data,
-      pdfLink,
-      read: false,
-      createdAt: new Date().toISOString()
-    };
-
-    // use unified saveNotification (Firestore + JSON fallback)
-    await saveNotification(payload);
-
-    return payload;
-  }
-
-  socket.on('new_booking', async (data) => {
-    console.log('Nouvelle réservation:', data);
-
-    try {
-      const sanitize = s => (s || '').toString().replace(/[^a-zA-Z0-9-_.]/g, '_');
-      const safeNum = sanitize(data.bagage_numero || data.id || Date.now());
-      const filename = `reservation_${safeNum}.pdf`;
-      const filePath = path.join(pdfsDir, filename);
-
-      const stream = fs.createWriteStream(filePath);
-      const doc = new PDFDocument({ size: 'A4', margin: 40 });
-
-      doc.pipe(stream);
-
-      doc.fontSize(20).text('GSM Transport', { align: 'center' });
-      doc.moveDown();
-      doc.fontSize(16).text('Réservation Bagage', { align: 'center' });
-      doc.moveDown();
-
-      let matricule = data.matricule || '';
-      if (!matricule && data.bagage_numero && data.bagage_numero.includes('/')) matricule = data.bagage_numero.split('/')[0];
-      if (matricule) {
-        doc.fontSize(12).text(`Matricule: ${matricule}`);
-      }
-
-      doc.fontSize(12).text(`Numéro: ${data.bagage_numero}`);
-      doc.text(`Expéditeur: ${data.exp_nom} ${data.exp_prenom}`);
-      doc.text(`Destinataire: ${data.dest_nom} ${data.dest_prenom}`);
-      if (data.exp_tel) doc.text(`Téléphone exp: ${data.exp_tel}`);
-      if (data.dest_tel) doc.text(`Téléphone dest: ${data.dest_tel}`);
-      if (data.pays_dest || data.destination) doc.text(`Destination: ${data.pays_dest || ''} ${data.destination || ''}`);
-      if (data.nb_bagages) doc.text(`Bagages: ${data.nb_bagages}`);
-      if (data.poids) doc.text(`Poids: ${data.poids} kg`);
-      if (data.prix) doc.text(`Prix: ${data.prix} €`);
-
-      if (data.notes) {
-        doc.moveDown();
-        doc.text(`Note: ${data.notes}`);
-      }
-
-      doc.end();
-
-      stream.on('finish', async () => {
-        const pdfLink = `/pdfs/${filename}`;
-
-        const payload = {
-          ...data,
-          pdfLink,
-          createdAt: new Date().toISOString()
-        };
-
-        // 🔥 SAVE FIRESTORE as booking
-        try {
-          const mongo = getDb();
-          if (mongo) {
-            await mongo.collection('bookings').insertOne(payload);
-          } else if (adminDb) {
-            await adminDb.collection('bookings').add(payload);
-          }
-        } catch (e) { console.warn('save booking failed', e); }
-
-        // 📁 fallback JSON notif
-        persistNotification({ ...payload, type: 'booking' });
-
-        // 🔔 envoyer à tous les clients
-        io.emit('booking_notification', payload);
-      });
-
-    } catch (err) {
-      console.error('Erreur PDF:', err);
-    }
-  });
+  
 
   // Clients may emit a lightweight booking notification event to quickly
   // inform the server to broadcast to admins (useful as a realtime ACK).
@@ -637,6 +552,11 @@ app.post('/api/bookings', async (req, res) => {
         const sanitize = s => (s || '').toString().replace(/[^a-zA-Z0-9-_.]/g, '_');
         const id = booking.bagage_numero || savedId || Date.now();
         const safeId = sanitize(id);
+
+        // Avoid generating the same PDF multiple times in-memory
+        if (generatedPdfs.has(safeId)) return;
+        generatedPdfs.add(safeId);
+
         const filename = `reservation_${safeId}.pdf`;
         const filePath = path.join(pdfsDir, filename);
 
