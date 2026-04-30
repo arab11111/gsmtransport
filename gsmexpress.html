@@ -188,6 +188,23 @@
       : window.location.origin;
     const socket = io(SERVER_ORIGIN);
     const notif = document.getElementById('notif');
+    // Disable notifications on this page (set true to hide all notifications/UI)
+    const DISABLE_NOTIFICATIONS_ON_PAGE = true;
+    if (DISABLE_NOTIFICATIONS_ON_PAGE) {
+      window.__NO_NOTIFICATIONS = true;
+      try { if (notif) notif.style.display = 'none'; } catch (e) {}
+      // Prevent the browser Notification permission prompt on this page
+      try {
+        if ('Notification' in window) Notification.requestPermission = () => Promise.resolve('denied');
+      } catch (e) {}
+      // Prevent socket events related to notifications (safe even if handlers not yet attached)
+      try {
+        if (socket && socket.off) {
+          socket.off('booking_notification');
+          socket.off('pending_notifications');
+        }
+      } catch (e) {}
+    }
     // prevent double submit
     let isSubmitting = false;
     // helper to show confirmation/toast to user
@@ -202,20 +219,22 @@
       } catch(e) { console.warn('showClientNotif error', e); }
     }
     // --- NOTIFICATIONS : version propre, unique, sans admin ---
-    // Zone d'affichage notifications (ajoutée dynamiquement)
+    // Zone d'affichage notifications (ajoutée dynamiquement) — skip si notifications désactivées
     let notifDiv = document.getElementById('notif-reservations');
     let listeDiv = document.getElementById('liste-reservations');
-    if (!notifDiv) {
-      notifDiv = document.createElement('div');
-      notifDiv.id = 'notif-reservations';
-      notifDiv.style = 'background:linear-gradient(90deg,#fffbe6,#e6ffe6);color:#1a4d2e;padding:1.2rem 1.7rem;border-radius:14px;margin:1.5rem auto 1rem auto;max-width:650px;box-shadow:0 4px 18px #0002;font-weight:700;font-size:1.15em;display:none;transition:background 0.3s;';
-      document.body.insertBefore(notifDiv, document.body.firstChild);
-    }
-    if (!listeDiv) {
-      listeDiv = document.createElement('div');
-      listeDiv.id = 'liste-reservations';
-      listeDiv.style = 'max-width:700px;margin:0 auto 2rem auto;';
-      document.body.insertBefore(listeDiv, notifDiv.nextSibling);
+    if (!window.__NO_NOTIFICATIONS) {
+      if (!notifDiv) {
+        notifDiv = document.createElement('div');
+        notifDiv.id = 'notif-reservations';
+        notifDiv.style = 'background:linear-gradient(90deg,#fffbe6,#e6ffe6);color:#1a4d2e;padding:1.2rem 1.7rem;border-radius:14px;margin:1.5rem auto 1rem auto;max-width:650px;box-shadow:0 4px 18px #0002;font-weight:700;font-size:1.15em;display:none;transition:background 0.3s;';
+        document.body.insertBefore(notifDiv, document.body.firstChild);
+      }
+      if (!listeDiv) {
+        listeDiv = document.createElement('div');
+        listeDiv.id = 'liste-reservations';
+        listeDiv.style = 'max-width:700px;margin:0 auto 2rem auto;';
+        document.body.insertBefore(listeDiv, notifDiv.nextSibling);
+      }
     }
     function getNotifications() {
       return JSON.parse(localStorage.getItem('notifications') || '[]');
@@ -250,6 +269,7 @@
       renderNotifications();
     }
     function renderNotifications() {
+      if (window.__NO_NOTIFICATIONS) return;
       const notifications = getNotifications();
       if (notifications.length === 0) {
         listeDiv.innerHTML = '<p style="text-align:center;color:#888;">Aucune notification de réservation.</p>';
@@ -295,10 +315,12 @@
     }
     // Écoute directe des notifications socket
     socket.on('booking_notification', data => {
+      if (window.__NO_NOTIFICATIONS) return;
       addNotification(data);
     });
     // Merge pending notifications sent by server (JSON array)
     socket.on('pending_notifications', list => {
+      if (window.__NO_NOTIFICATIONS) return;
       try {
         if (!Array.isArray(list) || list.length === 0) return;
         const cur = JSON.parse(localStorage.getItem('notifications') || '[]');
