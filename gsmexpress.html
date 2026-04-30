@@ -7,112 +7,112 @@
   <meta name="description" content="Réservez votre bagage simplement, obtenez un PDF, un QR code, et une notification instantanée." />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap">
   <style>
+    :root{
+      --bg-start: #0f172a;
+      --bg-end: #0b1220;
+      --card-bg: rgba(255,255,255,0.06);
+      --accent-1: #0ea5e9;
+      --accent-2: #1e40af;
+      --muted: #94a3b8;
+      --success: #10b981;
+    }
+
+    html,body{height:100%;}
     body {
       font-family: 'Inter', Arial, sans-serif;
-      background-image: linear-gradient(120deg, rgba(107,139,235,0.55) 0%, rgba(223,156,236,0.55) 100%), url('image/polo1.png');
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(14,165,233,0.06), transparent), linear-gradient(120deg, rgba(30,64,175,0.12) 0%, rgba(14,165,233,0.06) 100%), var(--bg-start);
+      color: #e6eef8;
       margin: 0;
-      min-height: 100vh;
-      color: #1e293b;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:2rem 1rem;
     }
     .container {
-      max-width: 420px;
-      margin: 1.5rem auto;
-      background: rgba(196, 82, 82, 0.94);
+      width:100%;
+      max-width:720px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.05);
       border-radius: 14px;
-      box-shadow: 0 8px 32px #0001;
-      padding: 2rem 1.5rem;
-      backdrop-filter: blur(6px);
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+      padding: 2rem;
+      backdrop-filter: blur(8px) saturate(120%);
     }
     h1 {
       text-align: center;
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 2rem;
-      color: #ebeef7;
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-bottom: 1.1rem;
+      color: #f8fafc;
+      letter-spacing: -0.02em;
     }
     label {
-      font-weight: 600;
-      color: #1e293b;
-      margin-bottom: 0.3rem;
-      display: block;
+      display:block;
+      margin-bottom:0.4rem;
+      color:var(--muted);
+      font-weight:700;
+      font-size:0.95rem;
     }
-    input, textarea {
+    input, textarea, select {
       width: 100%;
-      padding: 0.7rem 1rem;
-      border: 1.5px solid #cbd5e1;
-      border-radius: 7px;
-      font-size: 1rem;
-      margin-bottom: 1.1rem;
-      background: #f8fafc;
-      color: #1e293b;
-      transition: border 0.2s;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+      color: #e6eef8;
+      font-size: 0.98rem;
+      margin-bottom: 0.9rem;
+      transition: box-shadow .18s, transform .12s, border-color .12s;
+      -webkit-appearance:none;
+      appearance:none;
     }
-    input[readonly] {
-      background: #e0e7ff;
-      color: #334155;
-      font-weight: 700;
-      border-color: #1e40af;
+    textarea{min-height:90px;resize:vertical}
+    input[readonly]{opacity:0.9;background:rgba(255,255,255,0.015);font-weight:700}
+    input:focus, textarea:focus, select:focus{
+      outline:none;
+      box-shadow: 0 6px 18px rgba(30,64,175,0.12);
+      border-color: var(--accent-2);
+      transform: translateY(-1px);
     }
-    input:focus, textarea:focus {
-      border-color: #1e40af;
-      outline: none;
+    /* nicer select arrow */
+    select{
+      background-image: linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.6) 50%), linear-gradient(135deg, rgba(255,255,255,0.6) 50%, transparent 50%);
+      background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 12px) calc(1em + 2px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+      padding-right: 2.4rem;
     }
-    .actions {
-      display: flex;
-      gap: 0.7rem;
-      justify-content: center;
-      margin-top: 1.2rem;
-    }
+    .actions { display:flex; gap:0.8rem; flex-wrap:wrap; justify-content:center; margin-top:1rem }
     .btn {
-      background: linear-gradient(90deg, #1e40af 0%, #0ea5e9 100%);
-      color: #fff;
       border: none;
-      border-radius: 7px;
-      padding: 0.7rem 1.5rem;
-      font-weight: 700;
-      font-size: 1rem;
       cursor: pointer;
-      box-shadow: 0 2px 8px #0002;
-      transition: background 0.2s;
+      padding: 0.75rem 1.2rem;
+      border-radius: 10px;
+      font-weight:800;
+      color: white;
+      background: linear-gradient(90deg,var(--accent-2),var(--accent-1));
+      box-shadow: 0 8px 20px rgba(2,6,23,0.5), inset 0 -2px 6px rgba(0,0,0,0.12);
+      transition: transform .08s ease, box-shadow .12s ease, filter .12s;
+      min-width:140px;
     }
-    .btn:hover {
-      background: linear-gradient(90deg, #0ea5e9 0%, #1e40af 100%);
-    }
-    .btn-clean {
-      background: #f1f5f9;
-      color: #1e293b;
-      border: 1.5px solid #cbd5e1;
-      box-shadow: none;
-    }
-    .btn-clean:hover {
-      background: #e0e7ef;
-    }
-    .qr-section {
-      text-align: center;
-      margin-top: 2rem;
-      display: none;
-    }
-    .notif {
-      background: #e0e7ff;
-      color: #1e40af;
-      border-radius: 8px;
-      padding: 0.8rem 1.2rem;
-      margin-bottom: 1.2rem;
-      text-align: center;
-      font-weight: 600;
-      display: none;
-    }
+    .btn:active{transform:translateY(1px);}
+    .btn:hover{filter:brightness(1.03);}
+    .btn-clean{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.03);box-shadow:none;font-weight:700}
+    #btnPdf{background:linear-gradient(90deg,#06b6d4,#0891b2)}
+    #btnQr{background:linear-gradient(90deg,#7c3aed,#6d28d9)}
+    #btnReset{background:transparent;border:1px solid rgba(255,255,255,0.05);color:var(--muted)}
+    .qr-section{display:none;text-align:center;margin-top:1.25rem}
+    .notif{background:linear-gradient(90deg,rgba(16,185,129,0.06),rgba(59,130,246,0.02));color:var(--success);border-radius:10px;padding:0.8rem 1rem;margin-bottom:1rem;display:none}
     @media (max-width: 600px) {
-      .container { padding: 1rem 0.8rem; margin: 1rem; border-radius: 10px; }
+      .container { padding: 1rem; margin: 0.6rem; border-radius: 12px; }
       h1 { font-size: 1.25rem; }
-      input, textarea { font-size: 1.05rem; padding: 0.9rem 1rem; }
-      .btn { padding: 0.85rem 1rem; font-size: 1.05rem; }
-      .actions { flex-direction: column; gap: 0.6rem; }
-      .actions .btn { width: 100%; }
-      .qr-section { margin-top: 1rem; }
+      input, textarea, select { font-size: 1.02rem; padding: 0.85rem 0.9rem; }
+      .btn { padding: 0.85rem 0.9rem; font-size: 0.98rem; min-width: unset; }
+      .actions { gap:0.6rem }
+      .actions .btn { flex:1 1 48%; }
+      .qr-section { margin-top: 0.8rem; }
     }
 
     /* make action buttons wrap on narrow but not-too-small screens */
@@ -175,6 +175,8 @@
       : window.location.origin;
     const socket = io(SERVER_ORIGIN);
     const notif = document.getElementById('notif');
+    // prevent double submit
+    let isSubmitting = false;
     // helper to show confirmation/toast to user
     function showClientNotif(message, success = true, timeout = 5000) {
       try {
@@ -568,24 +570,9 @@
         const data = getFormData();
         showQr(data);
       };
-      // PDF: demander la génération côté serveur (le serveur créera le PDF et émettra `pdf_generated`)
-      document.getElementById('btnPdf').onclick = async function () {
-        const data = getFormData();
-        try {
-          const res = await fetch('/api/bookings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-          });
-          if (res.ok) {
-            showClientNotif('Demande envoyée au serveur — le PDF sera disponible sous peu.', true);
-            // socket emit removed: rely on /api/bookings to generate PDF once
-          } else {
-            showClientNotif('Erreur lors de la demande au serveur.', false);
-          }
-        } catch (e) {
-          showClientNotif('Erreur réseau lors de la demande PDF.', false);
-        }
+      // PDF button: local-only helper. The server will generate the PDF on submit.
+      document.getElementById('btnPdf').onclick = function () {
+        showClientNotif('Le PDF sera généré après réservation.', true);
       };
       // Nettoyer
       document.getElementById('btnReset').onclick = function () {
@@ -597,6 +584,8 @@
         // Réserver (submit)
       document.getElementById('reservationForm').onsubmit = async function (e) {
         e.preventDefault();
+        if (isSubmitting) return;
+        isSubmitting = true;
         const data = getFormData();
         // Envoi unique via REST : le serveur générera le PDF et diffusera la notification
         let postOk = false;
@@ -640,6 +629,8 @@
           document.getElementById('bagage_numero').value = newNum;
           document.getElementById('prix').value = '';
           document.getElementById('qrZone').style.display = 'none';
+          // release submit lock after UX reset
+          isSubmitting = false;
         }, 1200);
       };
 
