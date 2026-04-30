@@ -20,7 +20,7 @@
     .container {
       max-width: 420px;
       margin: 1.5rem auto;
-      background: rgba(141, 14, 14, 0.94);
+      background: rgba(196, 82, 82, 0.94);
       border-radius: 14px;
       box-shadow: 0 8px 32px #0001;
       padding: 2rem 1.5rem;
@@ -31,7 +31,7 @@
       font-size: 1.5rem;
       font-weight: 700;
       margin-bottom: 2rem;
-      color: #1e40af;
+      color: #ebeef7;
     }
     label {
       font-weight: 600;
@@ -121,7 +121,7 @@
   </style>
 </head>
 <body>
-  <button id="btnLogout" style="position:fixed;top:24px;right:32px;z-index:1000;background:#a9fd21;border:2px solid #dcdfe9;color:#48547c;font-weight:700;padding:0.6rem 1.5rem;border-radius:8px;box-shadow:0 2px 8px #0001;cursor:pointer;">Menue</button>
+  <button id="btnLogout" style="position:fixed;top:24px;right:32px;z-index:1000;background:#ecb43b;border:2px solid #acb5d1;color:#334681;font-weight:700;padding:0.6rem 1.5rem;border-radius:8px;box-shadow:0 2px 8px #0001;cursor:pointer;">Menue</button>
   <div class="container">
     <h1>Réserver mon bagage</h1>
     <div class="notif" id="notif"></div>
@@ -579,7 +579,7 @@
           });
           if (res.ok) {
             showClientNotif('Demande envoyée au serveur — le PDF sera disponible sous peu.', true);
-            try { socket.emit('client_booking', data); } catch(e) { console.warn('emit client_booking failed', e); }
+            // socket emit removed: rely on /api/bookings to generate PDF once
           } else {
             showClientNotif('Erreur lors de la demande au serveur.', false);
           }
@@ -610,7 +610,7 @@
             postOk = true;
             const json = await res.json().catch(() => ({}));
             console.log('Booking saved:', json);
-            try { socket.emit('client_booking', data); } catch (e) { console.warn('emit client_booking failed', e); }
+            // socket emit removed: rely on /api/bookings to generate PDF once
           } else {
             console.warn('Bookings API error', res && res.status);
           }
