@@ -115,6 +115,19 @@
       .qr-section { margin-top: 0.8rem; }
     }
 
+    /* Extra mobile polish for small phones */
+    @media (max-width: 420px) {
+      .container { padding: 0.9rem 0.9rem; border-radius: 12px; box-shadow: 0 8px 18px rgba(2,6,23,0.55); }
+      h1 { font-size: 1.15rem; }
+      label { font-size: 0.95rem; }
+      input, textarea, select { font-size: 1.05rem; padding: 0.9rem; border-radius: 12px; }
+      .actions { flex-direction: column; gap: 0.6rem; }
+      .actions .btn { width: 100%; min-width: unset; }
+      #btnPdf, #btnQr { font-size: 1rem; padding: 0.9rem; }
+      #btnReset { padding: 0.75rem; }
+      .notif { display:none !important; }
+    }
+
     /* make action buttons wrap on narrow but not-too-small screens */
     .actions { display: flex; gap: 0.7rem; justify-content: center; flex-wrap: wrap; }
     .actions .btn { min-width: 120px; flex: 1 1 auto; }
@@ -641,10 +654,20 @@
           const curNum = document.getElementById('bagage_numero') ? document.getElementById('bagage_numero').value : '';
           if (payload.filename && curNum && payload.filename.includes(curNum)) {
             const fullUrl = (payload.url && payload.url.startsWith('http')) ? payload.url : (SERVER_ORIGIN + payload.url);
-            notif.innerHTML = `PDF prêt : <a href="${fullUrl}" target="_blank" style="color:#1e40af;font-weight:700;">Télécharger le reçu</a> <button id="notif-download" style="margin-left:0.6em;background:#1e40af;color:#fff;border:none;padding:0.2em 0.6em;border-radius:6px;cursor:pointer;font-weight:700;">Télécharger</button>`;
-            const dlBtn = notif.querySelector('#notif-download');
-            if (dlBtn) dlBtn.addEventListener('click', () => window.open(fullUrl, '_blank'));
-            notif.style.display = 'block';
+            // automatically trigger download/open of the generated PDF for the current booking
+            try {
+              const a = document.createElement('a');
+              a.href = fullUrl;
+              a.target = '_blank';
+              // allow browser to infer filename; force download when possible
+              a.rel = 'noopener noreferrer';
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            } catch (err) {
+              // fallback: open in new tab
+              try { window.open(fullUrl, '_blank'); } catch (e) { /* ignore */ }
+            }
           }
         } catch (e) { console.warn('pdf_generated handler error', e); }
       });
