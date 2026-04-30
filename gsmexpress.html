@@ -20,7 +20,7 @@
     html,body{height:100%;}
     body {
       font-family: 'Inter', Arial, sans-serif;
-      background: radial-gradient(1200px 600px at 10% 10%, rgba(14,165,233,0.06), transparent), linear-gradient(120deg, rgba(30,64,175,0.12) 0%, rgba(14,165,233,0.06) 100%), var(--bg-start);
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(20, 179, 253, 0.06), transparent), linear-gradient(120deg, rgba(30,64,175,0.12) 0%, rgba(6, 209, 141, 0.06) 100%), var(--bg-start);
       color: #e6eef8;
       margin: 0;
       -webkit-font-smoothing:antialiased;
@@ -106,26 +106,40 @@
     .qr-section{display:none;text-align:center;margin-top:1.25rem}
     .notif{background:linear-gradient(90deg,rgba(16,185,129,0.06),rgba(59,130,246,0.02));color:var(--success);border-radius:10px;padding:0.8rem 1rem;margin-bottom:1rem;display:none}
     @media (max-width: 600px) {
-      .container { padding: 1rem; margin: 0.6rem; border-radius: 12px; }
+      body { padding: 0.8rem 0.6rem; align-items:flex-start; justify-content:flex-start; }
+      .container { padding: 0.9rem; margin: 0.5rem; border-radius: 10px; max-height: calc(100vh - 14px); overflow: auto; }
       h1 { font-size: 1.25rem; }
-      input, textarea, select { font-size: 1.02rem; padding: 0.85rem 0.9rem; }
-      .btn { padding: 0.85rem 0.9rem; font-size: 0.98rem; min-width: unset; }
-      .actions { gap:0.6rem }
+      label { margin-bottom: 0.25rem; }
+      input, textarea, select { font-size: 0.96rem; padding: 0.6rem 0.6rem; margin-bottom: 0.6rem; }
+      .btn { padding: 0.6rem 0.6rem; font-size: 0.95rem; min-width: unset; }
+      .actions { gap:0.5rem }
       .actions .btn { flex:1 1 48%; }
-      .qr-section { margin-top: 0.8rem; }
+      .qr-section { margin-top: 0.6rem; }
+      /* hide fixed menu button on small screens to save space */
+      #btnLogout { display: none; }
     }
 
     /* Extra mobile polish for small phones */
     @media (max-width: 420px) {
-      .container { padding: 0.9rem 0.9rem; border-radius: 12px; box-shadow: 0 8px 18px rgba(2,6,23,0.55); }
-      h1 { font-size: 1.15rem; }
-      label { font-size: 0.95rem; }
-      input, textarea, select { font-size: 1.05rem; padding: 0.9rem; border-radius: 12px; }
-      .actions { flex-direction: column; gap: 0.6rem; }
-      .actions .btn { width: 100%; min-width: unset; }
-      #btnPdf, #btnQr { font-size: 1rem; padding: 0.9rem; }
-      #btnReset { padding: 0.75rem; }
+      .container { padding: 0.7rem 0.7rem; border-radius: 10px; box-shadow: 0 8px 18px rgba(2,6,23,0.55); max-height: calc(100vh - 10px); overflow:auto }
+      h1 { font-size: 1.05rem; }
+      label { font-size: 0.92rem; }
+      input, textarea, select { font-size: 1.0rem; padding: 0.6rem; border-radius: 10px; }
+      .actions { flex-direction: column; gap: 0.45rem; }
+      .actions .btn { width: 100%; min-width: unset; padding: 0.6rem; }
+      #btnPdf, #btnQr { font-size: 0.96rem; padding: 0.6rem; }
+      #btnReset { padding: 0.5rem; }
       .notif { display:none !important; }
+      #btnLogout { display:none }
+    }
+
+    /* Compact layout when vertical space is limited */
+    @media (max-height: 720px) {
+      body { padding: 0.5rem 0.5rem; }
+      .container { padding: 0.6rem; margin: 0.4rem; max-height: calc(100vh - 8px); }
+      h1 { font-size: 1rem; }
+      input, textarea, select { padding: 0.5rem; font-size: 0.95rem }
+      .actions .btn { padding: 0.45rem; font-size: 0.92rem }
     }
 
     /* make action buttons wrap on narrow but not-too-small screens */
