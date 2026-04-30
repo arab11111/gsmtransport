@@ -178,7 +178,15 @@ app.post('/upload-pdf', async (req, res) => {
 
       res.json({ success: true, url: `/pdfs/${path.basename(filename)}` });
 
-      try { io.emit('pdf_generated', { filename: path.basename(filename), url: `/pdfs/${path.basename(filename)}` }); } catch(e){}
+      try {
+        // Avoid emitting duplicate pdf_generated events for the same reservation
+        const basename = path.basename(filename);
+        let safeId = basename.replace(/^reservation_/, '').replace(/\.pdf$/i, '');
+        if (!generatedPdfs.has(safeId)) {
+          generatedPdfs.add(safeId);
+          io.emit('pdf_generated', { filename: basename, url: `/pdfs/${basename}` });
+        }
+      } catch(e){}
     } catch (err) {
       console.error('upload-pdf write error', err);
       try { if (!res.headersSent) res.status(500).json({ error: err.message }); } catch(e){}
@@ -602,7 +610,15 @@ app.post('/api/bookings', async (req, res) => {
 
           // emit to connected clients (admin will show it)
           try { io.emit('booking_notification', payload); } catch (e) { console.warn('emit booking_notification failed', e); }
-          try { io.emit('pdf_generated', { filename, url: pdfLink }); } catch (e) { /* ignore */ }
+
+          try {
+            // Prevent duplicate realtime events when multiple generation paths are invoked
+            const safeId = (booking.bagage_numero || booking.id || '').toString().replace(/[^a-zA-Z0-9-_.]/g, '_');
+            if (!generatedPdfs.has(safeId)) {
+              generatedPdfs.add(safeId);
+              io.emit('pdf_generated', { filename, url: pdfLink });
+            }
+          } catch (e) { /* ignore */ }
         });
       } catch (e) {
         console.warn('post /api/bookings: pdf generation failed', e);
