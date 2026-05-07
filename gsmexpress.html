@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GSM Express – Réservation Bagage</title>
   <meta name="description" content="Réservez votre bagage simplement, obtenez un PDF, un QR code, et une notification instantanée." />
+  <meta name="google-adsense-account" content="ca-pub-8308471028441999">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap">
+  <!-- Google AdSense: publisher ID inserted -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-8308471028441999"></script>
   <style>
     :root{
       --bg-start: #0f172a;
@@ -20,7 +23,7 @@
     html,body{height:100%;}
     body {
       font-family: 'Inter', Arial, sans-serif;
-      background: radial-gradient(1200px 600px at 10% 10%, rgba(20, 179, 253, 0.06), transparent), linear-gradient(120deg, rgba(30,64,175,0.12) 0%, rgba(6, 209, 141, 0.06) 100%), var(--bg-start);
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(14,165,233,0.06), transparent), linear-gradient(120deg, rgba(30,64,175,0.12) 0%, rgba(14,165,233,0.06) 100%), var(--bg-start);
       color: #e6eef8;
       margin: 0;
       -webkit-font-smoothing:antialiased;
@@ -115,8 +118,8 @@
       .actions { gap:0.5rem }
       .actions .btn { flex:1 1 48%; }
       .qr-section { margin-top: 0.6rem; }
-      /* hide fixed menu button on small screens to save space */
-      #btnLogout { display: none; }
+      /* show a prominent floating menu button on small screens */
+      #btnLogout { display: block; position: fixed; top: 18px; right: 18px; z-index:1200; padding:0.7rem 1rem; border-radius:12px; box-shadow:0 8px 26px rgba(2,6,23,0.45); }
     }
 
     /* Extra mobile polish for small phones */
@@ -130,7 +133,8 @@
       #btnPdf, #btnQr { font-size: 0.96rem; padding: 0.6rem; }
       #btnReset { padding: 0.5rem; }
       .notif { display:none !important; }
-      #btnLogout { display:none }
+      /* keep menu visible on very small screens as a compact floating button */
+      #btnLogout { display:block; position: fixed; top: 12px; right: 12px; z-index:1200; padding:0.6rem 0.9rem; border-radius:10px; box-shadow:0 6px 20px rgba(2,6,23,0.5); }
     }
 
     /* Compact layout when vertical space is limited */
@@ -145,12 +149,19 @@
     /* make action buttons wrap on narrow but not-too-small screens */
     .actions { display: flex; gap: 0.7rem; justify-content: center; flex-wrap: wrap; }
     .actions .btn { min-width: 120px; flex: 1 1 auto; }
+    .ads-slot{margin:12px 0;text-align:center}
   </style>
 </head>
 <body>
   <button id="btnLogout" style="position:fixed;top:24px;right:32px;z-index:1000;background:#ecb43b;border:2px solid #acb5d1;color:#334681;font-weight:700;padding:0.6rem 1.5rem;border-radius:8px;box-shadow:0 2px 8px #0001;cursor:pointer;">Menue</button>
   <div class="container">
     <h1>Réserver mon bagage</h1>
+    <div id="display_matricule" style="max-width:700px;margin:0.4rem auto 0.8rem auto;padding:10px 12px;border-radius:10px;background:linear-gradient(90deg,#f0f9ff,#e6fffa);color:#0f172a;font-weight:700;display:none;text-align:center;"></div>
+    <!-- AdSense ad slot (replace data-ad-client and data-ad-slot) -->
+    <div class="ads-slot">
+      <ins class="adsbygoogle" style="display:block;max-width:728px;margin:0 auto" data-ad-client="ca-pub-8308471028441999" data-ad-slot="1234567892" data-ad-format="auto"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
     <div class="notif" id="notif"></div>
     <form id="reservationForm" autocomplete="on">
       <label for="bagage_numero">Numéro de bagage</label>
@@ -385,6 +396,16 @@
         const btnReset = document.getElementById('btnReset');
         if (btnReset) btnReset.addEventListener('click', () => { try { if (bagInput) bagInput.value = generateBagageNumero(); } catch(e){} });
       } catch (e) { console.warn('failed to prefill bagage numero', e); }
+
+      // Show matricule to user if available
+      try {
+        const display = document.getElementById('display_matricule');
+        const matricule = (function(){ try { return localStorage.getItem('gsm_matricule') || ''; } catch(e){ return ''; } })();
+        if (display && matricule) {
+          display.textContent = 'Votre matricule : ' + matricule;
+          display.style.display = 'block';
+        }
+      } catch (e) { console.warn('failed to show matricule', e); }
     });
     // ...reste du JS existant (formulaire, PDF, QR, etc.)...
     function generateBagageNumero() {
@@ -438,8 +459,11 @@
           region = document.getElementById('region_fr_autre') ? document.getElementById('region_fr_autre').value : '';
         }
       }
+      // include matricule if present in localStorage
+      const matricule = (function(){ try { return localStorage.getItem('gsm_matricule') || ''; } catch(e){ return ''; } })();
       return {
         bagage_numero: document.getElementById('bagage_numero').value,
+        matricule: matricule,
         exp_nom: document.getElementById('exp_nom').value,
         exp_prenom: document.getElementById('exp_prenom').value,
         exp_tel: document.getElementById('exp_tel').value,
@@ -631,11 +655,15 @@
         document.getElementById('qrZone').style.display = 'none';
       };
         // Réserver (submit)
-      document.getElementById('reservationForm').onsubmit = async function (e) {
+        // remember last submitted bagage numero so we can match incoming pdf_generated events
+        window.awaitingPdfFor = null;
+        document.getElementById('reservationForm').onsubmit = async function (e) {
         e.preventDefault();
         if (isSubmitting) return;
         isSubmitting = true;
         const data = getFormData();
+          // track this bagage number while waiting for server PDF
+          try { window.awaitingPdfFor = (data && data.bagage_numero) ? data.bagage_numero : null; } catch (e) {}
         // Envoi unique via REST : le serveur générera le PDF et diffusera la notification
         let postOk = false;
         try {
@@ -683,12 +711,12 @@
         }, 1200);
       };
 
-      // Quand le serveur a généré un PDF, afficher le lien (l'admin recevra aussi cette notification)
+        // Quand le serveur a généré un PDF, afficher le lien (l'admin recevra aussi cette notification)
       socket.on('pdf_generated', (payload) => {
         try {
           if (!payload || !payload.url) return;
-          const curNum = document.getElementById('bagage_numero') ? document.getElementById('bagage_numero').value : '';
-          if (payload.filename && curNum && payload.filename.includes(curNum)) {
+          const watchFor = window.awaitingPdfFor || (document.getElementById('bagage_numero') ? document.getElementById('bagage_numero').value : '');
+          if (payload.filename && watchFor && payload.filename.includes(watchFor)) {
             const fullUrl = (payload.url && payload.url.startsWith('http')) ? payload.url : (SERVER_ORIGIN + payload.url);
             // automatically trigger download/open of the generated PDF for the current booking
             try {
@@ -700,6 +728,8 @@
               document.body.appendChild(a);
               a.click();
               a.remove();
+              // clear awaiting flag after download
+              try { window.awaitingPdfFor = null; } catch (e) {}
             } catch (err) {
               // fallback: open in new tab
               try { window.open(fullUrl, '_blank'); } catch (e) { /* ignore */ }
