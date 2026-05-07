@@ -5,6 +5,76 @@ const path = require('path');
 const fs = require('fs');
 const fsp = fs.promises;
 const PDFDocument = require('pdfkit');
+// Optional MongoDB integration (use MONGODB_URI env var)
+const { MongoClient, ServerApiVersion } = require('mongodb');
+let mongoClient = null;
+let usersCollection = null;
+// initialize Mongo asynchronously if MONGODB_URI provided (users collection only)
+(async function initMongo() {
+  try {
+    const uri = process.env.MONGODB_URI || null;
+    if (!uri) { console.log('MONGODB_URI not set, skipping MongoDB init'); return; }
+    // Use explicit `client` variable as requested, but keep `mongoClient` reference for compatibility
+    const client = new MongoClient(process.env.MONGODB_URI, {
+      serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+      }
+    });
+    mongoClient = client;
+    await client.connect();
+    const db = process.env.MONGODB_DB ? client.db(process.env.MONGODB_DB) : client.db();
+    usersCollection = db.collection('users');
+    try { await usersCollection.createIndex({ matricule: 1 }, { unique: true }); } catch (e) {}
+    try { await usersCollection.createIndex({ whatsapp: 1 }); } catch (e) {}
+    console.log('Connected to MongoDB (users only)');
+  } catch (e) { console.warn('MongoDB init failed', e); }
+})();
+// Optional Google Drive integration
+let driveClient = null;
+try {
+  const { google } = require('googleapis');
+  const DRIVE_CRED_FILE = path.join(__dirname, 'drive_credentials.json'); // OAuth2 client credentials
+  const DRIVE_TOKEN_FILE = path.join(__dirname, 'drive_token.json'); // OAuth2 token for gsmauto15@gmail.com
+
+  async function initDriveClient() {
+    try {
+      const credRaw = await fsp.readFile(DRIVE_CRED_FILE, 'utf8').catch(() => null);
+      const tokenRaw = await fsp.readFile(DRIVE_TOKEN_FILE, 'utf8').catch(() => null);
+      if (!credRaw || !tokenRaw) return null;
+      const creds = JSON.parse(credRaw);
+      const token = JSON.parse(tokenRaw);
+      const clientData = creds.installed || creds.web || creds;
+      const oAuth2Client = new google.auth.OAuth2(clientData.client_id, clientData.client_secret, (clientData.redirect_uris && clientData.redirect_uris[0]) || 'urn:ietf:wg:oauth:2.0:oob');
+      oAuth2Client.setCredentials(token);
+      const drive = google.drive({ version: 'v3', auth: oAuth2Client });
+      return drive;
+    } catch (e) { console.warn('initDriveClient failed', e); return null; }
+  }
+
+  // initialize asynchronously but non-blocking
+  initDriveClient().then(d => { driveClient = d; if (driveClient) console.log('Google Drive client initialized'); }).catch(() => {});
+} catch (e) { console.warn('googleapis not available', e); }
+
+// Upload or update users.json to the authenticated Google Drive account
+async function uploadUsersToDrive(users) {
+  try {
+    if (!driveClient) return false;
+    const filename = 'gsm_users.json';
+    // find existing file
+    const listRes = await driveClient.files.list({ q: `name='${filename.replace(/'/g,"\\'")}' and trashed=false`, fields: 'files(id,name)' });
+    const content = JSON.stringify(users, null, 2);
+    if (listRes && listRes.data && Array.isArray(listRes.data.files) && listRes.data.files.length > 0) {
+      const fileId = listRes.data.files[0].id;
+      await driveClient.files.update({ fileId, requestBody: { name: filename }, media: { mimeType: 'application/json', body: Buffer.from(content) } });
+      return true;
+    } else {
+      await driveClient.files.create({ requestBody: { name: filename, mimeType: 'application/json' }, media: { mimeType: 'application/json', body: Buffer.from(content) } });
+      return true;
+    }
+  } catch (e) { console.warn('uploadUsersToDrive failed', e); return false; }
+}
 
 // Optional Firebase Admin (if provided in the project)
 let admin = null;
@@ -26,20 +96,34 @@ try {
 // Basic helpers
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, { cors: { origin: '*', methods: ['GET','POST'] } });
+// tighten CORS: allow origins from env or default to production domain
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['https://gsmtransport.onrender.com'];
+const io = socketIo(server, { cors: { origin: ALLOWED_ORIGINS, methods: ['GET','POST'] } });
+
+// Require GSM admin code in env to avoid insecure default
+const GSM_CODE = process.env.GSM_ADMIN_CODE;
+if (!GSM_CODE) {
+  console.error('GSM_ADMIN_CODE manquant — définissez la variable d\'environnement GSM_ADMIN_CODE');
+  process.exit(1);
+}
 
 const PDFS_DIR = path.join(__dirname, 'pdfs');
+const USERS_PHOTOS_DIR = path.join(__dirname, 'user_photos');
 const BOOKINGS_FILE = path.join(__dirname, 'bookings.json');
 const NOTIF_FILE = path.join(__dirname, 'notifications.json');
+const USERS_FILE = path.join(__dirname, 'users.json');
 const SETTINGS_FILE = path.join(__dirname, 'settings.json');
 
 // Ensure directories exist
 (async () => { try { await fsp.mkdir(PDFS_DIR, { recursive: true }); } catch (e) {} })();
+// ensure user photos directory exists
+(async () => { try { await fsp.mkdir(USERS_PHOTOS_DIR, { recursive: true }); } catch (e) {} })();
 
 // In-memory dedupe for PDF generation
 const generatedPdfs = new Set();
 
-app.use(express.json());
+// limit JSON body to 5MB to mitigate large base64 uploads
+app.use(express.json({ limit: '5mb' }));
 app.use('/pdfs', express.static(PDFS_DIR));
 app.use(express.static(path.join(__dirname)));
 
@@ -63,11 +147,14 @@ async function generatePdfForBooking(booking) {
   const sanitize = s => (s || '').toString().replace(/[^a-zA-Z0-9-_.]/g, '_');
   const id = booking.bagage_numero || booking.id || Date.now();
   const safeId = sanitize(id);
-  const filename = `reservation_${safeId}.pdf`;
+  const matricule = booking.matricule || '';
+  const safeMat = matricule ? sanitize(matricule) + '_' : '';
+  const safeKey = `${safeMat}${safeId}`;
+  const filename = `reservation_${safeKey}.pdf`;
   const urlPath = `/pdfs/${filename}`;
 
-  if (generatedPdfs.has(safeId)) return urlPath;
-  generatedPdfs.add(safeId);
+  if (generatedPdfs.has(safeKey)) return urlPath;
+  generatedPdfs.add(safeKey);
 
   const filePath = path.join(PDFS_DIR, filename);
   await new Promise((resolve, reject) => {
@@ -109,6 +196,96 @@ async function generatePdfForBooking(booking) {
 
 // ROUTES
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+
+// Secure photo endpoint (do NOT expose the directory publicly)
+try {
+  const { verifyFirebaseToken, requireAdmin } = require('./lib/auth');
+  // allow GSM admin code via query `?gsm=CODE` as a convenience (browser IMG tags cannot send headers)
+  const preAuth = (req, res, next) => {
+    try {
+      const GSM_CODE = process.env.GSM_ADMIN_CODE || 'GSM2026';
+      const gsmQuery = (req.query && req.query.gsm) ? String(req.query.gsm) : null;
+      const gsmHeader = req.headers && (req.headers['x-gsm-admin'] || req.headers['X-GSM-ADMIN']);
+      const authHeader = req.headers && (req.headers.authorization || req.headers.Authorization || '');
+      const gsmFromAuth = (authHeader && authHeader.startsWith('GSM ')) ? authHeader.slice(4).trim() : null;
+      const gsm = gsmQuery || gsmHeader || gsmFromAuth;
+      if (gsm && String(gsm) === GSM_CODE) { req.isGsmAdmin = true; req.user = { email: process.env.GSM_ADMIN_EMAIL || 'gsm-admin@local' }; return next(); }
+      return verifyFirebaseToken(req, res, next);
+    } catch (err) { return res.status(401).json({ error: 'Auth failed' }); }
+  };
+
+  app.get('/api/photo/:filename', preAuth, requireAdmin, async (req, res) => {
+    try {
+      const filename = req.params.filename || '';
+      if (!filename) return res.status(400).json({ error: 'Missing filename' });
+      const safe = path.basename(filename);
+      const filePath = path.join(USERS_PHOTOS_DIR, safe);
+      await fsp.access(filePath);
+      return res.sendFile(filePath);
+    } catch (e) { return res.status(404).json({ error: 'Photo introuvable' }); }
+  });
+} catch (e) { console.error('Auth middleware required for photo endpoint — aborting startup', e); process.exit(1); }
+
+// Return all users (from local JSON fallback or Firestore)
+app.get('/api/users', async (req, res) => {
+  try {
+    // Prefer MongoDB if configured
+    if (usersCollection) {
+      try {
+        const docs = await usersCollection.find({}).sort({ createdAt: -1 }).limit(1000).toArray();
+        return res.json(docs || []);
+      } catch (e) { console.warn('mongo /api/users failed', e); }
+    }
+    let list = await readJson(USERS_FILE, []);
+    // try Firestore if available
+    if (adminDb) {
+      try {
+        const snap = await adminDb.collection('users').orderBy('createdAt','desc').limit(1000).get();
+        list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch (e) { /* ignore firestore failure */ }
+    }
+    res.json(list || []);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Find single user by matricule or phone (param may be matricule or phone)
+app.get('/api/users/:key', async (req, res) => {
+  try {
+    const key = (req.params.key || '').toString();
+    if (!key) return res.status(400).json({ error: 'Missing key' });
+    const norm = key.replace(/[^+0-9]/g,'');
+    // try MongoDB first
+    if (usersCollection) {
+      try {
+        const byMat = await usersCollection.findOne({ matricule: key });
+        if (byMat) return res.json({ source: 'mongo', user: byMat });
+        const byPhone = await usersCollection.findOne({ whatsapp: norm });
+        if (byPhone) return res.json({ source: 'mongo', user: byPhone });
+      } catch (e) { console.warn('mongo /api/users/:key failed', e); }
+    }
+
+    let list = await readJson(USERS_FILE, []);
+    // try Firestore first for authoritative answer
+    if (adminDb) {
+      try {
+        // search by matricule
+        let q = await adminDb.collection('users').where('matricule','==',key).limit(1).get();
+        if (!q.empty) return res.json({ source: 'firestore', user: { id: q.docs[0].id, ...q.docs[0].data() } });
+        // search by whatsapp normalized
+        q = await adminDb.collection('users').get();
+        for (const d of q.docs) {
+          const u = d.data();
+          if ((u.whatsapp||'').toString().replace(/[^+0-9]/g,'') === norm) return res.json({ source: 'firestore', user: { id: d.id, ...u } });
+        }
+      } catch (e) { /* ignore firestore error */ }
+    }
+
+    // fallback to local JSON
+    let found = list.find(u => u && ((u.matricule && u.matricule.toString().toLowerCase() === key.toLowerCase()) || ((u.whatsapp||'').toString().replace(/[^+0-9]/g,'') === norm) || (u.id && String(u.id) === key)));
+    if (!found) return res.status(404).json({ error: 'User not found' });
+    res.json({ source: 'json', user: found });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 app.get('/api/notifications', async (req, res) => {
   try {
@@ -164,15 +341,49 @@ app.post('/upload-pdf', async (req, res) => {
 app.post('/api/bookings', async (req, res) => {
   try {
     const data = req.body || {};
+    // normalize phone helper
+    const normalizePhone = p => (p || '').toString().replace(/[^+0-9]/g, '');
+    // simple validation for exp_tel (WhatsApp-like: + and 7-15 digits)
+    const exp_tel = normalizePhone(data.exp_tel || data.whatsapp || '');
+    if (!/^[+]?[0-9]{7,15}$/.test(exp_tel)) return res.status(400).json({ error: 'Numéro WhatsApp/téléphone invalide. Utiliser le format international, ex: +33123456789' });
+
+    // attach normalized phone back
+    data.exp_tel = exp_tel;
+
+    // attach matricule from users.json if not provided but exp_tel matches a registered user
+    try {
+      // prefer Mongo lookup
+      if (usersCollection) {
+        try {
+          const found = await usersCollection.findOne({ whatsapp: exp_tel });
+          if (found && !data.matricule) data.matricule = found.matricule;
+        } catch (e) { /* ignore mongo lookup */ }
+      } else {
+        const users = await readJson(USERS_FILE, []);
+        const found = users.find(u => u && (u.whatsapp || '').replace(/[^+0-9]/g,'') === exp_tel);
+        if (found && !data.matricule) data.matricule = found.matricule;
+      }
+    } catch (e) { /* ignore */ }
+
+    // prevent duplicate bookings from same contact within 24 hours
+    try {
+      const listExisting = await readJson(BOOKINGS_FILE, []);
+      const cutoff = Date.now() - (24 * 60 * 60 * 1000);
+      const dup = listExisting.find(b => b && ((b.exp_tel||'').toString().replace(/[^+0-9]/g,'') === exp_tel) && (new Date(b.createdAt || 0).getTime() > cutoff));
+      if (dup) return res.status(409).json({ error: 'Une réservation existe déjà pour ce numéro dans les dernières 24 heures.' });
+    } catch (e) { /* ignore */ }
+
     const booking = { ...data, createdAt: new Date().toISOString() };
 
-    // persist in JSON fallback
-    const list = await readJson(BOOKINGS_FILE, []);
-    list.unshift(booking);
-    await writeJson(BOOKINGS_FILE, list);
+    // persist bookings to local JSON (bookings/PDFs are not stored in MongoDB)
+    let savedId = null;
+    try {
+      const list = await readJson(BOOKINGS_FILE, []);
+      list.unshift(booking);
+      await writeJson(BOOKINGS_FILE, list);
+    } catch (e) { console.warn('persist booking failed', e); }
 
     // try saving to Firestore if available
-    let savedId = null;
     try { if (adminDb) { const ref = await adminDb.collection('bookings').add(booking); savedId = ref.id; } } catch (e) { console.warn('firestore add failed', e); }
 
     // Generate PDF once (await)
@@ -189,13 +400,97 @@ app.post('/api/bookings', async (req, res) => {
   } catch (e) { console.error('POST /api/bookings', e); res.status(500).json({ error: e.message }); }
 });
 
+// Simple registration endpoint: server generates a matricule and stores basic user info
+app.post('/api/register', async (req, res) => {
+  try {
+    // accept additional fields: pays_residence, adresse_france, adresse_algerie, id_number, id_photo (base64)
+    const { nom, prenom, whatsapp, pays_residence, adresse_france, adresse_algerie, id_number, id_photo } = req.body || {};
+    if (!nom || !prenom || !whatsapp || !pays_residence || !id_number) return res.status(400).json({ error: 'Missing required fields: nom, prenom, pays_residence, id_number, whatsapp' });
+    // country-specific address validation
+    if (pays_residence === 'France' && !(req.body.adresse_france && req.body.adresse_france.toString().trim())) return res.status(400).json({ error: 'Adresse en France requise pour les résidents France' });
+    if (pays_residence === 'Algérie' && !(req.body.adresse_algerie && req.body.adresse_algerie.toString().trim())) return res.status(400).json({ error: 'Adresse en Algérie requise pour les résidents Algérie' });
+    if (!(req.body.id_photo && typeof req.body.id_photo === 'string')) return res.status(400).json({ error: 'Photo de la pièce d\'identité requise' });
+
+    // normalize whatsapp format
+    const normalizePhone = p => (p || '').toString().replace(/[^+0-9]/g, '');
+    const norm = normalizePhone(whatsapp);
+    if (!/^[+]?[0-9]{7,15}$/.test(norm)) return res.status(400).json({ error: 'Format WhatsApp invalide. Utilisez le format international, ex: +33123456789' });
+
+    // check existing by whatsapp in Mongo or JSON
+    try {
+      if (usersCollection) {
+        const existing = await usersCollection.findOne({ whatsapp: norm });
+        if (existing) return res.json({ success: true, matricule: existing.matricule, existing: true });
+      } else {
+        const list = await readJson(USERS_FILE, []);
+        const existing = list.find(u => u && ((u.whatsapp||'').toString().replace(/[^+0-9]/g,'') === norm));
+        if (existing) return res.json({ success: true, matricule: existing.matricule, existing: true });
+      }
+    } catch (e) { /* ignore */ }
+
+    const matricule = `GSM-${new Date().getFullYear()}-${Math.floor(100000 + Math.random()*900000)}`;
+    // mask ID number for privacy before persisting
+    const maskedId = id_number ? (String(id_number).slice(0,2) + '****') : '';
+    const user = {
+      id: Date.now(), matricule, nom, prenom, whatsapp: norm,
+      pays_residence: pays_residence || '', adresse_france: adresse_france || '', adresse_algerie: adresse_algerie || '',
+      id_number_masked: maskedId, createdAt: new Date().toISOString()
+    };
+
+    // handle id_photo base64 if present: save to user_photos/<matricule>_id.<ext>
+    try {
+      if (id_photo && typeof id_photo === 'string') {
+        // detect data URI header
+        let base64 = id_photo;
+        let ext = 'jpg';
+        const m = id_photo.match(/^data:(image\/[^;]+);base64,(.*)$/);
+        if (m) { ext = m[1].split('/')[1] || 'jpg'; base64 = m[2]; }
+        const safeExt = (ext || 'jpg').split('?')[0].replace(/[^a-z0-9]/gi,'') || 'jpg';
+        const filename = `${matricule}_id.${safeExt}`;
+        const filePath = path.join(USERS_PHOTOS_DIR, filename);
+        try {
+          // convert to buffer and check true byte size (base64 length != byte length)
+          const buffer = Buffer.from(base64, 'base64');
+          if (buffer.length > (5 * 1024 * 1024)) { return res.status(413).json({ error: 'Image trop grande (max 5MB)' }); }
+          await fsp.writeFile(filePath, buffer);
+          user.id_photo = `/api/photo/${filename}`;
+        } catch (e) { console.warn('failed to write id_photo', e); }
+      }
+    } catch (e) { console.warn('id_photo handling failed', e); }
+
+    // persist: prefer MongoDB, fallback to JSON; also try Firestore
+    try {
+      if (usersCollection) {
+        try {
+          await usersCollection.insertOne(user);
+          // sync local JSON snapshot (best-effort)
+          try { const all = await usersCollection.find({}).sort({ createdAt: -1 }).limit(2000).toArray(); await writeJson(USERS_FILE, all); } catch (e) {}
+        } catch (e) { console.warn('mongo insert user failed', e); }
+      } else {
+        const list = await readJson(USERS_FILE, []);
+        list.unshift(user);
+        await writeJson(USERS_FILE, list);
+        try { await uploadUsersToDrive(list); } catch (e) { console.warn('uploadUsersToDrive error', e); }
+      }
+    } catch (e) { console.warn('failed to persist user', e); }
+
+    try { if (adminDb) await adminDb.collection('users').add(user); } catch (e) { console.warn('failed to persist user to Firestore', e); }
+
+    res.json({ success: true, matricule });
+  } catch (e) {
+    console.error('/api/register error', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Admin endpoint to regenerate and download PDF
 app.get('/generate-pdf/:id', async (req, res) => {
   try {
     const id = req.params.id;
-    // look in JSON fallback first
+    // look in JSON fallback (bookings are stored in local JSON / Firestore)
+    let booking = null;
     const list = await readJson(BOOKINGS_FILE, []);
-    let booking = list.find(b => (b && (b.bagage_numero === id || String(b.id) === String(id))));
+    booking = list.find(b => (b && (b.bagage_numero === id || String(b.id) === String(id))));
     // try Firestore
     if (!booking && adminDb) {
       try {
