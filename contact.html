@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google-adsense-account" content="ca-pub-8308471028441999">
+  <title>Contact — GSM Transport</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#f7fafc;--card:#ffffff;--muted:#6b7280;--primary:#1e40af;--accent:#0f172a}
+    *{box-sizing:border-box}
+    body{font-family:'Poppins',sans-serif;margin:0;background:var(--bg);color:var(--accent);-webkit-font-smoothing:antialiased}
+    .wrap{max-width:920px;margin:36px auto;padding:26px;background:linear-gradient(180deg,rgba(255,255,255,0.7),rgba(255,255,255,0.95));border-radius:12px;box-shadow:0 8px 36px rgba(2,6,23,0.06)}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1{margin:0;color:var(--primary);font-size:20px}
+    .lead{color:var(--muted);margin-top:8px}
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:20px}
+    .card{background:var(--card);padding:18px;border-radius:10px;box-shadow:0 2px 14px rgba(2,6,23,0.04)}
+    label{display:block;font-weight:600;margin-bottom:6px}
+    input[type="text"],input[type="email"],textarea{width:100%;padding:10px;border:1px solid #e6eef8;border-radius:8px;font-size:14px}
+    textarea{min-height:120px;resize:vertical}
+    button.primary{background:var(--primary);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
+    button.primary:disabled{opacity:0.6;cursor:not-allowed}
+    .muted{color:var(--muted)}
+    .contact-info{font-size:14px}
+    a{color:var(--primary);text-decoration:none}
+    @media (max-width:880px){.grid{grid-template-columns:1fr}.wrap{margin:18px;padding:18px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Contactez-nous</h1>
+        <div class="lead">Pour toute demande liée aux réservations, support ou confidentialité.</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <form class="card" id="contact-form" action="/api/contact" method="post">
+        <div style="margin-bottom:12px">
+          <label for="name">Nom</label>
+          <input id="name" name="name" type="text" placeholder="Votre nom complet" required>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" placeholder="votre@email.com" required>
+          </div>
+          <div>
+            <label for="whatsapp">WhatsApp</label>
+            <input id="whatsapp" name="whatsapp" type="text" placeholder="+33... ou +213...">
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px">
+          <label for="message">Message</label>
+          <textarea id="message" name="message" placeholder="Dites-nous en quoi nous pouvons vous aider" required></textarea>
+        </div>
+
+        <div style="display:flex;gap:12px;align-items:center">
+          <button type="submit" class="primary">Envoyer</button>
+          <div class="muted" style="font-size:13px">Nous répondons généralement sous 48 heures.</div>
+        </div>
+      </form>
+
+      <aside class="card">
+        <h2>Coordonnées</h2>
+        <div class="contact-info muted">
+          <p><strong>Support Réservations</strong><br>support@gsm-transport.example</p>
+          <p><strong>Téléphone / WhatsApp</strong><br>+33 6 12 34 56 78</p>
+          <p><strong>Adresse</strong><br>Siège social — Adresse fictive, Paris</p>
+        </div>
+
+        <hr style="margin:14px 0;border:none;border-top:1px solid #eef2f7">
+
+        <h3>Liens utiles</h3>
+        <ul class="muted">
+          <li><a href="privacy.html">Politique de confidentialité</a></li>
+          <li><a href="index.html">Accueil</a></li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // Progressive: submit via fetch if endpoint exists, else fallback to normal POST
+    (function(){
+      const form = document.getElementById('contact-form');
+      form.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const data = {name:form.name.value,email:form.email.value,whatsapp:form.whatsapp.value,message:form.message.value};
+        try{
+          const res = await fetch(form.action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+          if(res.ok){alert('Message envoyé — nous vous répondrons bientôt.');form.reset();} else {alert('Erreur lors de l'envoi. Veuillez réessayer.');}
+        }catch(err){console.error(err);alert('Impossible de contacter le serveur.');}
+      });
+    })();
+  </script>
+</body>
+</html>
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google-adsense-account" content="ca-pub-8308471028441999">
+  <title>Contact — GSM Transport</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>body{font-family:'Poppins',sans-serif;margin:24px;color:#111;line-height:1.6}h1{color:#0f172a}a{color:#1e40af}label{font-weight:700}</style>
+</head>
+<body>
+  <h1>Contact</h1>
+  <p>Pour toute question ou demande, utilisez les moyens suivants :</p>
+  <ul>
+    <li>Email : <a href="mailto:gsmauto15@gmail.com">gsmauto15@gmail.com</a></li>
+    <li>Téléphone / WhatsApp : +33 6 XX XX XX XX (ou insérez votre numéro)</li>
+    <li>Adresse : (votre adresse ou siège social)</li>
+  </ul>
+
+  <h2>Formulaire de contact</h2>
+  <form method="post" action="mailto:gsmauto15@gmail.com" enctype="text/plain">
+    <label>Nom</label><br>
+    <input type="text" name="name" style="width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #ccc"><br>
+    <label>Email</label><br>
+    <input type="email" name="email" style="width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #ccc"><br>
+    <label>Message</label><br>
+    <textarea name="message" rows="6" style="width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #ccc"></textarea><br>
+    <button type="submit" style="background:#1e40af;color:#fff;padding:10px 14px;border-radius:8px;border:none">Envoyer</button>
+  </form>
+
+  <hr>
+  <p><a href="index.html">Accueil</a> — <a href="privacy.html">Politique de confidentialité</a></p>
+</body>
+</html>
