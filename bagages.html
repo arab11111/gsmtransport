@@ -1,8 +1,11 @@
 <!doctype html>
 <html lang="fr">
 <head>
+  <!-- Google AdSense: publisher ID inserted -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-8308471028441999"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="google-adsense-account" content="ca-pub-8308471028441999">
 <title>Gestionnaire de Bagages Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -229,6 +232,9 @@ textarea{min-height:100px;resize:vertical}
   margin-top:1.5rem;
 }
 
+/* Highlight search results for matricule */
+.highlight-matricule{background:linear-gradient(90deg,#fffbe6,#e6ffea);border-left:4px solid #10b981}
+
 table{
   width:100%;
   border-collapse:collapse;
@@ -325,6 +331,24 @@ tr:last-child td{border-bottom:none}
 </head>
 <script src="/socket.io/socket.io.js"></script>
 <body>
+  <script>
+    (function(){
+      const ADMIN_CODE = 'GSM2026';
+      const STORAGE_KEY = 'GSM_ADMIN';
+      try{
+          if (localStorage.getItem(STORAGE_KEY) === '1') return;
+          const input = prompt('Code admin requis pour accéder à cette page:');
+          if (input === ADMIN_CODE) {
+            localStorage.setItem(STORAGE_KEY, '1');
+            return;
+          }
+        alert('Code invalide. Redirection vers la page d\'accueil.');
+        window.location.href = '/';
+      } catch (e) {
+        window.location.href = '/';
+      }
+    })();
+  </script>
   <div id="notif-reservations" style="background:linear-gradient(90deg,#fffbe6,#e6ffe6);color:#1a4d2e;padding:1.2rem 1.7rem;border-radius:14px;margin:1.5rem auto 1rem auto;max-width:650px;box-shadow:0 4px 18px #0002;font-weight:700;font-size:1.15em;display:none;transition:background 0.3s;"></div>
   <div id="liste-reservations" style="max-width:700px;margin:0 auto 2rem auto;"></div>
 <!-- Navigation Bar -->
@@ -345,6 +369,11 @@ tr:last-child td{border-bottom:none}
   <header class="page-header">
     <h1>📦 Gestion des Bagages</h1>
     <div class="breadcrumb">GSM Transport de bagages </div>
+    <!-- AdSense small leaderboard -->
+    <div style="margin-top:12px;">
+      <ins class="adsbygoogle" style="display:block;" data-ad-client="ca-pub-8308471028441999" data-ad-slot="1234567891" data-ad-format="auto"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
   </header>
 
   <div class="grid">
@@ -356,6 +385,9 @@ tr:last-child td{border-bottom:none}
           <div class="form-group">
             <label>Numéro de bagage *</label>
             <input id="bag_number" type="text" required autocomplete="off" placeholder="Ex: BAG-2024-001"/>
+          </div>
+          <div id="userInfoDisplay" style="margin-top:0.8rem;display:none;max-width:700px;padding:0.9rem;border-radius:10px;background:linear-gradient(90deg,#f8fafc,#f1f5f9);color:var(--text-primary);border:1px solid var(--border);">
+            <!-- User info populated when searching matricule -->
           </div>
           <div class="form-group">
             <label>Numéro France</label>
@@ -435,6 +467,10 @@ tr:last-child td{border-bottom:none}
               <label>Recherche</label>
               <input id="search" class="search-box" placeholder="Rechercher par numéro..."/>
             </div>
+                <div class="filter-group" style="align-items:flex-start;min-width:240px;">
+                  <label>Recherche Matricule</label>
+                  <input id="searchMatricule" class="search-box" placeholder="Ex: GSM-2026-123456" />
+                </div>
           </div>
         </div>
 
@@ -1104,6 +1140,79 @@ document.getElementById('bell-btn').addEventListener('click', function(e) {
   });
 
 })();
+</script>
+<script>
+// Matricule search: fetch users.json and display user info, highlight matching rows
+(function(){
+  let usersCache = null;
+  async function fetchUsersOnce(){
+    if(usersCache!==null) return usersCache;
+    try{
+      const res = await fetch('/api/users');
+      if(!res.ok) { usersCache = []; return usersCache; }
+      usersCache = await res.json().catch(()=>[]);
+      return usersCache;
+    }catch(e){ usersCache = []; return usersCache; }
+  }
+
+  const searchMat = document.getElementById('searchMatricule');
+  const userInfo = document.getElementById('userInfoDisplay');
+  const tbody = document.querySelector('#table tbody');
+
+  function clearHighlights(){ if(!tbody) return; Array.from(tbody.querySelectorAll('tr')).forEach(tr=>tr.classList.remove('highlight-matricule')); }
+  function showUser(u){
+    if(!userInfo) return;
+    if(!u){ userInfo.innerHTML = '<div style="color:#b91c1c;font-weight:700;">Aucun utilisateur trouvé</div>'; userInfo.style.display='block'; return; }
+    const photoUrl = u.id_photo ? (u.id_photo + (sessionStorage.getItem('gsm_code') ? ('?gsm=' + encodeURIComponent(sessionStorage.getItem('gsm_code'))) : '')) : null;
+    const html = `
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div style="flex:1">
+          <div style="font-weight:800;color:#0f172a">${u.nom || ''} ${u.prenom || ''}</div>
+          <div style="color:#334155;margin-top:6px">Matricule: <strong>${u.matricule || ''}</strong></div>
+          <div style="color:#334155;margin-top:6px">WhatsApp: <strong>${u.whatsapp || ''}</strong></div>
+          <div style="color:#334155;margin-top:6px">Pays résidence: <strong>${u.pays_residence || ''}</strong></div>
+          <div style="color:#334155;margin-top:6px">Adresse France: <span style="font-weight:600">${u.adresse_france || ''}</span></div>
+          <div style="color:#334155;margin-top:6px">Adresse Algérie: <span style="font-weight:600">${u.adresse_algerie || ''}</span></div>
+          <div style="color:#334155;margin-top:6px">N° CI: <strong>${u.id_number_masked || ''}</strong></div>
+        </div>
+        <div style="text-align:right;min-width:120px;">
+          ${photoUrl ? `<a href="${photoUrl}" target="_blank"><img src="${photoUrl}" alt="ID" style="max-width:110px;border-radius:6px;border:1px solid #e2e8f0;"></a>` : ''}
+          <div style="margin-top:8px"><a href="/pdfs/" style="color:var(--primary);font-weight:700;text-decoration:underline;">Voir PDF</a></div>
+        </div>
+      </div>`;
+    userInfo.innerHTML = html; userInfo.style.display='block';
+  }
+
+  async function onSearchMat(){
+    const q = (searchMat && searchMat.value||'').trim();
+    clearHighlights();
+    if(!q){ if(userInfo) userInfo.style.display='none'; return; }
+    const users = await fetchUsersOnce();
+    const norm = q.replace(/[^+0-9]/g,'');
+    let found = users.find(u => (u && u.matricule && u.matricule.toLowerCase() === q.toLowerCase()));
+    if(!found) found = users.find(u => ((u.whatsapp||'').replace(/[^+0-9]/g,'') === norm));
+    showUser(found);
+    // highlight rows whose bag number contains the matricule string
+    try{
+      if(!tbody) return;
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      rows.forEach(r=>{
+        const tds = r.querySelectorAll('td');
+        if(tds && tds[1] && (tds[1].textContent || '').includes(q)) r.classList.add('highlight-matricule');
+        else r.classList.remove('highlight-matricule');
+      });
+      const first = tbody.querySelector('tr.highlight-matricule');
+      if(first) first.scrollIntoView({behavior:'smooth',block:'center'});
+    }catch(e){ /* ignore */ }
+  }
+
+  if(searchMat){
+    searchMat.addEventListener('input', debounce(onSearchMat, 300));
+  }
+
+  function debounce(fn, wait){ let t; return function(){ clearTimeout(t); t = setTimeout(()=>fn.apply(this, arguments), wait); } }
+})();
+
 </script>
 </body>
 <script>
