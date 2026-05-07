@@ -361,6 +361,11 @@ tr:last-child td{border-bottom:none}
         <div class="nav-subtitle">France = Algérie</div>
       </div>
     </div>
+    <button id="mobile-menu-btn" aria-label="Menu mobile" style="display:none;background:transparent;border:none;color:#fff;font-size:1.4rem;padding:8px;margin-left:12px;">☰</button>
+    <div style="display:flex;align-items:center;gap:12px">
+      <a href="privacy.html" style="color:#fff;text-decoration:none;font-weight:600;margin-right:8px">Politique</a>
+      <a href="contact.html" style="color:#fff;text-decoration:none;font-weight:600">Contact</a>
+    </div>
   </div>
 </nav>
 
@@ -1214,6 +1219,63 @@ document.getElementById('bell-btn').addEventListener('click', function(e) {
 })();
 
 </script>
+
+<!-- Mobile navigation drawer -->
+  <div id="mobile-menu-drawer">
+    <button id="mobile-menu-close" aria-label="Fermer le menu" style="background:none;border:none;font-size:1.2rem;float:right;">✕</button>
+    <nav style="margin-top:18px;">
+      <a href="index.html">Accueil</a>
+      <a href="gsmexpress.html">GSM Express</a>
+      <a href="privacy.html">Politique de confidentialité</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div id="mobile-auth-area">
+      <div id="mobile-user-info" style="display:none">
+        <div class="user-email"></div>
+        <button id="mobile-logout" class="btn-logout">Se déconnecter</button>
+      </div>
+      <div id="mobile-guest-actions" style="display:none">
+        <button id="mobile-open-login" class="btn-login">Se connecter</button>
+        <button id="mobile-open-register" class="btn-login">S'inscrire</button>
+      </div>
+    </div>
+  </div>
+  <div id="mobile-menu-backdrop"></div>
+
+  <script>
+  (function(){
+    const btn = document.getElementById('mobile-menu-btn');
+    const drawer = document.getElementById('mobile-menu-drawer');
+    const closeBtn = document.getElementById('mobile-menu-close');
+    const backdrop = document.getElementById('mobile-menu-backdrop');
+    const userInfoWrap = document.getElementById('mobile-user-info');
+    const guestWrap = document.getElementById('mobile-guest-actions');
+    function show(){ if(drawer){ drawer.classList.add('open'); if(backdrop) backdrop.classList.add('visible'); document.body.style.overflow='hidden'; } }
+    function hide(){ if(drawer){ drawer.classList.remove('open'); if(backdrop) backdrop.classList.remove('visible'); document.body.style.overflow=''; } }
+    if(btn) btn.addEventListener('click', show);
+    if(closeBtn) closeBtn.addEventListener('click', hide);
+    if(backdrop) backdrop.addEventListener('click', hide);
+    function updateBtn(){ try{ const b = document.getElementById('mobile-menu-btn'); if(window.innerWidth <= 900){ if(b) b.style.display='block'; } else { if(b) b.style.display='none'; hide(); } } catch(e){} }
+    updateBtn(); window.addEventListener('resize', updateBtn);
+
+    function updateMobileAuth(user){ try{ if(user){ guestWrap.style.display='none'; userInfoWrap.style.display='block'; const emailEl = userInfoWrap.querySelector('.user-email'); if(emailEl) emailEl.textContent = user.email || user.displayName || ''; } else { userInfoWrap.style.display='none'; guestWrap.style.display='block'; } } catch(e){} }
+
+    document.getElementById('mobile-open-login').addEventListener('click', ()=>{ hide(); try{ window.location.href='index.html'; }catch(e){} });
+    document.getElementById('mobile-open-register').addEventListener('click', ()=>{ hide(); try{ window.location.href='index.html'; }catch(e){} });
+    document.getElementById('mobile-logout').addEventListener('click', async ()=>{ try{ if(window.auth) await auth.signOut(); hide(); }catch(e){ console.warn('mobile logout failed', e); } });
+
+    if(window.auth && typeof window.auth.onAuthStateChanged === 'function'){ auth.onAuthStateChanged(u=> updateMobileAuth(u)); } else { updateMobileAuth(null); }
+  })();
+  </script>
+
+<footer style="padding:18px 12px;text-align:center;background:rgba(0,0,0,0.04);color:#111;margin-top:28px;">
+  <div>GSM Transport — Gestion des bagages</div>
+  <div style="margin-top:6px;font-size:0.95em;color:#374151">
+    <a href="privacy.html" style="color:#1e40af;margin-right:10px;">Politique de confidentialité</a>
+    <a href="contact.html" style="color:#1e40af;margin-right:10px;">Contact</a>
+    <a href="index.html" style="color:#1e40af;">Accueil</a>
+  </div>
+</footer>
 </body>
 <script>
 socket.on('booking_notification', data => {
