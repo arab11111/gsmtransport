@@ -3,10 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="google-adsense-account" content="ca-pub-8308471028441999">
 
 <title>GSM Transport</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<!-- Google AdSense: publisher ID inserted -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-8308471028441999"></script>
 
 <style>
 /* ... tout ton CSS existant inchangé ... */
@@ -145,13 +149,13 @@ h1 {
 /* NOTE */
 .note {
     background: linear-gradient(90deg,#fffbe6,#ffe6e6);
-    color: #222;
+    color: #3d0202;
     padding: 15px 18px;
     border-radius: 12px;
     margin-bottom: 18px;
     font-size: 1.05rem;
     font-weight: 500;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    box-shadow: 0 2px 12px rgba(255, 253, 253, 0.07);
     animation: fadein 1.3s 0.2s backwards;
 }
 /* APPS */
@@ -232,7 +236,7 @@ footer {
 /* Mobile-first responsive tweaks (smartphone transport style) */
 @media (max-width: 640px) {
     body {
-        background: linear-gradient(180deg,#1be99a 0%, #a0e9fc 100%);
+        background: linear-gradient(180deg,#3a9974 0%, #2d798b 100%);
         padding: 12px 8px 80px 8px;
     }
     .menu-bar {
@@ -330,6 +334,33 @@ footer {
             </form>
         </div>
     </div>
+    
+    <!-- Modal inscription GSM Express (client) -->
+    <div id="gsm-register-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,34,44,0.65);z-index:2500;align-items:center;justify-content:center;">
+        <div style="background:linear-gradient(135deg,#fff 0%,#f7fbff 100%);padding:1.8em;border-radius:14px;min-width:320px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 12px 36px rgba(2,6,23,0.14);">
+            <h3 style="margin-top:0;color:#0f172a;text-align:center;">Inscription — Réserver un bagage</h3>
+            <form id="gsm-register-form">
+                <input id="reg-nom" type="text" placeholder="Nom" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <input id="reg-prenom" type="text" placeholder="Prénom" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <select id="reg-pays" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                    <option value="">Pays de résidence</option>
+                    <option value="France">France</option>
+                    <option value="Algérie">Algérie</option>
+                    <option value="Autre">Autre</option>
+                </select>
+                <input id="reg-adresse-fr" type="text" placeholder="Adresse exacte en France (si applicable)" style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <input id="reg-adresse-dz" type="text" placeholder="Adresse exacte en Algérie (si applicable)" style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <input id="reg-id-number" type="text" placeholder="N° de carte d'identité / CIN" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <label style="font-size:0.9em;color:#374151;margin-bottom:0.4em;display:block;">Photo de la carte d'identité (photo recto) *</label>
+                <input id="reg-id-photo" type="file" accept="image/*" capture="environment" required style="width:100%;margin-bottom:0.6em;">
+                <input id="reg-whatsapp" type="tel" placeholder="Numéro WhatsApp (ex: +33...)" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <div id="reg-error" style="color:#b91c1c;font-size:0.95em;margin-bottom:0.6em;display:none;"></div>
+                <div id="reg-success" style="color:#065f46;font-size:0.98em;margin-bottom:0.6em;display:none;"></div>
+                <button type="submit" style="width:100%;background:#0ea5e9;color:#fff;padding:0.7em 0;border-radius:8px;font-weight:700;font-size:1.02em;border:none;">S'inscrire et recevoir ma matricule</button>
+                <button type="button" id="reg-cancel" style="width:100%;margin-top:0.6em;background:#888;color:#fff;padding:0.6em 0;border-radius:8px;font-weight:600;font-size:1.0em;border:none;">Annuler</button>
+            </form>
+        </div>
+    </div>
     <button id="adminBtn" class="login" style="background:linear-gradient(90deg,#d80824,#444);color:#fff;">GSM</button>
     <button id="quit-admin-btn" class="logout" style="display:none;background:linear-gradient(90deg,#888,#444);color:#fff;">Quitter mode admin</button>
     <button id="open-admin-panel-btn" class="login" style="display:none;margin-left:8px;background:linear-gradient(90deg,#1e40af,#0ea5e9);color:#fff;">Panneau Admin</button>
@@ -370,6 +401,17 @@ footer {
                 <div><strong>Gestion Bagages</strong></div>
                 <div>Suivi des colis</div>
             </a>
+        </div>
+
+        <!-- AdSense ad slot (replace data-ad-client & data-ad-slot) -->
+        <div style="margin:16px 0;text-align:center;">
+            <ins class="adsbygoogle"
+                 style="display:block;max-width:728px;margin:0 auto"
+                 data-ad-client="ca-pub-8308471028441999"
+                 data-ad-slot="1234567890"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
         </div>
 
         <!-- Zone de note admin -->
@@ -922,6 +964,77 @@ function enableCalendarSwipe() {
 
 
 // --- NOTIFICATIONS : version admin uniquement ---
+
+// GSM Express: intercept click, show registration modal and POST to /api/register
+try {
+    const gsmLink = document.getElementById('gsmexpress-link');
+    const gsmModal = document.getElementById('gsm-register-modal');
+    const gsmForm = document.getElementById('gsm-register-form');
+    const regCancel = document.getElementById('reg-cancel');
+    const regError = document.getElementById('reg-error');
+    const regSuccess = document.getElementById('reg-success');
+
+    if (gsmLink && gsmModal && gsmForm) {
+        gsmLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            regError.style.display = 'none';
+            regSuccess.style.display = 'none';
+            gsmModal.style.display = 'flex';
+        });
+
+        regCancel && regCancel.addEventListener('click', function() { gsmModal.style.display = 'none'; });
+
+        gsmForm.addEventListener('submit', async function(ev) {
+            ev.preventDefault();
+            regError.style.display = 'none'; regSuccess.style.display = 'none';
+            const nom = (document.getElementById('reg-nom').value || '').trim();
+            const prenom = (document.getElementById('reg-prenom').value || '').trim();
+            const pays = (document.getElementById('reg-pays').value || '').trim();
+            const adresse_fr = (document.getElementById('reg-adresse-fr').value || '').trim();
+            const adresse_dz = (document.getElementById('reg-adresse-dz').value || '').trim();
+            const id_number = (document.getElementById('reg-id-number').value || '').trim();
+            const whatsapp = (document.getElementById('reg-whatsapp').value || '').trim();
+            const idPhotoInput = document.getElementById('reg-id-photo');
+            if (!nom || !prenom || !pays || !id_number || !whatsapp || !idPhotoInput || !idPhotoInput.files || idPhotoInput.files.length === 0) {
+                regError.textContent = 'Veuillez remplir tous les champs obligatoires et joindre la photo de la pièce d\'identité.'; regError.style.display = 'block'; return;
+            }
+            // if residence is France require adresse_fr, if Algérie require adresse_dz; otherwise both optional
+            if (pays === 'France' && !adresse_fr) { regError.textContent = 'Veuillez fournir votre adresse exacte en France.'; regError.style.display = 'block'; return; }
+            if (pays === 'Algérie' && !adresse_dz) { regError.textContent = 'Veuillez fournir votre adresse exacte en Algérie.'; regError.style.display = 'block'; return; }
+
+            // read file as base64
+            async function fileToBase64(file){ return await new Promise((resolve, reject)=>{ const r = new FileReader(); r.onload = ()=>{ const s = String(r.result || ''); resolve(s); }; r.onerror = ()=>reject(new Error('file read error')); r.readAsDataURL(file); }); }
+            let id_photo_base64 = null;
+            try { id_photo_base64 = await fileToBase64(idPhotoInput.files[0]); } catch (e) { regError.textContent = 'Impossible de lire la photo. Réessayez.'; regError.style.display = 'block'; return; }
+            try {
+                const payload = { nom, prenom, whatsapp, pays_residence: pays, adresse_france: adresse_fr, adresse_algerie: adresse_dz, id_number, id_photo: id_photo_base64 };
+                const res = await fetch('/api/register', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const j = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    regError.textContent = j && j.error ? j.error : ('Erreur serveur: ' + res.status);
+                    regError.style.display = 'block';
+                    return;
+                }
+                const matricule = j && j.matricule ? j.matricule : null;
+                if (matricule) {
+                    try { localStorage.setItem('gsm_matricule', matricule); } catch (e) {}
+                    regSuccess.textContent = 'Inscription réussie — Matricule: ' + matricule;
+                    regSuccess.style.display = 'block';
+                    setTimeout(() => { gsmModal.style.display = 'none'; window.location.href = 'gsmexpress.html?matricule=' + encodeURIComponent(matricule); }, 1100);
+                    return;
+                }
+                regError.textContent = 'Inscription incomplète.'; regError.style.display = 'block';
+            } catch (err) {
+                regError.textContent = 'Erreur réseau lors de l\'inscription.'; regError.style.display = 'block';
+                console.error('register error', err);
+            }
+        });
+    }
+} catch (e) { console.warn('gsm register init failed', e); }
+
 // Determine server origin: use localhost:3002 during local dev, otherwise use current origin (works on Render)
 const SERVER_ORIGIN = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? (window.location.protocol + '//' + window.location.hostname + ':3002')
