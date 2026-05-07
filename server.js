@@ -534,3 +534,6 @@ io.on('connection', async (socket) => {
 // Start
 const PORT = process.env.PORT || 3002;
 server.listen(PORT, () => console.log('Server started on', PORT));
+server.listen(PORT, '0.0.0.0', () => {
+  console.log('Server started on', PORT);
+});
