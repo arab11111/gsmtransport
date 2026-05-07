@@ -279,6 +279,20 @@ footer {
     .notif, #notif-reservations { font-size: 1rem; padding: 12px; border-radius: 12px; }
     footer { font-size: 0.95rem; padding: 12px 0; }
 }
+/* Mobile drawer styles */
+#mobile-menu-drawer{
+    position:fixed;top:0;right:0;width:85%;max-width:360px;height:100vh;background:#fff;color:#111;z-index:3000;box-shadow:-8px 0 40px rgba(0,0,0,0.32);padding:18px 16px;overflow:auto;border-left:1px solid rgba(0,0,0,0.06);
+    transform:translateX(100%);transition:transform 300ms ease;will-change:transform;
+}
+#mobile-menu-drawer.open{transform:translateX(0);} 
+#mobile-menu-backdrop{position:fixed;left:0;top:0;width:100%;height:100vh;background:rgba(0,0,0,0.45);z-index:2999;opacity:0;pointer-events:none;transition:opacity 220ms ease}
+#mobile-menu-backdrop.visible{opacity:1;pointer-events:auto}
+#mobile-menu-drawer nav a{display:block;padding:12px 0;border-bottom:1px solid #eee;color:#111;text-decoration:none;font-weight:700}
+#mobile-auth-area{margin-top:14px;padding:10px 0;border-top:1px solid #f1f5f9}
+#mobile-auth-area .user-email{font-weight:700;color:#0f172a;margin-bottom:8px}
+#mobile-auth-area button{display:inline-block;margin-right:8px;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+#mobile-auth-area .btn-login{background:linear-gradient(90deg,#43cea2,#185a9d);color:#fff}
+#mobile-auth-area .btn-logout{background:linear-gradient(90deg,#ff512f,#dd2476);color:#fff}
 </style>
 </style>
 </head>
@@ -290,6 +304,11 @@ footer {
 <div class="menu-bar">
     <button id="client-login-btn" class="login"><span style="font-size:1.1em;">🔑</span> Connecter</button>
     <button id="client-logout-btn" class="logout" style="display:none;"><span style="font-size:1.1em;">🚪</span> Déconnecter</button>
+    <button id="mobile-menu-btn" aria-label="Menu mobile" style="display:none;background:transparent;border:none;font-size:1.4rem;padding:8px;margin-left:8px;">☰</button>
+    <div style="display:flex;align-items:center;gap:10px;margin-left:auto;">
+        <a href="privacy.html" style="color:#0f172a;background:#fff;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:600;">Politique</a>
+        <a href="contact.html" style="color:#0f172a;background:#fff;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:600;">Contact</a>
+    </div>
     <!-- Modal de connexion/inscription client -->
     <div id="client-auth-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,34,44,0.55);z-index:2000;align-items:center;justify-content:center;">
         <div style="background:linear-gradient(135deg,#ffffff 0%,#f3f8ff 100%);padding:2.4em 2.6em;border-radius:18px;box-shadow:0 12px 40px rgba(2,6,23,0.14);min-width:320px;max-width:95vw;border:1px solid rgba(30,58,138,0.06);backdrop-filter: blur(6px);">
@@ -354,6 +373,8 @@ footer {
                 <label style="font-size:0.9em;color:#374151;margin-bottom:0.4em;display:block;">Photo de la carte d'identité (photo recto) *</label>
                 <input id="reg-id-photo" type="file" accept="image/*" capture="environment" required style="width:100%;margin-bottom:0.6em;">
                 <input id="reg-whatsapp" type="tel" placeholder="Numéro WhatsApp (ex: +33...)" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <input id="reg-email" type="email" placeholder="Email (pour connexion & vérification)" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <input id="reg-password" type="password" placeholder="Mot de passe (min 6 caractères)" required minlength="6" style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
                 <div id="reg-error" style="color:#b91c1c;font-size:0.95em;margin-bottom:0.6em;display:none;"></div>
                 <div id="reg-success" style="color:#065f46;font-size:0.98em;margin-bottom:0.6em;display:none;"></div>
                 <button type="submit" style="width:100%;background:#0ea5e9;color:#fff;padding:0.7em 0;border-radius:8px;font-weight:700;font-size:1.02em;border:none;">S'inscrire et recevoir ma matricule</button>
@@ -426,8 +447,13 @@ footer {
     </div>
 </div>
 
-<footer>
-MJ Tiddas Studio | GSM Transport France - Algérie
+<footer style="padding:18px 12px;text-align:center;background:rgba(0,0,0,0.04);color:#111;margin-top:28px;">
+    <div>MJ Tiddas Studio | GSM Transport France - Algérie</div>
+    <div style="margin-top:6px;font-size:0.95em;color:#374151">
+        <a href="privacy.html" style="color:#1e40af;margin-right:10px;">Politique de confidentialité</a>
+        <a href="contact.html" style="color:#1e40af;margin-right:10px;">Contact</a>
+        <a href="gsmexpress.html" style="color:#1e40af;">GSM Express</a>
+    </div>
 </footer>
 
 <!-- Fenêtre notifications admin -->
@@ -501,37 +527,16 @@ clientAuthForm.addEventListener('submit', function(e) {
 });
 
 clientRegisterBtn.addEventListener('click', function() {
-    const email = document.getElementById('client-email').value;
-    const password = document.getElementById('client-password').value;
-    if (!email || !password) {
-        clientAuthError.textContent = 'Veuillez remplir email et mot de passe.';
-        clientAuthError.style.display = 'block';
-        return;
-    }
-    auth.createUserWithEmailAndPassword(email, password)
-        .then(async userCred => {
-            try {
-                // Générer une matricule unique et mémoriser côté serveur (Firestore) et localStorage
-                const user = userCred.user;
-                const matricule = `GSM-${new Date().getFullYear()}-${Math.floor(100000 + Math.random()*900000)}`;
-                try { await db.collection('users').doc(user.uid).set({ email: email, matricule: matricule }); } catch (e) { console.warn('failed to save user matricule', e); }
-                try { localStorage.setItem('gsm_matricule', matricule); } catch (e) { /* ignore */ }
-                user.sendEmailVerification();
-                clientVerifyEmail.textContent = 'Inscription réussie ! Matricule: ' + matricule + '. Vérifiez votre email pour valider votre compte.';
-                clientVerifyEmail.style.display = 'block';
-                clientAuthError.style.display = 'none';
-                // sign out to enforce email verification before next login
-                auth.signOut();
-            } catch (errInner) {
-                console.error('register then error', errInner);
-                clientAuthError.textContent = 'Erreur interne lors de l\'inscription.';
-                clientAuthError.style.display = 'block';
-            }
-        })
-        .catch(err => {
-            clientAuthError.textContent = 'Erreur : ' + (err.message || 'Impossible de créer le compte');
-            clientAuthError.style.display = 'block';
-        });
+    // Instead of creating a Firebase account immediately, require the full GSM registration
+    // Hide the simple auth modal and show the detailed GSM registration modal so the user
+    // provides name, prénom, WhatsApp, adresse, N° CI and photo as required.
+    try {
+        clientAuthError.style.display = 'none';
+        clientVerifyEmail.style.display = 'none';
+    } catch (e) {}
+    // close the auth modal and open the GSM register modal
+    try { hideClientAuthModal(); } catch (e) {}
+    try { document.getElementById('gsm-register-modal').style.display = 'flex'; } catch (e) { console.warn('gsm register modal not found', e); }
 });
 
 if (clientForgotBtn) {
@@ -1007,7 +1012,10 @@ try {
             let id_photo_base64 = null;
             try { id_photo_base64 = await fileToBase64(idPhotoInput.files[0]); } catch (e) { regError.textContent = 'Impossible de lire la photo. Réessayez.'; regError.style.display = 'block'; return; }
             try {
-                const payload = { nom, prenom, whatsapp, pays_residence: pays, adresse_france: adresse_fr, adresse_algerie: adresse_dz, id_number, id_photo: id_photo_base64 };
+                const email = (document.getElementById('reg-email').value || '').trim();
+                const password = (document.getElementById('reg-password').value || '').trim();
+                if (!email || !password || password.length < 6) { regError.textContent = 'Veuillez fournir un email valide et un mot de passe d\'au moins 6 caractères.'; regError.style.display = 'block'; return; }
+                const payload = { nom, prenom, whatsapp, pays_residence: pays, adresse_france: adresse_fr, adresse_algerie: adresse_dz, id_number, id_photo: id_photo_base64, email };
                 const res = await fetch('/api/register', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -1021,10 +1029,55 @@ try {
                 const matricule = j && j.matricule ? j.matricule : null;
                 if (matricule) {
                     try { localStorage.setItem('gsm_matricule', matricule); } catch (e) {}
-                    regSuccess.textContent = 'Inscription réussie — Matricule: ' + matricule;
-                    regSuccess.style.display = 'block';
-                    setTimeout(() => { gsmModal.style.display = 'none'; window.location.href = 'gsmexpress.html?matricule=' + encodeURIComponent(matricule); }, 1100);
-                    return;
+                    // Now create Firebase account automatically and send verification
+                    try {
+                        await auth.createUserWithEmailAndPassword(email, password);
+                        const user = auth.currentUser;
+                        if (user) {
+                            try { await user.sendEmailVerification(); } catch (e) { console.warn('sendEmailVerification failed', e); }
+                            try { await auth.signOut(); } catch (e) {}
+                        }
+                        regSuccess.textContent = 'Inscription réussie — Matricule: ' + matricule + '. Un email de vérification a été envoyé.';
+                        regSuccess.style.display = 'block';
+                        setTimeout(() => { gsmModal.style.display = 'none'; window.location.href = 'gsmexpress.html?matricule=' + encodeURIComponent(matricule); }, 1400);
+                        return;
+                    } catch (fbErr) {
+                        console.error('Firebase createUser error', fbErr);
+                        // If email already in use, offer reset password or open login modal prefilled
+                        if (fbErr && (fbErr.code === 'auth/email-already-in-use' || fbErr.code === 'auth/email-already-exists')) {
+                            regError.innerHTML = 'Cet email est déjà utilisé. <button id="reg-send-reset" style="margin-left:8px;background:#f59e0b;border:none;padding:6px 10px;border-radius:6px;">Envoyer réinitialisation</button> <button id="reg-open-login" style="margin-left:8px;background:#185a9d;color:#fff;border:none;padding:6px 10px;border-radius:6px;">Se connecter</button>';
+                            regError.style.display = 'block';
+                            setTimeout(() => {
+                                const resetBtn = document.getElementById('reg-send-reset');
+                                const loginBtn = document.getElementById('reg-open-login');
+                                if (resetBtn) {
+                                    resetBtn.addEventListener('click', async () => {
+                                        try {
+                                            await auth.sendPasswordResetEmail(email);
+                                            regSuccess.textContent = 'Email de réinitialisation envoyé.';
+                                            regSuccess.style.display = 'block';
+                                            regError.style.display = 'none';
+                                        } catch (e) {
+                                            regError.textContent = 'Erreur lors de l\'envoi du reset : ' + (e && e.message ? e.message : e);
+                                            regError.style.display = 'block';
+                                        }
+                                    });
+                                }
+                                if (loginBtn) {
+                                    loginBtn.addEventListener('click', () => {
+                                        try { hideClientAuthModal(); } catch (e) {}
+                                        try { showClientAuthModal(); } catch (e) {}
+                                        try { document.getElementById('client-email').value = email; } catch (e) {}
+                                        try { document.getElementById('client-password').value = ''; } catch (e) {}
+                                    });
+                                }
+                            }, 60);
+                            return;
+                        }
+                        regError.textContent = 'Compte Firebase non créé : ' + (fbErr && fbErr.message ? fbErr.message : fbErr);
+                        regError.style.display = 'block';
+                        return;
+                    }
                 }
                 regError.textContent = 'Inscription incomplète.'; regError.style.display = 'block';
             } catch (err) {
@@ -1289,5 +1342,68 @@ if (adminPanelSave) adminPanelSave.addEventListener('click', async () => {
     } catch (e) { console.error(e); alert('Échec enregistrement. Voir console.'); }
 });
 </script>
+    <!-- Mobile navigation drawer -->
+    <div id="mobile-menu-drawer">
+        <button id="mobile-menu-close" aria-label="Fermer le menu" style="background:none;border:none;font-size:1.2rem;float:right;">✕</button>
+        <nav style="margin-top:18px;">
+            <a href="index.html">Accueil</a>
+            <a href="gsmexpress.html">GSM Express</a>
+            <a href="privacy.html">Politique de confidentialité</a>
+            <a href="contact.html">Contact</a>
+        </nav>
+        <div id="mobile-auth-area">
+            <div id="mobile-user-info" style="display:none">
+                <div class="user-email"></div>
+                <button id="mobile-logout" class="btn-logout">Se déconnecter</button>
+            </div>
+            <div id="mobile-guest-actions" style="display:none">
+                <button id="mobile-open-login" class="btn-login">Se connecter</button>
+                <button id="mobile-open-register" class="btn-login">S'inscrire</button>
+            </div>
+        </div>
+    </div>
+    <div id="mobile-menu-backdrop"></div>
+
+    <script>
+    (function(){
+        const btn = document.getElementById('mobile-menu-btn');
+        const drawer = document.getElementById('mobile-menu-drawer');
+        const closeBtn = document.getElementById('mobile-menu-close');
+        const backdrop = document.getElementById('mobile-menu-backdrop');
+        const userInfoWrap = document.getElementById('mobile-user-info');
+        const guestWrap = document.getElementById('mobile-guest-actions');
+        function show(){ if(drawer){ drawer.classList.add('open'); if(backdrop) backdrop.classList.add('visible'); document.body.style.overflow='hidden'; } }
+        function hide(){ if(drawer){ drawer.classList.remove('open'); if(backdrop) backdrop.classList.remove('visible'); document.body.style.overflow=''; } }
+        if(btn) btn.addEventListener('click', show);
+        if(closeBtn) closeBtn.addEventListener('click', hide);
+        if(backdrop) backdrop.addEventListener('click', hide);
+        function updateBtn(){ try{ const b = document.getElementById('mobile-menu-btn'); if(window.innerWidth <= 900){ if(b) b.style.display='block'; } else { if(b) b.style.display='none'; hide(); } } catch(e){} }
+        updateBtn(); window.addEventListener('resize', updateBtn);
+
+        // Mobile auth integration: works if `auth` is defined (Firebase). Otherwise show links to index.
+        async function updateMobileAuth(user){
+            try{
+                if(user){
+                    guestWrap.style.display='none'; userInfoWrap.style.display='block';
+                    const emailEl = userInfoWrap.querySelector('.user-email'); if(emailEl) emailEl.textContent = user.email || user.displayName || '';
+                } else {
+                    userInfoWrap.style.display='none'; guestWrap.style.display='block';
+                }
+            } catch(e){}
+        }
+
+        // Attach actions
+        document.getElementById('mobile-open-login').addEventListener('click', ()=>{ hide(); try{ showClientAuthModal(); }catch(e){ window.location.href='index.html'; } });
+        document.getElementById('mobile-open-register').addEventListener('click', ()=>{ hide(); try{ document.getElementById('gsm-register-modal').style.display='flex'; }catch(e){ window.location.href='index.html'; } });
+        document.getElementById('mobile-logout').addEventListener('click', async ()=>{ try{ if(window.auth) await auth.signOut(); hide(); setClientUI(false);}catch(e){ console.warn('mobile logout failed', e); } });
+
+        // If Firebase auth exists, listen for state changes, otherwise default guest view
+        if(window.auth && typeof window.auth.onAuthStateChanged === 'function'){
+            auth.onAuthStateChanged(u=> updateMobileAuth(u));
+        } else {
+            updateMobileAuth(null);
+        }
+    })();
+    </script>
 </body>
 </html>
