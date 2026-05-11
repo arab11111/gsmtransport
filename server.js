@@ -76,22 +76,9 @@ async function uploadUsersToDrive(users) {
   } catch (e) { console.warn('uploadUsersToDrive failed', e); return false; }
 }
 
-// Optional Firebase Admin (if provided in the project)
-let admin = null;
-let adminDb = null;
-try {
-  admin = require('firebase-admin');
-  try {
-    const serviceAccount = require('./serviceAccountKey.json');
-    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-    adminDb = admin.firestore();
-    console.log('Firebase Admin initialisé');
-  } catch (e) {
-    try { admin.initializeApp(); adminDb = admin.firestore(); console.log('Firebase Admin initialisé via ADC'); } catch (e2) {}
-  }
-} catch (e) {
-  // firebase-admin not installed — fine, fallback to JSON
-}
+// Firebase Admin / Firestore disabled for this project (we use Firebase Auth on client)
+const admin = null;
+const adminDb = null;
 
 // Basic helpers
 const app = express();
@@ -108,7 +95,6 @@ if (!GSM_CODE) {
 }
 
 const PDFS_DIR = path.join(__dirname, 'pdfs');
-const USERS_PHOTOS_DIR = path.join(__dirname, 'user_photos');
 const BOOKINGS_FILE = path.join(__dirname, 'bookings.json');
 const NOTIF_FILE = path.join(__dirname, 'notifications.json');
 const USERS_FILE = path.join(__dirname, 'users.json');
@@ -117,7 +103,7 @@ const SETTINGS_FILE = path.join(__dirname, 'settings.json');
 // Ensure directories exist
 (async () => { try { await fsp.mkdir(PDFS_DIR, { recursive: true }); } catch (e) {} })();
 // ensure user photos directory exists
-(async () => { try { await fsp.mkdir(USERS_PHOTOS_DIR, { recursive: true }); } catch (e) {} })();
+// photos removed: no user_photos directory needed
 
 // In-memory dedupe for PDF generation
 const generatedPdfs = new Set();
@@ -197,34 +183,7 @@ async function generatePdfForBooking(booking) {
 // ROUTES
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
-// Secure photo endpoint (do NOT expose the directory publicly)
-try {
-  const { verifyFirebaseToken, requireAdmin } = require('./lib/auth');
-  // allow GSM admin code via query `?gsm=CODE` as a convenience (browser IMG tags cannot send headers)
-  const preAuth = (req, res, next) => {
-    try {
-      const GSM_CODE = process.env.GSM_ADMIN_CODE || 'GSM2026';
-      const gsmQuery = (req.query && req.query.gsm) ? String(req.query.gsm) : null;
-      const gsmHeader = req.headers && (req.headers['x-gsm-admin'] || req.headers['X-GSM-ADMIN']);
-      const authHeader = req.headers && (req.headers.authorization || req.headers.Authorization || '');
-      const gsmFromAuth = (authHeader && authHeader.startsWith('GSM ')) ? authHeader.slice(4).trim() : null;
-      const gsm = gsmQuery || gsmHeader || gsmFromAuth;
-      if (gsm && String(gsm) === GSM_CODE) { req.isGsmAdmin = true; req.user = { email: process.env.GSM_ADMIN_EMAIL || 'gsm-admin@local' }; return next(); }
-      return verifyFirebaseToken(req, res, next);
-    } catch (err) { return res.status(401).json({ error: 'Auth failed' }); }
-  };
-
-  app.get('/api/photo/:filename', preAuth, requireAdmin, async (req, res) => {
-    try {
-      const filename = req.params.filename || '';
-      if (!filename) return res.status(400).json({ error: 'Missing filename' });
-      const safe = path.basename(filename);
-      const filePath = path.join(USERS_PHOTOS_DIR, safe);
-      await fsp.access(filePath);
-      return res.sendFile(filePath);
-    } catch (e) { return res.status(404).json({ error: 'Photo introuvable' }); }
-  });
-} catch (e) { console.error('Auth middleware required for photo endpoint — aborting startup', e); process.exit(1); }
+// photo endpoints removed — photos are no longer collected or served
 
 // Return all users (from local JSON fallback or Firestore)
 app.get('/api/users', async (req, res) => {
@@ -237,13 +196,7 @@ app.get('/api/users', async (req, res) => {
       } catch (e) { console.warn('mongo /api/users failed', e); }
     }
     let list = await readJson(USERS_FILE, []);
-    // try Firestore if available
-    if (adminDb) {
-      try {
-        const snap = await adminDb.collection('users').orderBy('createdAt','desc').limit(1000).get();
-        list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      } catch (e) { /* ignore firestore failure */ }
-    }
+    // Firestore disabled — using local JSON or MongoDB fallback
     res.json(list || []);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -265,20 +218,7 @@ app.get('/api/users/:key', async (req, res) => {
     }
 
     let list = await readJson(USERS_FILE, []);
-    // try Firestore first for authoritative answer
-    if (adminDb) {
-      try {
-        // search by matricule
-        let q = await adminDb.collection('users').where('matricule','==',key).limit(1).get();
-        if (!q.empty) return res.json({ source: 'firestore', user: { id: q.docs[0].id, ...q.docs[0].data() } });
-        // search by whatsapp normalized
-        q = await adminDb.collection('users').get();
-        for (const d of q.docs) {
-          const u = d.data();
-          if ((u.whatsapp||'').toString().replace(/[^+0-9]/g,'') === norm) return res.json({ source: 'firestore', user: { id: d.id, ...u } });
-        }
-      } catch (e) { /* ignore firestore error */ }
-    }
+    // Firestore disabled — fallback to local JSON or MongoDB lookup above
 
     // fallback to local JSON
     let found = list.find(u => u && ((u.matricule && u.matricule.toString().toLowerCase() === key.toLowerCase()) || ((u.whatsapp||'').toString().replace(/[^+0-9]/g,'') === norm) || (u.id && String(u.id) === key)));
@@ -289,11 +229,7 @@ app.get('/api/users/:key', async (req, res) => {
 
 app.get('/api/notifications', async (req, res) => {
   try {
-    if (adminDb) {
-      const snapshot = await adminDb.collection('notifications').orderBy('createdAt','desc').limit(50).get();
-      const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      return res.json(list);
-    }
+    // Firestore disabled — use local JSON fallback
     const list = await readJson(NOTIF_FILE, []);
     return res.json(list);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -314,6 +250,16 @@ app.post('/api/settings', async (req, res) => {
 
 app.get('/api/settings', async (req, res) => {
   try { const s = await readJson(SETTINGS_FILE, {}); res.json(s); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Verify GSM admin code (server-side) to avoid exposing the code in client sources
+app.post('/api/auth/verify-code', async (req, res) => {
+  try {
+    const code = req.body && req.body.code ? String(req.body.code).trim() : '';
+    if (!code) return res.status(400).json({ error: 'missing_code' });
+    if (code === GSM_CODE) return res.json({ success: true });
+    return res.status(403).json({ success: false });
+  } catch (e) { return res.status(500).json({ error: e.message }); }
 });
 
 // Upload a PDF (used by clients who generate locally)
@@ -383,8 +329,7 @@ app.post('/api/bookings', async (req, res) => {
       await writeJson(BOOKINGS_FILE, list);
     } catch (e) { console.warn('persist booking failed', e); }
 
-    // try saving to Firestore if available
-    try { if (adminDb) { const ref = await adminDb.collection('bookings').add(booking); savedId = ref.id; } } catch (e) { console.warn('firestore add failed', e); }
+    // Firestore disabled — bookings persisted to local JSON (or MongoDB if configured)
 
     // Generate PDF once (await)
     let pdfLink = null;
@@ -403,13 +348,13 @@ app.post('/api/bookings', async (req, res) => {
 // Simple registration endpoint: server generates a matricule and stores basic user info
 app.post('/api/register', async (req, res) => {
   try {
-    // accept additional fields: pays_residence, adresse_france, adresse_algerie, id_number, id_photo (base64)
-    const { nom, prenom, whatsapp, pays_residence, adresse_france, adresse_algerie, id_number, id_photo } = req.body || {};
+    // accept additional fields: pays_residence, adresse_france, adresse_algerie, id_number
+    const { nom, prenom, whatsapp, pays_residence, adresse_france, adresse_algerie, id_number } = req.body || {};
     if (!nom || !prenom || !whatsapp || !pays_residence || !id_number) return res.status(400).json({ error: 'Missing required fields: nom, prenom, pays_residence, id_number, whatsapp' });
     // country-specific address validation
     if (pays_residence === 'France' && !(req.body.adresse_france && req.body.adresse_france.toString().trim())) return res.status(400).json({ error: 'Adresse en France requise pour les résidents France' });
     if (pays_residence === 'Algérie' && !(req.body.adresse_algerie && req.body.adresse_algerie.toString().trim())) return res.status(400).json({ error: 'Adresse en Algérie requise pour les résidents Algérie' });
-    if (!(req.body.id_photo && typeof req.body.id_photo === 'string')) return res.status(400).json({ error: 'Photo de la pièce d\'identité requise' });
+    // photos are no longer required or accepted
 
     // normalize whatsapp format
     const normalizePhone = p => (p || '').toString().replace(/[^+0-9]/g, '');
@@ -437,26 +382,7 @@ app.post('/api/register', async (req, res) => {
       id_number_masked: maskedId, createdAt: new Date().toISOString()
     };
 
-    // handle id_photo base64 if present: save to user_photos/<matricule>_id.<ext>
-    try {
-      if (id_photo && typeof id_photo === 'string') {
-        // detect data URI header
-        let base64 = id_photo;
-        let ext = 'jpg';
-        const m = id_photo.match(/^data:(image\/[^;]+);base64,(.*)$/);
-        if (m) { ext = m[1].split('/')[1] || 'jpg'; base64 = m[2]; }
-        const safeExt = (ext || 'jpg').split('?')[0].replace(/[^a-z0-9]/gi,'') || 'jpg';
-        const filename = `${matricule}_id.${safeExt}`;
-        const filePath = path.join(USERS_PHOTOS_DIR, filename);
-        try {
-          // convert to buffer and check true byte size (base64 length != byte length)
-          const buffer = Buffer.from(base64, 'base64');
-          if (buffer.length > (5 * 1024 * 1024)) { return res.status(413).json({ error: 'Image trop grande (max 5MB)' }); }
-          await fsp.writeFile(filePath, buffer);
-          user.id_photo = `/api/photo/${filename}`;
-        } catch (e) { console.warn('failed to write id_photo', e); }
-      }
-    } catch (e) { console.warn('id_photo handling failed', e); }
+    // no photo handling
 
     // persist: prefer MongoDB, fallback to JSON; also try Firestore
     try {
@@ -474,7 +400,7 @@ app.post('/api/register', async (req, res) => {
       }
     } catch (e) { console.warn('failed to persist user', e); }
 
-    try { if (adminDb) await adminDb.collection('users').add(user); } catch (e) { console.warn('failed to persist user to Firestore', e); }
+    // Firestore disabled — not persisting to Firestore in this project
 
     res.json({ success: true, matricule });
   } catch (e) {
@@ -491,17 +417,7 @@ app.get('/generate-pdf/:id', async (req, res) => {
     let booking = null;
     const list = await readJson(BOOKINGS_FILE, []);
     booking = list.find(b => (b && (b.bagage_numero === id || String(b.id) === String(id))));
-    // try Firestore
-    if (!booking && adminDb) {
-      try {
-        const doc = await adminDb.collection('bookings').doc(id).get();
-        if (doc.exists) booking = { id: doc.id, ...doc.data() };
-        else {
-          const q = await adminDb.collection('bookings').where('bagage_numero','==',id).limit(1).get();
-          if (!q.empty) booking = { id: q.docs[0].id, ...q.docs[0].data() };
-        }
-      } catch (e) { console.warn('firestore lookup failed', e); }
-    }
+    // Firestore disabled — booking lookup only uses local JSON or MongoDB
 
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
@@ -533,7 +449,4 @@ io.on('connection', async (socket) => {
 
 // Start
 const PORT = process.env.PORT || 3002;
-
-server.listen(PORT, '0.0.0.0', () => {
-  console.log('Server started on', PORT);
-});
+server.listen(PORT, () => console.log('Server started on', PORT));
