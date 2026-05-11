@@ -1168,7 +1168,6 @@ document.getElementById('bell-btn').addEventListener('click', function(e) {
   function showUser(u){
     if(!userInfo) return;
     if(!u){ userInfo.innerHTML = '<div style="color:#b91c1c;font-weight:700;">Aucun utilisateur trouvé</div>'; userInfo.style.display='block'; return; }
-    const photoUrl = u.id_photo ? (u.id_photo + (sessionStorage.getItem('gsm_code') ? ('?gsm=' + encodeURIComponent(sessionStorage.getItem('gsm_code'))) : '')) : null;
     const html = `
       <div style="display:flex;gap:12px;align-items:center;">
         <div style="flex:1">
@@ -1181,7 +1180,6 @@ document.getElementById('bell-btn').addEventListener('click', function(e) {
           <div style="color:#334155;margin-top:6px">N° CI: <strong>${u.id_number_masked || ''}</strong></div>
         </div>
         <div style="text-align:right;min-width:120px;">
-          ${photoUrl ? `<a href="${photoUrl}" target="_blank"><img src="${photoUrl}" alt="ID" style="max-width:110px;border-radius:6px;border:1px solid #e2e8f0;"></a>` : ''}
           <div style="margin-top:8px"><a href="/pdfs/" style="color:var(--primary);font-weight:700;text-decoration:underline;">Voir PDF</a></div>
         </div>
       </div>`;
