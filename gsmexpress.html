@@ -150,25 +150,21 @@
     .actions { display: flex; gap: 0.7rem; justify-content: center; flex-wrap: wrap; }
     .actions .btn { min-width: 120px; flex: 1 1 auto; }
     .ads-slot{margin:12px 0;text-align:center}
+
+    /* Mobile: make the reservation container use full screen and form scrollable */
+    @media (max-width: 600px) {
+      .container { max-width:100%; width:100%; margin:0; padding:0.9rem; border-radius:0; height:calc(100vh - 0px); box-shadow:none; border-left:none; border-right:none; overflow:auto; display:flex; flex-direction:column; }
+      #reservationForm { display:flex; flex-direction:column; flex:1 1 auto; overflow:auto; }
+      #reservationForm .actions { margin-top: auto; }
+      .qr-section { margin-top: 0.6rem; }
+    }
   </style>
 </head>
 <body>
   <div id="top-menu-wrap" style="position:fixed;top:18px;right:18px;z-index:1200;">
-    <button id="top-menu-btn" style="background:linear-gradient(90deg,#ecb43b,#f59e0b);border:2px solid #acb5d1;color:#334681;font-weight:800;padding:0.6rem 1rem;border-radius:10px;box-shadow:0 8px 26px rgba(2,6,23,0.45);cursor:pointer;">☰ Menu</button>
-    <div id="top-menu-panel" style="display:none;position:absolute;right:0;top:44px;background:#08203a;color:#e6eef8;border-radius:10px;box-shadow:0 12px 40px rgba(2,6,23,0.28);min-width:200px;padding:10px;">
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <a href="index.html" style="color:inherit;text-decoration:none;padding:8px;border-radius:8px;font-weight:700;">🏠 Accueil</a>
-        <a href="privacy.html" style="color:inherit;text-decoration:none;padding:8px;border-radius:8px;font-weight:700;">🔎 Politique</a>
-        <a href="contact.html" style="color:inherit;text-decoration:none;padding:8px;border-radius:8px;font-weight:700;">✉️ Contact</a>
-        <button id="top-menu-open-auth" style="background:transparent;border:none;color:inherit;text-align:left;padding:8px;border-radius:8px;font-weight:700;">🔑 Se connecter</button>
-      </div>
-    </div>
+    <a id="top-menu-btn" href="index.html" style="display:inline-block;background:linear-gradient(90deg,#ecb43b,#f59e0b);border:2px solid #acb5d1;color:#334681;font-weight:800;padding:0.6rem 1rem;border-radius:10px;box-shadow:0 8px 26px rgba(2,6,23,0.45);cursor:pointer;text-decoration:none;">☰ Menu</a>
   </div>
   <div class="container">
-    <div style="display:flex;justify-content:flex-end;gap:12px;margin-bottom:8px;">
-      <a href="privacy.html" style="color:#dbeafe;text-decoration:none;font-weight:600">Politique</a>
-      <a href="contact.html" style="color:#dbeafe;text-decoration:none;font-weight:600">Contact</a>
-    </div>
     <h1>Réserver mon bagage</h1>
     <div id="display_matricule" style="max-width:700px;margin:0.4rem auto 0.8rem auto;padding:10px 12px;border-radius:10px;background:linear-gradient(90deg,#f0f9ff,#e6fffa);color:#0f172a;font-weight:700;display:none;text-align:center;"></div>
     <!-- AdSense ad slot (replace data-ad-client and data-ad-slot) -->
@@ -248,14 +244,10 @@
     let isSubmitting = false;
     // helper to show confirmation/toast to user
 
-    // Top menu interactions
+    // Top menu interactions — simplified: direct redirect to Accueil
     try {
       const topMenuBtn = document.getElementById('top-menu-btn');
-      const topMenuPanel = document.getElementById('top-menu-panel');
-      const topMenuOpenAuth = document.getElementById('top-menu-open-auth');
-      if (topMenuBtn) topMenuBtn.addEventListener('click', (e)=>{ e.stopPropagation(); if (topMenuPanel) topMenuPanel.style.display = topMenuPanel.style.display === 'none' ? 'block' : 'none'; });
-      document.addEventListener('click', ()=>{ try { if (topMenuPanel) topMenuPanel.style.display='none'; } catch(e){} });
-      if (topMenuOpenAuth) topMenuOpenAuth.addEventListener('click', (e)=>{ e.stopPropagation(); try { if (window.showClientAuthModal) showClientAuthModal(); if (topMenuPanel) topMenuPanel.style.display='none'; } catch(e){} });
+      if (topMenuBtn) topMenuBtn.addEventListener('click', (e) => { try { e.preventDefault(); window.location.href = 'index.html'; } catch (err) {} });
     } catch (e) { console.warn('top menu init failed', e); }
     function showClientNotif(message, success = true, timeout = 5000) {
       try {
