@@ -161,8 +161,9 @@
   </style>
 </head>
 <body>
-  <div id="top-menu-wrap" style="position:fixed;top:18px;right:18px;z-index:1200;">
+  <div id="top-menu-wrap" style="position:fixed;top:18px;right:18px;z-index:1200;display:flex;gap:8px;align-items:center;">
     <a id="top-menu-btn" href="index.html" style="display:inline-block;background:linear-gradient(90deg,#ecb43b,#f59e0b);border:2px solid #acb5d1;color:#334681;font-weight:800;padding:0.6rem 1rem;border-radius:10px;box-shadow:0 8px 26px rgba(2,6,23,0.45);cursor:pointer;text-decoration:none;">☰ Menu</a>
+    <button id="open-notifs-btn" style="display:none;background:linear-gradient(90deg,#06b6d4,#0891b2);color:#fff;border:none;padding:0.5rem 0.7rem;border-radius:8px;cursor:pointer">🔔 Notifications</button>
   </div>
   <div class="container">
     <h1>Réserver mon bagage</h1>
@@ -248,6 +249,13 @@
     try {
       const topMenuBtn = document.getElementById('top-menu-btn');
       if (topMenuBtn) topMenuBtn.addEventListener('click', (e) => { try { e.preventDefault(); window.location.href = 'index.html'; } catch (err) {} });
+      // show notifications button when admin code is present in sessionStorage
+      try {
+        const notBtn = document.getElementById('open-notifs-btn');
+        const isGsmAdmin = (function(){ try { return sessionStorage.getItem('gsm_code') === '1'; } catch(e){ return false; } })();
+        if (notBtn && isGsmAdmin) { notBtn.style.display = ''; }
+        if (notBtn) notBtn.addEventListener('click', ()=>{ try { window.open('/admin-notifications.html','gsm_admin_notifications','width=480,height=720'); } catch(e) { alert('Impossible d\'ouvrir la fenêtre.'); } });
+      } catch(e){}
     } catch (e) { console.warn('top menu init failed', e); }
     function showClientNotif(message, success = true, timeout = 5000) {
       try {
