@@ -9,6 +9,10 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
+    <meta name="description" content="Transport de bagages France Algérie avec GSM Transport. Réservation rapide et suivi colis.">
+    <meta name="keywords" content="transport bagage france algérie, gsm transport, colis algérie, réservation bagage">
+    <meta name="theme-color" content="#185a9d">
+
 <!-- Google AdSense: publisher ID inserted -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-8308471028441999"></script>
 
@@ -27,7 +31,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow-x: hidden;
+    overflow-x: clip;
 }
 /* NAVBAR SaaS */
 .menu-bar {
@@ -158,6 +162,12 @@ h1 {
     box-shadow: 0 2px 12px rgba(255, 253, 253, 0.07);
     animation: fadein 1.3s 0.2s backwards;
 }
+/* Editorial / FAQ content styling */
+.editorial h2{color:#fff;font-size:1.35rem;margin-bottom:8px}
+.editorial h3{color:#fff;font-size:1.05rem;margin-top:12px;margin-bottom:6px}
+.editorial p{margin-bottom:10px;color:#eef2ff}
+.editorial ul{margin-left:20px;margin-bottom:10px;color:#eef2ff}
+
 /* APPS */
 .apps {
     display: grid;
@@ -239,6 +249,7 @@ footer {
         background: linear-gradient(180deg,#3a9974 0%, #2d798b 100%);
         padding: 12px 8px 80px 8px;
     }
+    html { -webkit-tap-highlight-color: transparent; }
     .menu-bar {
         height: 64px;
         padding: 0 12px;
@@ -272,12 +283,16 @@ footer {
     .menu-bar .login, .menu-bar .logout, .menu-bar .whatsapp { padding: 10px 12px; }
     button, .menu-bar button, .menu-bar a { touch-action: manipulation; }
     .menu-bar { backdrop-filter: blur(8px); }
+    .editorial{font-size:0.98rem;line-height:1.7;padding:10px 6px;margin-top:18px;color:#fff}
+    .editorial h2{font-size:1.15rem}
+    .editorial h3{font-size:1rem}
     .container, .calendar-section, .note { background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); }
     .logo-btn { background: linear-gradient(90deg,#ffd54f,#ffb300); color: #042029; box-shadow: 0 6px 20px rgba(0,0,0,0.45); }
     .btn, .menu-bar button, .menu-bar a { border-radius: 12px; }
     .apps > * { box-shadow: 0 8px 30px rgba(236, 170, 27, 0.55); border-radius: 12px; }
     .notif, #notif-reservations { font-size: 1rem; padding: 12px; border-radius: 12px; }
     footer { font-size: 0.95rem; padding: 12px 0; }
+    #mobile-menu-btn { display: block !important; }
 }
 /* Mobile drawer styles */
 #mobile-menu-drawer{
@@ -293,8 +308,7 @@ footer {
 #mobile-auth-area button{display:inline-block;margin-right:8px;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
 #mobile-auth-area .btn-login{background:linear-gradient(90deg,#43cea2,#185a9d);color:#fff}
 #mobile-auth-area .btn-logout{background:linear-gradient(90deg,#ff512f,#dd2476);color:#fff}
-</style>
-</style>
+    </style>
 </head>
 
 <body>
@@ -306,8 +320,22 @@ footer {
     <button id="client-logout-btn" class="logout" style="display:none;"><span style="font-size:1.1em;">🚪</span> Déconnecter</button>
     <button id="mobile-menu-btn" aria-label="Menu mobile" style="display:none;background:transparent;border:none;font-size:1.4rem;padding:8px;margin-left:8px;">☰</button>
     <div style="display:flex;align-items:center;gap:10px;margin-left:auto;">
-        <a href="privacy.html" style="color:#0f172a;background:#fff;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:600;">Politique</a>
-        <a href="contact.html" style="color:#0f172a;background:#fff;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:600;">Contact</a>
+        <!-- single menu button -->
+        <div id="main-menu-wrap" style="position:relative;">
+            <button id="main-menu-btn" style="background:linear-gradient(90deg,#1e40af,#0ea5e9);color:#fff;padding:10px 14px;border-radius:12px;border:none;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(30,64,175,0.18);">☰ Menu</button>
+            <div id="main-menu-panel" style="display:none;position:absolute;right:0;top:46px;background:#fff;color:#0f172a;border-radius:10px;box-shadow:0 12px 40px rgba(2,6,23,0.18);min-width:220px;padding:10px;z-index:400;">
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <button id="menu-connect" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;">🔑 Se connecter</button>
+                    <button id="menu-logout" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;display:none;">🚪 Se déconnecter</button>
+                    <button id="menu-admin" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;">🔒 Mode Admin</button>
+                    <button id="menu-panel" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;display:none;">⚙️ Panneau Admin</button>
+                    <a href="gsmexpress.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">🚚 GSM Express</a>
+                    <a href="bagages.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">📋 Gestion Bagages</a>
+                    <a href="privacy.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">🔎 Politique</a>
+                    <a href="contact.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">✉️ Contact</a>
+                </div>
+            </div>
+        </div>
     </div>
     <!-- Modal de connexion/inscription client -->
     <div id="client-auth-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,34,44,0.55);z-index:2000;align-items:center;justify-content:center;">
@@ -370,8 +398,7 @@ footer {
                 <input id="reg-adresse-fr" type="text" placeholder="Adresse exacte en France (si applicable)" style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
                 <input id="reg-adresse-dz" type="text" placeholder="Adresse exacte en Algérie (si applicable)" style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
                 <input id="reg-id-number" type="text" placeholder="N° de carte d'identité / CIN" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
-                <label style="font-size:0.9em;color:#374151;margin-bottom:0.4em;display:block;">Photo de la carte d'identité (photo recto) *</label>
-                <input id="reg-id-photo" type="file" accept="image/*" capture="environment" required style="width:100%;margin-bottom:0.6em;">
+                <!-- ID photo removed: not required anymore -->
                 <input id="reg-whatsapp" type="tel" placeholder="Numéro WhatsApp (ex: +33...)" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
                 <input id="reg-email" type="email" placeholder="Email (pour connexion & vérification)" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
                 <input id="reg-password" type="password" placeholder="Mot de passe (min 6 caractères)" required minlength="6" style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
@@ -395,15 +422,7 @@ footer {
     </div>
 
     <div>
-        <div class="note">
-            🚚 <b>Bienvenue chez GSM Transport !</b><br>
-            <ul style="margin:10px 0 0 18px;padding:0 0 0 0.5em;font-size:1.07em;">
-                <li>Consultez les <b>dates de départ</b> en rouge sur le calendrier.</li>
-                <li>Préparez vos colis à l’avance pour garantir leur prise en charge.</li>
-                <li>Après inscription, <b>vérifiez vos spams</b> sur Gmail pour valider votre compte.</li>
-                <li>Pour toute question ou suivi, contactez-nous directement sur <b>WhatsApp</b> !</li>
-            </ul>
-        </div>
+        
 
         <!-- Affichage public de la note admin -->
         <div id="display-note" class="note" style="display:none;margin-top:12px;"></div>
@@ -411,6 +430,35 @@ footer {
         <h1>📦 GSM Transport</h1>
         <div class="subtitle">France ⇄ Algérie</div>
 
+        <section class="editorial" style="margin-top:25px;line-height:1.9;color:#fff;">
+            <h2>Transport de bagages France - Algérie</h2>
+
+            <p>
+                GSM Transport est un service spécialisé dans le transport
+                de bagages et colis entre la France et l’Algérie.
+            </p>
+
+            <p>
+                Nous proposons des départs réguliers, un suivi des réservations
+                et une assistance WhatsApp rapide pour tous nos clients.
+            </p>
+
+            <p>
+                Notre plateforme permet :
+            </p>
+
+            <ul style="margin-left:20px;">
+                <li>Réservation de bagages</li>
+                <li>Suivi colis</li>
+                <li>Gestion des départs</li>
+                <li>Notifications clients</li>
+                <li>Support France ⇄ Algérie</li>
+            </ul>
+
+            <p>
+                Nos services sont disponibles pour particuliers et professionnels.
+            </p>
+        </section>
         <div class="apps">
             <a href="gsmexpress.html" id="gsmexpress-link" class="card">
                 <div class="card-icon">🚚</div>
@@ -425,13 +473,25 @@ footer {
         </div>
 
         <!-- AdSense ad slot (replace data-ad-client & data-ad-slot) -->
+        <section class="editorial faq" style="margin-top:30px;color:#fff;">
+            <h2>FAQ</h2>
+
+            <h3>Quels pays sont desservis ?</h3>
+            <p>France et Algérie.</p>
+
+            <h3>Comment réserver un bagage ?</h3>
+            <p>Utilisez GSM Express directement depuis le site.</p>
+
+            <h3>Comment suivre mon colis ?</h3>
+            <p>Via la section Gestion Bagages.</p>
+        </section>
         <div style="margin:16px 0;text-align:center;">
-            <ins class="adsbygoogle"
-                 style="display:block;max-width:728px;margin:0 auto"
-                 data-ad-client="ca-pub-8308471028441999"
-                 data-ad-slot="1234567890"
-                 data-ad-format="auto"
-                 data-full-width-responsive="true"></ins>
+              <ins class="adsbygoogle"
+                  style="display:block;max-width:728px;margin:0 auto"
+                  data-ad-client="ca-pub-8308471028441999"
+                  data-ad-slot="REPLACE_WITH_AD_SLOT"
+                  data-ad-format="auto"
+                  data-full-width-responsive="true"></ins>
             <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
         </div>
 
@@ -643,23 +703,30 @@ if (bagagesLink) {
 adminCodeForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     try {
-        const code = (adminCodeInput && adminCodeInput.value) ? adminCodeInput.value.trim() : '';
-        // Allow admin mode with the GSM code without Firebase authentication
-        if (code === 'GSM2026') {
-            hideAdminCodeModal();
-            isAdmin = true;
-            try { sessionStorage.setItem('gsm_code', code); } catch (e) {}
-            setAdminUI(true);
-            if (pendingNavigationTarget) {
-                const target = pendingNavigationTarget;
-                pendingNavigationTarget = null;
-                window.location.href = target;
+            const code = (adminCodeInput && adminCodeInput.value) ? adminCodeInput.value.trim() : '';
+            // Try server-side verification of the GSM admin code (prevents exposing the code in client sources)
+            try {
+                const res = await fetch(`${SERVER_ORIGIN}/api/auth/verify-code`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code })
+                });
+                if (res.ok) {
+                    hideAdminCodeModal();
+                    isAdmin = true;
+                    try { sessionStorage.setItem('gsm_code', '1'); } catch (e) {}
+                    setAdminUI(true);
+                    if (pendingNavigationTarget) {
+                        const target = pendingNavigationTarget;
+                        pendingNavigationTarget = null;
+                        window.location.href = target;
+                    }
+                    return;
+                }
+            } catch (e) {
+                console.warn('verify-code request failed', e);
             }
-            return;
-        }
 
-        // Fallback to existing Firebase-based admin check
-        const user = auth.currentUser;
+            // Fallback to existing Firebase-based admin check (if server verification did not pass)
+            const user = auth.currentUser;
         if (!user || !user.emailVerified) {
             adminCodeError.textContent = 'Vous devez être connecté et avoir vérifié votre email.';
             adminCodeError.style.display = 'block';
@@ -999,23 +1066,18 @@ try {
             const adresse_dz = (document.getElementById('reg-adresse-dz').value || '').trim();
             const id_number = (document.getElementById('reg-id-number').value || '').trim();
             const whatsapp = (document.getElementById('reg-whatsapp').value || '').trim();
-            const idPhotoInput = document.getElementById('reg-id-photo');
-            if (!nom || !prenom || !pays || !id_number || !whatsapp || !idPhotoInput || !idPhotoInput.files || idPhotoInput.files.length === 0) {
-                regError.textContent = 'Veuillez remplir tous les champs obligatoires et joindre la photo de la pièce d\'identité.'; regError.style.display = 'block'; return;
+            if (!nom || !prenom || !pays || !id_number || !whatsapp) {
+                regError.textContent = 'Veuillez remplir tous les champs obligatoires.'; regError.style.display = 'block'; return;
             }
             // if residence is France require adresse_fr, if Algérie require adresse_dz; otherwise both optional
             if (pays === 'France' && !adresse_fr) { regError.textContent = 'Veuillez fournir votre adresse exacte en France.'; regError.style.display = 'block'; return; }
             if (pays === 'Algérie' && !adresse_dz) { regError.textContent = 'Veuillez fournir votre adresse exacte en Algérie.'; regError.style.display = 'block'; return; }
 
-            // read file as base64
-            async function fileToBase64(file){ return await new Promise((resolve, reject)=>{ const r = new FileReader(); r.onload = ()=>{ const s = String(r.result || ''); resolve(s); }; r.onerror = ()=>reject(new Error('file read error')); r.readAsDataURL(file); }); }
-            let id_photo_base64 = null;
-            try { id_photo_base64 = await fileToBase64(idPhotoInput.files[0]); } catch (e) { regError.textContent = 'Impossible de lire la photo. Réessayez.'; regError.style.display = 'block'; return; }
             try {
                 const email = (document.getElementById('reg-email').value || '').trim();
                 const password = (document.getElementById('reg-password').value || '').trim();
                 if (!email || !password || password.length < 6) { regError.textContent = 'Veuillez fournir un email valide et un mot de passe d\'au moins 6 caractères.'; regError.style.display = 'block'; return; }
-                const payload = { nom, prenom, whatsapp, pays_residence: pays, adresse_france: adresse_fr, adresse_algerie: adresse_dz, id_number, id_photo: id_photo_base64, email };
+                const payload = { nom, prenom, whatsapp, pays_residence: pays, adresse_france: adresse_fr, adresse_algerie: adresse_dz, id_number, email };
                 const res = await fetch('/api/register', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -1027,6 +1089,10 @@ try {
                     return;
                 }
                 const matricule = j && j.matricule ? j.matricule : null;
+                // Log matricule for debugging (visible in browser console)
+                try { console.info('API /api/register returned matricule:', matricule, j); } catch (e) {}
+                // Show alert with matricule for user feedback
+                try { if (matricule) alert('Inscription réussie — Matricule: ' + matricule); } catch (e) {}
                 if (matricule) {
                     try { localStorage.setItem('gsm_matricule', matricule); } catch (e) {}
                     // Now create Firebase account automatically and send verification
@@ -1341,6 +1407,44 @@ if (adminPanelSave) adminPanelSave.addEventListener('click', async () => {
         if (adminPanelModal) adminPanelModal.style.display = 'none';
     } catch (e) { console.error(e); alert('Échec enregistrement. Voir console.'); }
 });
+
+// --- Main menu interactions (single button) ---
+try {
+    const mainMenuBtn = document.getElementById('main-menu-btn');
+    const mainMenuPanel = document.getElementById('main-menu-panel');
+    const menuConnect = document.getElementById('menu-connect');
+    const menuLogout = document.getElementById('menu-logout');
+    const menuAdmin = document.getElementById('menu-admin');
+    const menuPanel = document.getElementById('menu-panel');
+
+    function updateMenuAuth(connected) {
+        if (menuConnect && menuLogout) {
+            menuConnect.style.display = connected ? 'none' : '';
+            menuLogout.style.display = connected ? '' : 'none';
+        }
+        if (menuPanel) menuPanel.style.display = isAdmin ? '' : 'none';
+    }
+
+    if (mainMenuBtn) {
+        mainMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!mainMenuPanel) return;
+            mainMenuPanel.style.display = mainMenuPanel.style.display === 'none' ? 'block' : 'none';
+        });
+    }
+
+    // close menu on outside click
+    document.addEventListener('click', () => { try { if (mainMenuPanel) mainMenuPanel.style.display = 'none'; } catch (e) {} });
+
+    if (menuConnect) menuConnect.addEventListener('click', (e) => { e.stopPropagation(); try { showClientAuthModal(); if (mainMenuPanel) mainMenuPanel.style.display='none'; } catch (e) {} });
+    if (menuLogout) menuLogout.addEventListener('click', (e) => { e.stopPropagation(); try { clientLogoutBtn.click(); if (mainMenuPanel) mainMenuPanel.style.display='none'; } catch (e) {} });
+    if (menuAdmin) menuAdmin.addEventListener('click', (e) => { e.stopPropagation(); try { showAdminCodeModal(); if (mainMenuPanel) mainMenuPanel.style.display='none'; } catch (e) {} });
+    if (menuPanel) menuPanel.addEventListener('click', (e) => { e.stopPropagation(); try { if (openAdminPanelBtn) openAdminPanelBtn.click(); if (mainMenuPanel) mainMenuPanel.style.display='none'; } catch (e) {} });
+
+    // update menu based on auth changes
+    try { updateMenuAuth(!!auth.currentUser && auth.currentUser.emailVerified); } catch (e) {}
+    auth.onAuthStateChanged(u => { updateMenuAuth(!!u && u.emailVerified); });
+} catch (e) { console.warn('main menu init failed', e); }
 </script>
     <!-- Mobile navigation drawer -->
     <div id="mobile-menu-drawer">
