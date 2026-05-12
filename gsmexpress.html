@@ -225,7 +225,8 @@
     const socket = io(SERVER_ORIGIN);
     const notif = document.getElementById('notif');
     // Disable notifications on this page (set true to hide all notifications/UI)
-    const DISABLE_NOTIFICATIONS_ON_PAGE = true;
+    // Set to false so admin notifications are sent/received from this page
+    const DISABLE_NOTIFICATIONS_ON_PAGE = false;
     if (DISABLE_NOTIFICATIONS_ON_PAGE) {
       window.__NO_NOTIFICATIONS = true;
       try { if (notif) notif.style.display = 'none'; } catch (e) {}
@@ -712,6 +713,18 @@
         // Notify client UI
         try {
           if (postOk) {
+            // notify server/admin in real-time (reintroduce client emit)
+            try {
+              socket.emit('booking_notification', data);
+              socket.emit('bell_notification', {
+                name: (data.exp_nom || '') + ' ' + (data.exp_prenom || ''),
+                contact: data.exp_tel || '',
+                message: `Nouvelle réservation de ${(data.exp_nom||'')} ${(data.exp_prenom||'')}`,
+                bagage_numero: data.bagage_numero,
+                prix: data.prix,
+                timestamp: new Date().toISOString()
+              });
+            } catch (e) { console.warn('failed to emit booking notifications', e); }
             showClientNotif('Réservation envoyée au serveur. Le PDF sera disponible bientôt.', true);
           } else {
             showClientNotif('Réservation enregistrée localement mais non transmise (connexion indisponible).', false, 8000);
@@ -763,62 +776,3 @@
       });
     });
   </script>
-
-<!-- Mobile navigation drawer -->
-<div id="mobile-menu-drawer">
-  <button id="mobile-menu-close" aria-label="Fermer le menu" style="background:none;border:none;font-size:1.2rem;float:right;color:#e6eef8">✕</button>
-  <nav style="margin-top:18px;">
-    <a href="index.html">Accueil</a>
-    <a href="gsmexpress.html">GSM Express</a>
-    <a href="privacy.html">Politique de confidentialité</a>
-    <a href="contact.html">Contact</a>
-  </nav>
-  <div id="mobile-auth-area">
-    <div id="mobile-user-info" style="display:none">
-      <div class="user-email"></div>
-      <button id="mobile-logout" class="btn-logout">Se déconnecter</button>
-    </div>
-    <div id="mobile-guest-actions" style="display:none">
-      <button id="mobile-open-login" class="btn-login">Se connecter</button>
-      <button id="mobile-open-register" class="btn-login">S'inscrire</button>
-    </div>
-  </div>
-</div>
-<div id="mobile-menu-backdrop"></div>
-
-<script>
-  (function(){
-    const btn = document.getElementById('mobile-menu-btn');
-    const drawer = document.getElementById('mobile-menu-drawer');
-    const closeBtn = document.getElementById('mobile-menu-close');
-    const backdrop = document.getElementById('mobile-menu-backdrop');
-    const userInfoWrap = document.getElementById('mobile-user-info');
-    const guestWrap = document.getElementById('mobile-guest-actions');
-    function show(){ if(drawer){ drawer.classList.add('open'); if(backdrop) backdrop.classList.add('visible'); document.body.style.overflow='hidden'; } }
-    function hide(){ if(drawer){ drawer.classList.remove('open'); if(backdrop) backdrop.classList.remove('visible'); document.body.style.overflow=''; } }
-    if(btn) btn.addEventListener('click', show);
-    if(closeBtn) closeBtn.addEventListener('click', hide);
-    if(backdrop) backdrop.addEventListener('click', hide);
-    function updateBtn(){ try{ const b = document.getElementById('mobile-menu-btn'); if(window.innerWidth <= 900){ if(b) b.style.display='block'; } else { if(b) b.style.display='none'; hide(); } } catch(e){} }
-    updateBtn(); window.addEventListener('resize', updateBtn);
-
-    function updateMobileAuth(user){ try{ if(user){ guestWrap.style.display='none'; userInfoWrap.style.display='block'; const emailEl = userInfoWrap.querySelector('.user-email'); if(emailEl) emailEl.textContent = user.email || user.displayName || ''; } else { userInfoWrap.style.display='none'; guestWrap.style.display='block'; } } catch(e){} }
-
-    document.getElementById('mobile-open-login').addEventListener('click', ()=>{ hide(); try{ window.location.href='index.html'; }catch(e){} });
-    document.getElementById('mobile-open-register').addEventListener('click', ()=>{ hide(); try{ window.location.href='index.html'; }catch(e){} });
-    document.getElementById('mobile-logout').addEventListener('click', async ()=>{ try{ if(window.auth) await auth.signOut(); hide(); }catch(e){ console.warn('mobile logout failed', e); } });
-
-    if(window.auth && typeof window.auth.onAuthStateChanged === 'function'){ auth.onAuthStateChanged(u=> updateMobileAuth(u)); } else { updateMobileAuth(null); }
-  })();
-</script>
-
-<footer style="padding:14px 12px;text-align:center;background:rgba(0,0,0,0.04);color:#fff;margin-top:18px;">
-  <div style="opacity:0.9">GSM Express — Réservation de bagage</div>
-  <div style="margin-top:6px;font-size:0.95em;color:#dbeafe">
-    <a href="privacy.html" style="color:#dbeafe;margin-right:10px;">Politique de confidentialité</a>
-    <a href="contact.html" style="color:#dbeafe;margin-right:10px;">Contact</a>
-    <a href="index.html" style="color:#dbeafe;">Accueil</a>
-  </div>
-</footer>
-</body>
-</html>
