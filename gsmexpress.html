@@ -5,10 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GSM Express – Réservation Bagage</title>
   <meta name="description" content="Réservez votre bagage simplement, obtenez un PDF, un QR code, et une notification instantanée." />
-  <meta name="google-adsense-account" content="ca-pub-8308471028441999">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap">
-  <!-- Google AdSense: publisher ID inserted -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-8308471028441999"></script>
   <style>
     :root{
       --bg-start: #0f172a;
@@ -23,7 +20,7 @@
     html,body{height:100%;}
     body {
       font-family: 'Inter', Arial, sans-serif;
-      background: radial-gradient(1200px 600px at 10% 10%, rgba(14,165,233,0.06), transparent), linear-gradient(120deg, rgba(30,64,175,0.12) 0%, rgba(14,165,233,0.06) 100%), var(--bg-start);
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(20, 179, 253, 0.06), transparent), linear-gradient(120deg, rgba(30,64,175,0.12) 0%, rgba(6, 209, 141, 0.06) 100%), var(--bg-start);
       color: #e6eef8;
       margin: 0;
       -webkit-font-smoothing:antialiased;
@@ -118,8 +115,8 @@
       .actions { gap:0.5rem }
       .actions .btn { flex:1 1 48%; }
       .qr-section { margin-top: 0.6rem; }
-      /* show a prominent floating menu button on small screens */
-      #btnLogout { display: block; position: fixed; top: 18px; right: 18px; z-index:1200; padding:0.7rem 1rem; border-radius:12px; box-shadow:0 8px 26px rgba(2,6,23,0.45); }
+      /* hide fixed menu button on small screens to save space */
+      #btnLogout { display: none; }
     }
 
     /* Extra mobile polish for small phones */
@@ -133,8 +130,7 @@
       #btnPdf, #btnQr { font-size: 0.96rem; padding: 0.6rem; }
       #btnReset { padding: 0.5rem; }
       .notif { display:none !important; }
-      /* keep menu visible on very small screens as a compact floating button */
-      #btnLogout { display:block; position: fixed; top: 12px; right: 12px; z-index:1200; padding:0.6rem 0.9rem; border-radius:10px; box-shadow:0 6px 20px rgba(2,6,23,0.5); }
+      #btnLogout { display:none }
     }
 
     /* Compact layout when vertical space is limited */
@@ -149,63 +145,12 @@
     /* make action buttons wrap on narrow but not-too-small screens */
     .actions { display: flex; gap: 0.7rem; justify-content: center; flex-wrap: wrap; }
     .actions .btn { min-width: 120px; flex: 1 1 auto; }
-    .ads-slot{margin:12px 0;text-align:center}
-
-    /* Pro left-side menu */
-    #pro-menu-btn{position:fixed;left:18px;top:18px;z-index:1300;background:linear-gradient(90deg,#06b6d4,#0891b2);color:#fff;border:none;padding:0.6rem 0.9rem;border-radius:10px;box-shadow:0 8px 26px rgba(2,6,23,0.45);cursor:pointer;font-weight:800}
-    #pro-menu-panel{position:fixed;left:0;top:0;height:100vh;width:280px;max-width:85%;background:linear-gradient(180deg,#0b1220,#071028);color:#e6eef8;z-index:1350;transform:translateX(-110%);transition:transform .28s ease;padding:18px 14px;box-shadow:8px 0 40px rgba(0,0,0,0.5);overflow:hidden;position:relative}
-    #pro-menu-panel::before{content:'';position:absolute;left:50%;transform:translateX(-50%);top:36px;width:140px;height:140px;background-image:url('image/polo1.png');background-size:contain;background-repeat:no-repeat;opacity:0.06;filter:blur(1px);pointer-events:none}
-    #pro-menu-panel.open{transform:translateX(0)}
-    #pro-menu-panel .close{position:absolute;right:12px;top:12px;background:transparent;border:none;color:#e6eef8;font-size:1.1rem}
-    #pro-menu-panel .matricule{font-weight:800;color:#f8fafc;margin-bottom:12px;font-size:0.98rem}
-    #pro-menu-panel nav a{display:block;color:#cfe9ff;padding:10px 6px;border-radius:8px;text-decoration:none;margin:6px 0;font-weight:700}
-    #pro-menu-panel .brand{margin-top:18px;border-top:1px solid rgba(255,255,255,0.04);padding-top:12px;color:#93c5fd;font-weight:700}
-    #pro-menu-backdrop{position:fixed;left:0;top:0;width:100%;height:100vh;background:rgba(0,0,0,0.45);z-index:1340;opacity:0;pointer-events:none;transition:opacity .2s}
-    #pro-menu-backdrop.visible{opacity:1;pointer-events:auto}
-
-    /* Mobile: make the reservation container use full screen and form scrollable */
-    @media (max-width: 600px) {
-      .container { max-width:100%; width:100%; margin:0; padding:0.9rem; border-radius:0; height:calc(100vh - 0px); box-shadow:none; border-left:none; border-right:none; overflow:auto; display:flex; flex-direction:column; }
-      #reservationForm { display:flex; flex-direction:column; flex:1 1 auto; overflow:auto; }
-      #reservationForm .actions { margin-top: auto; }
-      .qr-section { margin-top: 0.6rem; }
-    }
   </style>
 </head>
 <body>
-  <div id="top-menu-wrap" style="position:fixed;top:18px;right:18px;z-index:1200;display:flex;gap:8px;align-items:center;">
-    <a id="top-menu-btn" href="index.html" style="display:inline-block;background:linear-gradient(90deg,#ecb43b,#f59e0b);border:2px solid #acb5d1;color:#334681;font-weight:800;padding:0.6rem 1rem;border-radius:10px;box-shadow:0 8px 26px rgba(2,6,23,0.45);cursor:pointer;text-decoration:none;">☰ Menu</a>
-    <button id="open-notifs-btn" style="display:none;background:linear-gradient(90deg,#06b6d4,#0891b2);color:#fff;border:none;padding:0.5rem 0.7rem;border-radius:8px;cursor:pointer">🔔 Notifications</button>
-  </div>
-  <!-- Pro left menu button -->
-  <button id="pro-menu-btn" aria-expanded="false" aria-controls="pro-menu-panel">☰ Pro</button>
-  <div id="pro-menu-panel" role="dialog" aria-hidden="true">
-    <button class="close" aria-label="Fermer">✕</button>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-      <img src="image/polo1.png" alt="Logo" style="width:56px;height:56px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,0.06)">
-      <div>
-        <div class="matricule" id="pro-matricule">Matricule : —</div>
-        <div style="font-size:0.9rem;color:#9fbff8;margin-top:4px;font-weight:600">mj tiddas studio</div>
-      </div>
-    </div>
-    <nav>
-      <a href="index.html">Accueil</a>
-      <a href="contact.html">Contact</a>
-      <a href="privacy.html">Politique</a>
-      <a href="terms.html">Conditions</a>
-      <a href="about.html">À propos</a>
-    </nav>
-    <div class="brand">mj tiddas studio | gsn transport bagages</div>
-  </div>
-  <div id="pro-menu-backdrop"></div>
+  <button id="btnLogout" style="position:fixed;top:24px;right:32px;z-index:1000;background:#ecb43b;border:2px solid #acb5d1;color:#334681;font-weight:700;padding:0.6rem 1.5rem;border-radius:8px;box-shadow:0 2px 8px #0001;cursor:pointer;">Menue</button>
   <div class="container">
     <h1>Réserver mon bagage</h1>
-    <div id="display_matricule" style="max-width:700px;margin:0.4rem auto 0.8rem auto;padding:10px 12px;border-radius:10px;background:linear-gradient(90deg,#f0f9ff,#e6fffa);color:#0f172a;font-weight:700;display:none;text-align:center;"></div>
-    <!-- AdSense ad slot (replace data-ad-client and data-ad-slot) -->
-    <div class="ads-slot">
-      <ins class="adsbygoogle" style="display:block;max-width:728px;margin:0 auto" data-ad-client="ca-pub-8308471028441999" data-ad-slot="1234567892" data-ad-format="auto"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </div>
     <div class="notif" id="notif"></div>
     <form id="reservationForm" autocomplete="on">
       <label for="bagage_numero">Numéro de bagage</label>
@@ -258,8 +203,7 @@
     const socket = io(SERVER_ORIGIN);
     const notif = document.getElementById('notif');
     // Disable notifications on this page (set true to hide all notifications/UI)
-    // Set to false so admin notifications are sent/received from this page
-    const DISABLE_NOTIFICATIONS_ON_PAGE = false;
+    const DISABLE_NOTIFICATIONS_ON_PAGE = true;
     if (DISABLE_NOTIFICATIONS_ON_PAGE) {
       window.__NO_NOTIFICATIONS = true;
       try { if (notif) notif.style.display = 'none'; } catch (e) {}
@@ -278,34 +222,6 @@
     // prevent double submit
     let isSubmitting = false;
     // helper to show confirmation/toast to user
-
-    // Top menu interactions — simplified: direct redirect to Accueil
-    try {
-      const topMenuBtn = document.getElementById('top-menu-btn');
-      if (topMenuBtn) topMenuBtn.addEventListener('click', (e) => { try { e.preventDefault(); window.location.href = 'index.html'; } catch (err) {} });
-      // Pro menu interactions (left-side)
-      try {
-        const proBtn = document.getElementById('pro-menu-btn');
-        const proPanel = document.getElementById('pro-menu-panel');
-        const proBackdrop = document.getElementById('pro-menu-backdrop');
-        const proClose = proPanel ? proPanel.querySelector('.close') : null;
-        function openPro(){ if(proPanel){ proPanel.classList.add('open'); proPanel.setAttribute('aria-hidden','false'); if(proBtn) proBtn.setAttribute('aria-expanded','true'); if(proBackdrop) proBackdrop.classList.add('visible'); document.body.style.overflow='hidden'; } }
-        function closePro(){ if(proPanel){ proPanel.classList.remove('open'); proPanel.setAttribute('aria-hidden','true'); if(proBtn) proBtn.setAttribute('aria-expanded','false'); if(proBackdrop) proBackdrop.classList.remove('visible'); document.body.style.overflow=''; } }
-        if (proBtn) proBtn.addEventListener('click', ()=>{ try{ const open = proPanel && proPanel.classList.contains('open'); if(open) closePro(); else openPro(); }catch(e){} });
-        if (proClose) proClose.addEventListener('click', closePro);
-        if (proBackdrop) proBackdrop.addEventListener('click', closePro);
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePro(); });
-        // show matricule if present
-        try { const pm = document.getElementById('pro-matricule'); const mat = (function(){ try{ return localStorage.getItem('gsm_matricule')||'' }catch(e){return ''} })(); if (pm && mat) { pm.textContent = 'Matricule : ' + mat; } } catch(e){}
-      } catch(e){ console.warn('pro menu init failed', e); }
-      // show notifications button when admin code is present in sessionStorage
-      try {
-        const notBtn = document.getElementById('open-notifs-btn');
-        const isGsmAdmin = (function(){ try { return sessionStorage.getItem('gsm_code') === '1'; } catch(e){ return false; } })();
-        if (notBtn && isGsmAdmin) { notBtn.style.display = ''; }
-        if (notBtn) notBtn.addEventListener('click', ()=>{ try { window.open('/admin-notifications.html','gsm_admin_notifications','width=480,height=720'); } catch(e) { alert('Impossible d\'ouvrir la fenêtre.'); } });
-      } catch(e){}
-    } catch (e) { console.warn('top menu init failed', e); }
     function showClientNotif(message, success = true, timeout = 5000) {
       try {
         notif.style.display = 'block';
@@ -411,62 +327,10 @@
         </div>
       `).join('');
     }
-    // --- Enhanced admin in-page notifications and desktop notifications ---
-    // Floating admin notifications (compact) — created when admin detected
-    let floatNotifs = null;
-    function ensureFloatNotifs() {
-      if (floatNotifs) return floatNotifs;
-      floatNotifs = document.createElement('div');
-      floatNotifs.id = 'float-notifs';
-      floatNotifs.style = 'position:fixed;top:72px;right:18px;z-index:1400;display:flex;flex-direction:column;gap:8px;max-width:320px;pointer-events:none;';
-      document.body.appendChild(floatNotifs);
-      return floatNotifs;
-    }
-    function showFloatNotif(n) {
-      try {
-        ensureFloatNotifs();
-        const el = document.createElement('div');
-        el.style = 'background:linear-gradient(90deg,#fff,#f4f4f8);color:#0b1220;border-radius:10px;padding:10px 12px;box-shadow:0 8px 26px rgba(2,6,23,0.3);pointer-events:auto;';
-        el.innerHTML = `<div style="font-weight:800;margin-bottom:6px;">${n.bagage_numero || 'Nouvelle réservation'}</div>
-          <div style="font-size:0.98rem;color:#334681;margin-bottom:8px;">${(n.exp_nom||'') + ' ' + (n.exp_prenom||'')} → ${ (n.dest_nom||'') }</div>
-          <div style="display:flex;gap:8px;justify-content:flex-end">
-            <a href="${n.pdfLink || (SERVER_ORIGIN + '/pdfs/reservation_' + (n.bagage_numero||'') + '.pdf')}" target="_blank" style="background:#1e40af;color:#fff;padding:6px 8px;border-radius:8px;text-decoration:none;font-weight:700">PDF</a>
-            <button style="background:#ef4444;color:#fff;border:none;padding:6px 8px;border-radius:8px;font-weight:700;cursor:pointer">Fermer</button>
-          </div>`;
-        const btn = el.querySelector('button');
-        btn.addEventListener('click', () => { try { el.remove(); } catch(e){} });
-        floatNotifs.insertBefore(el, floatNotifs.firstChild);
-        // auto-remove after 14s
-        setTimeout(() => { try { el.remove(); } catch(e){} }, 14000);
-      } catch (e) { console.warn('showFloatNotif error', e); }
-    }
-
-    function requestDesktopPermissionIfNeeded() {
-      try {
-        if (!('Notification' in window)) return;
-        if (Notification.permission === 'default') {
-          Notification.requestPermission().catch(()=>{});
-        }
-      } catch (e) {}
-    }
-
-    // Écoute directe des notifications socket — show in-page + desktop for admin
+    // Écoute directe des notifications socket
     socket.on('booking_notification', data => {
       if (window.__NO_NOTIFICATIONS) return;
-      try { addNotification(data); } catch(e){}
-      // if admin (sessionStorage flag), display floating and desktop notification
-      const isAdmin = (function(){ try { return sessionStorage.getItem('gsm_code') === '1'; } catch(e){ return false; } })();
-      if (isAdmin) {
-        try { showFloatNotif(data); } catch(e){}
-        try {
-          if ('Notification' in window && Notification.permission === 'granted') {
-            const title = `Nouvelle réservation — ${data.bagage_numero || ''}`;
-            const body = `${(data.exp_nom||'')} ${(data.exp_prenom||'')} → ${(data.dest_nom||'')} · ${data.prix || ''} €`;
-            const n = new Notification(title, { body });
-            n.onclick = function() { try { window.focus(); window.open(data.pdfLink || (SERVER_ORIGIN + '/pdfs/reservation_' + (data.bagage_numero||'') + '.pdf'), '_blank'); } catch(e){} };
-          }
-        } catch (e) { console.warn('desktop notification failed', e); }
-      }
+      addNotification(data);
     });
     // Merge pending notifications sent by server (JSON array)
     socket.on('pending_notifications', list => {
@@ -521,25 +385,6 @@
         const btnReset = document.getElementById('btnReset');
         if (btnReset) btnReset.addEventListener('click', () => { try { if (bagInput) bagInput.value = generateBagageNumero(); } catch(e){} });
       } catch (e) { console.warn('failed to prefill bagage numero', e); }
-
-      // Show matricule to user if available
-      try {
-        const display = document.getElementById('display_matricule');
-        const matricule = (function(){ try { return localStorage.getItem('gsm_matricule') || ''; } catch(e){ return ''; } })();
-        if (display && matricule) {
-          display.textContent = 'Votre matricule : ' + matricule;
-          display.style.display = 'block';
-        }
-      } catch (e) { console.warn('failed to show matricule', e); }
-      // Admin notification setup: request desktop permission and prepare float panel
-      try {
-        const isAdmin = (function(){ try { return sessionStorage.getItem('gsm_code') === '1'; } catch(e){ return false; } })();
-        if (isAdmin) {
-          try { requestDesktopPermissionIfNeeded(); } catch(e){}
-          try { ensureFloatNotifs(); } catch(e){}
-          try { const notBtn = document.getElementById('open-notifs-btn'); if (notBtn) notBtn.style.display = ''; } catch(e){}
-        }
-      } catch (e) { console.warn('admin notif init failed', e); }
     });
     // ...reste du JS existant (formulaire, PDF, QR, etc.)...
     function generateBagageNumero() {
@@ -593,11 +438,8 @@
           region = document.getElementById('region_fr_autre') ? document.getElementById('region_fr_autre').value : '';
         }
       }
-      // include matricule if present in localStorage
-      const matricule = (function(){ try { return localStorage.getItem('gsm_matricule') || ''; } catch(e){ return ''; } })();
       return {
         bagage_numero: document.getElementById('bagage_numero').value,
-        matricule: matricule,
         exp_nom: document.getElementById('exp_nom').value,
         exp_prenom: document.getElementById('exp_prenom').value,
         exp_tel: document.getElementById('exp_tel').value,
@@ -685,7 +527,7 @@
     ];
 
     const tiziRegions = [
-      "Bouzegane", "Illoula", "Michelet", "Iferhounene", "Tizi Ouzou", "Azazga", "Freha", "Ouad Aissi", "Tamda", "Tigzirt", "Azefoune", "Ouasif", "Oudhia", "Draa Ben Khedda", "Beni Douala"
+      "Azazga", "Tizi Ville", "Illoula", "Michelet", "Iferhounene", "Mikla", "Draa Ben Khedda", "Freha", "Tigzirt"
     ];
 
     const franceVilles = ["Paris", "Lyon", "Marseille"];
@@ -730,9 +572,7 @@
         tiziRegions.forEach(r => { options += `<option value="${r}">${r}</option>`; });
         regionZone.innerHTML = `<label for="region_tizi">Région</label><select id="region_tizi" required>${options}</select>`;
       } else if (wilaya) {
-        regionZone.innerHTML = `<label for="region_autre">Région</label>
-          <input id="region_autre" type="text" required placeholder="Région dans ${wilaya}" aria-describedby="region_help" />
-          <div id="region_help" style="font-size:0.92rem;color:#cbd5e1;margin-top:6px;">Si votre wilaya n'est pas listée ou vous souhaitez préciser l'adresse, saisissez la commune et l'adresse complète (ex: commune, rue).</div>`;
+        regionZone.innerHTML = `<label for="region_autre">Région</label><input id="region_autre" type="text" required placeholder="Région dans ${wilaya}" />`;
       } else {
         regionZone.innerHTML = '';
       }
@@ -754,9 +594,7 @@
         marseilleArr.forEach(a => { options += `<option value="${a}">${a} arrondissement</option>`; });
         regionZone.innerHTML = `<label for="arr_marseille">Arrondissement</label><select id="arr_marseille" required>${options}</select>`;
       } else if (ville) {
-        regionZone.innerHTML = `<label for="region_fr_autre">Région</label>
-          <input id="region_fr_autre" type="text" required placeholder="Région dans ${ville}" aria-describedby="region_fr_help" />
-          <div id="region_fr_help" style="font-size:0.92rem;color:#cbd5e1;margin-top:6px;">Entrez la commune ou l'arrondissement précis si nécessaire (ex: 5e arrondissement, Nom de la commune).</div>`;
+        regionZone.innerHTML = `<label for="region_fr_autre">Région</label><input id="region_fr_autre" type="text" required placeholder="Région dans ${ville}" />`;
       } else {
         regionZone.innerHTML = '';
       }
@@ -793,15 +631,11 @@
         document.getElementById('qrZone').style.display = 'none';
       };
         // Réserver (submit)
-        // remember last submitted bagage numero so we can match incoming pdf_generated events
-        window.awaitingPdfFor = null;
-        document.getElementById('reservationForm').onsubmit = async function (e) {
+      document.getElementById('reservationForm').onsubmit = async function (e) {
         e.preventDefault();
         if (isSubmitting) return;
         isSubmitting = true;
         const data = getFormData();
-          // track this bagage number while waiting for server PDF
-          try { window.awaitingPdfFor = (data && data.bagage_numero) ? data.bagage_numero : null; } catch (e) {}
         // Envoi unique via REST : le serveur générera le PDF et diffusera la notification
         let postOk = false;
         try {
@@ -826,18 +660,6 @@
         // Notify client UI
         try {
           if (postOk) {
-            // notify server/admin in real-time (reintroduce client emit)
-            try {
-              socket.emit('booking_notification', data);
-              socket.emit('bell_notification', {
-                name: (data.exp_nom || '') + ' ' + (data.exp_prenom || ''),
-                contact: data.exp_tel || '',
-                message: `Nouvelle réservation de ${(data.exp_nom||'')} ${(data.exp_prenom||'')}`,
-                bagage_numero: data.bagage_numero,
-                prix: data.prix,
-                timestamp: new Date().toISOString()
-              });
-            } catch (e) { console.warn('failed to emit booking notifications', e); }
             showClientNotif('Réservation envoyée au serveur. Le PDF sera disponible bientôt.', true);
           } else {
             showClientNotif('Réservation enregistrée localement mais non transmise (connexion indisponible).', false, 8000);
@@ -861,12 +683,12 @@
         }, 1200);
       };
 
-        // Quand le serveur a généré un PDF, afficher le lien (l'admin recevra aussi cette notification)
+      // Quand le serveur a généré un PDF, afficher le lien (l'admin recevra aussi cette notification)
       socket.on('pdf_generated', (payload) => {
         try {
           if (!payload || !payload.url) return;
-          const watchFor = window.awaitingPdfFor || (document.getElementById('bagage_numero') ? document.getElementById('bagage_numero').value : '');
-          if (payload.filename && watchFor && payload.filename.includes(watchFor)) {
+          const curNum = document.getElementById('bagage_numero') ? document.getElementById('bagage_numero').value : '';
+          if (payload.filename && curNum && payload.filename.includes(curNum)) {
             const fullUrl = (payload.url && payload.url.startsWith('http')) ? payload.url : (SERVER_ORIGIN + payload.url);
             // automatically trigger download/open of the generated PDF for the current booking
             try {
@@ -878,8 +700,6 @@
               document.body.appendChild(a);
               a.click();
               a.remove();
-              // clear awaiting flag after download
-              try { window.awaitingPdfFor = null; } catch (e) {}
             } catch (err) {
               // fallback: open in new tab
               try { window.open(fullUrl, '_blank'); } catch (e) { /* ignore */ }
@@ -889,3 +709,5 @@
       });
     });
   </script>
+</body>
+</html>
