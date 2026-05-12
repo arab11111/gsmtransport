@@ -7,6 +7,7 @@ const fsp = fs.promises;
 const PDFDocument = require('pdfkit');
 // Optional MongoDB integration (use MONGODB_URI env var)
 const { MongoClient, ServerApiVersion } = require('mongodb');
+const jwt = require('jsonwebtoken');
 let mongoClient = null;
 let usersCollection = null;
 // initialize Mongo asynchronously if MONGODB_URI provided (users collection only)
@@ -89,6 +90,8 @@ const io = socketIo(server, { cors: { origin: ALLOWED_ORIGINS, methods: ['GET','
 
 // Require GSM admin code in env to avoid insecure default
 const GSM_CODE = process.env.GSM_ADMIN_CODE;
+// Token signing secret (use a dedicated secret in production)
+const TOKEN_SECRET = process.env.GSM_TOKEN_SECRET || GSM_CODE;
 if (!GSM_CODE) {
   console.error('GSM_ADMIN_CODE manquant — définissez la variable d\'environnement GSM_ADMIN_CODE');
   process.exit(1);
@@ -125,6 +128,15 @@ async function persistNotification(payload) {
     list.unshift({ ...payload, receivedAt: new Date().toISOString(), read: false });
     if (list.length > 200) list.length = 200;
     await writeJson(NOTIF_FILE, list);
+    // also persist to MongoDB if available
+    try {
+      if (mongoClient) {
+        const db = process.env.MONGODB_DB ? mongoClient.db(process.env.MONGODB_DB) : mongoClient.db();
+        const col = db.collection('notifications');
+        const doc = { ...payload, createdAt: new Date().toISOString() };
+        await col.insertOne(doc).catch(() => {});
+      }
+    } catch (e) { console.warn('persistNotification mongo error', e); }
   } catch (e) { console.warn('persistNotification error', e); }
 }
 
@@ -176,7 +188,21 @@ async function generatePdfForBooking(booking) {
     } catch (err) { reject(err); }
   });
 
-  try { io.emit('pdf_generated', { filename, url: urlPath }); } catch (e) {}
+  try {
+    // emit pdf_generated only to admin sockets
+    try {
+      for (const [id, s] of Object.entries(io.sockets.sockets)) {
+        try {
+          const sock = io.sockets.sockets.get ? io.sockets.sockets.get(id) : s;
+          if (sock && sock.data && sock.data.isAdmin) {
+            sock.emit('pdf_generated', { filename, url: urlPath });
+          }
+        } catch (e) {}
+      }
+    } catch (e) {
+      try { io.emit('pdf_generated', { filename, url: urlPath }); } catch (ex) { /* ignore */ }
+    }
+  } catch (e) {}
   return urlPath;
 }
 
@@ -262,6 +288,23 @@ app.post('/api/auth/verify-code', async (req, res) => {
   } catch (e) { return res.status(500).json({ error: e.message }); }
 });
 
+// Issue a short-lived admin token (JWT) when correct GSM admin code provided
+app.post('/api/auth/token', async (req, res) => {
+  try {
+    const code = req.body && req.body.code ? String(req.body.code).trim() : '';
+    if (!code) return res.status(400).json({ error: 'missing_code' });
+    if (code !== GSM_CODE) return res.status(403).json({ error: 'invalid_code' });
+    // sign token
+    try {
+      const token = jwt.sign({ admin: true }, String(TOKEN_SECRET), { expiresIn: '1h' });
+      return res.json({ token });
+    } catch (e) {
+      console.warn('token sign failed', e);
+      return res.status(500).json({ error: 'token_error' });
+    }
+  } catch (e) { return res.status(500).json({ error: e.message }); }
+});
+
 // Upload a PDF (used by clients who generate locally)
 app.post('/upload-pdf', async (req, res) => {
   const filename = req.query.filename || `file_${Date.now()}.pdf`;
@@ -339,7 +382,21 @@ app.post('/api/bookings', async (req, res) => {
     try { persistNotification({ ...payload, type: 'booking' }); } catch (e) {}
 
     // emit single booking_notification
-    try { io.emit('booking_notification', payload); } catch (e) { console.warn('emit booking_notification failed', e); }
+    try {
+      // emit only to registered admin sockets
+      try {
+        for (const [id, s] of Object.entries(io.sockets.sockets)) {
+          try {
+            const sock = io.sockets.sockets.get ? io.sockets.sockets.get(id) : s;
+            if (sock && sock.data && sock.data.isAdmin) {
+              sock.emit('booking_notification', payload);
+            }
+          } catch (e) {}
+        }
+      } catch (e) {
+        try { io.emit('booking_notification', payload); } catch (ex) { console.warn('emit booking_notification failed', ex); }
+      }
+    } catch (e) { console.warn('emit booking_notification failed', e); }
 
     res.json({ success: true, id: savedId, pdf: pdfLink });
   } catch (e) { console.error('POST /api/bookings', e); res.status(500).json({ error: e.message }); }
@@ -432,6 +489,35 @@ app.get('/generate-pdf/:id', async (req, res) => {
 io.on('connection', async (socket) => {
   console.log('Socket connected', socket.id);
 
+  // simple admin registry: sockets can identify themselves as admins
+  socket.data.isAdmin = false;
+  // Prefer token-based admin authentication: token passed in handshake auth
+  try {
+    const token = socket.handshake && socket.handshake.auth && socket.handshake.auth.token;
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, String(TOKEN_SECRET));
+        if (decoded && decoded.admin) {
+          socket.data.isAdmin = true;
+          try { socket.emit('admin_registered', { ok: true, token: true }); } catch (e) {}
+          console.log('Socket admin authenticated by token:', socket.id);
+        }
+      } catch (e) { /* invalid token - ignore */ }
+    }
+  } catch (e) { console.warn('socket token check failed', e); }
+  // fallback: allow explicit register_admin event (backwards compat)
+  socket.on('register_admin', (code) => {
+    try {
+      if (String(code) === String(GSM_CODE)) {
+        socket.data.isAdmin = true;
+        try { socket.emit('admin_registered', { ok: true, token: false }); } catch (e) {}
+        console.log('Socket registered as admin via code:', socket.id);
+      } else {
+        try { socket.emit('admin_registered', { ok: false }); } catch (e) {}
+      }
+    } catch (e) { console.warn('register_admin error', e); }
+  });
+
   // send pending notifications (JSON fallback)
   try { const list = await readJson(NOTIF_FILE, []); if (list && list.length) socket.emit('pending_notifications', list); } catch (e) {}
 
@@ -440,7 +526,17 @@ io.on('connection', async (socket) => {
     try {
       const payload = { ...(data||{}), createdAt: new Date().toISOString(), read: false };
       persistNotification({ ...payload, type: 'booking' });
-      io.emit('booking_notification', payload);
+      // emit only to registered admin sockets
+      try {
+        for (const [id, s] of Object.entries(io.sockets.sockets)) {
+          try {
+            const sock = io.sockets.sockets.get ? io.sockets.sockets.get(id) : s; // support different socket.io versions
+            if (sock && sock.data && sock.data.isAdmin) {
+              sock.emit('booking_notification', payload);
+            }
+          } catch (e) {}
+        }
+      } catch (e) { try { io.emit('booking_notification', payload); } catch (ex) {} }
     } catch (e) { console.warn('client_booking error', e); }
   });
 
