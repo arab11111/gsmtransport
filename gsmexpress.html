@@ -1,713 +1,291 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GSM Express – Réservation Bagage</title>
-  <meta name="description" content="Réservez votre bagage simplement, obtenez un PDF, un QR code, et une notification instantanée." />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GSM Express - Réservation Bagage</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --bg-start: #0f172a;
-      --bg-end: #0b1220;
-      --card-bg: rgba(255,255,255,0.06);
-      --accent-1: #0ea5e9;
-      --accent-2: #1e40af;
-      --muted: #94a3b8;
-      --success: #10b981;
-    }
-
-    html,body{height:100%;}
-    body {
-      font-family: 'Inter', Arial, sans-serif;
-      background: radial-gradient(1200px 600px at 10% 10%, rgba(20, 179, 253, 0.06), transparent), linear-gradient(120deg, rgba(30,64,175,0.12) 0%, rgba(6, 209, 141, 0.06) 100%), var(--bg-start);
-      color: #e6eef8;
-      margin: 0;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:2rem 1rem;
-    }
-    .container {
-      width:100%;
-      max-width:720px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-      border: 1px solid rgba(255,255,255,0.05);
-      border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(2,6,23,0.6);
-      padding: 2rem;
-      backdrop-filter: blur(8px) saturate(120%);
-    }
-    h1 {
-      text-align: center;
-      font-size: 1.6rem;
-      font-weight: 800;
-      margin-bottom: 1.1rem;
-      color: #f8fafc;
-      letter-spacing: -0.02em;
-    }
-    label {
-      display:block;
-      margin-bottom:0.4rem;
-      color:var(--muted);
-      font-weight:700;
-      font-size:0.95rem;
-    }
-    input, textarea, select {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.06);
-      background: rgba(255,255,255,0.02);
-      color: #e6eef8;
-      font-size: 0.98rem;
-      margin-bottom: 0.9rem;
-      transition: box-shadow .18s, transform .12s, border-color .12s;
-      -webkit-appearance:none;
-      appearance:none;
-    }
-    textarea{min-height:90px;resize:vertical}
-    input[readonly]{opacity:0.9;background:rgba(255,255,255,0.015);font-weight:700}
-    input:focus, textarea:focus, select:focus{
-      outline:none;
-      box-shadow: 0 6px 18px rgba(30,64,175,0.12);
-      border-color: var(--accent-2);
-      transform: translateY(-1px);
-    }
-    /* nicer select arrow */
-    select{
-      background-image: linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.6) 50%), linear-gradient(135deg, rgba(255,255,255,0.6) 50%, transparent 50%);
-      background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 12px) calc(1em + 2px);
-      background-size: 6px 6px, 6px 6px;
-      background-repeat: no-repeat;
-      padding-right: 2.4rem;
-    }
-    .actions { display:flex; gap:0.8rem; flex-wrap:wrap; justify-content:center; margin-top:1rem }
-    .btn {
-      border: none;
-      cursor: pointer;
-      padding: 0.75rem 1.2rem;
-      border-radius: 10px;
-      font-weight:800;
-      color: white;
-      background: linear-gradient(90deg,var(--accent-2),var(--accent-1));
-      box-shadow: 0 8px 20px rgba(2,6,23,0.5), inset 0 -2px 6px rgba(0,0,0,0.12);
-      transition: transform .08s ease, box-shadow .12s ease, filter .12s;
-      min-width:140px;
-    }
-    .btn:active{transform:translateY(1px);}
-    .btn:hover{filter:brightness(1.03);}
-    .btn-clean{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.03);box-shadow:none;font-weight:700}
-    #btnPdf{background:linear-gradient(90deg,#06b6d4,#0891b2)}
-    #btnQr{background:linear-gradient(90deg,#7c3aed,#6d28d9)}
-    #btnReset{background:transparent;border:1px solid rgba(255,255,255,0.05);color:var(--muted)}
-    .qr-section{display:none;text-align:center;margin-top:1.25rem}
-    .notif{background:linear-gradient(90deg,rgba(16,185,129,0.06),rgba(59,130,246,0.02));color:var(--success);border-radius:10px;padding:0.8rem 1rem;margin-bottom:1rem;display:none}
-    @media (max-width: 600px) {
-      body { padding: 0.8rem 0.6rem; align-items:flex-start; justify-content:flex-start; }
-      .container { padding: 0.9rem; margin: 0.5rem; border-radius: 10px; max-height: calc(100vh - 14px); overflow: auto; }
-      h1 { font-size: 1.25rem; }
-      label { margin-bottom: 0.25rem; }
-      input, textarea, select { font-size: 0.96rem; padding: 0.6rem 0.6rem; margin-bottom: 0.6rem; }
-      .btn { padding: 0.6rem 0.6rem; font-size: 0.95rem; min-width: unset; }
-      .actions { gap:0.5rem }
-      .actions .btn { flex:1 1 48%; }
-      .qr-section { margin-top: 0.6rem; }
-      /* hide fixed menu button on small screens to save space */
-      #btnLogout { display: none; }
-    }
-
-    /* Extra mobile polish for small phones */
-    @media (max-width: 420px) {
-      .container { padding: 0.7rem 0.7rem; border-radius: 10px; box-shadow: 0 8px 18px rgba(2,6,23,0.55); max-height: calc(100vh - 10px); overflow:auto }
-      h1 { font-size: 1.05rem; }
-      label { font-size: 0.92rem; }
-      input, textarea, select { font-size: 1.0rem; padding: 0.6rem; border-radius: 10px; }
-      .actions { flex-direction: column; gap: 0.45rem; }
-      .actions .btn { width: 100%; min-width: unset; padding: 0.6rem; }
-      #btnPdf, #btnQr { font-size: 0.96rem; padding: 0.6rem; }
-      #btnReset { padding: 0.5rem; }
-      .notif { display:none !important; }
-      #btnLogout { display:none }
-    }
-
-    /* Compact layout when vertical space is limited */
-    @media (max-height: 720px) {
-      body { padding: 0.5rem 0.5rem; }
-      .container { padding: 0.6rem; margin: 0.4rem; max-height: calc(100vh - 8px); }
-      h1 { font-size: 1rem; }
-      input, textarea, select { padding: 0.5rem; font-size: 0.95rem }
-      .actions .btn { padding: 0.45rem; font-size: 0.92rem }
-    }
-
-    /* make action buttons wrap on narrow but not-too-small screens */
-    .actions { display: flex; gap: 0.7rem; justify-content: center; flex-wrap: wrap; }
-    .actions .btn { min-width: 120px; flex: 1 1 auto; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#0f172a;color:white;min-height:100vh;display:flex;flex-direction:column}
+  header{width:100%;background:#111827;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1000}
+  .logo{font-size:20px;color:#38bdf8;font-weight:800}
+  .menu-btn{background:#2563eb;color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+  main{flex:1;display:flex;align-items:center;justify-content:center;padding:28px 16px}
+  .container{width:100%;max-width:780px;background:#0b1220;padding:22px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.45)}
+  .container h1{color:#38bdf8;margin-bottom:12px;text-align:center}
+  label{display:block;margin-top:12px;margin-bottom:6px;color:#cbd5e1;font-weight:700}
+  input,select,textarea{width:100%;padding:12px;border-radius:10px;border:none;background:#1f2937;color:#fff}
+  textarea{min-height:90px}
+  input:focus,select:focus,textarea:focus{outline:none;box-shadow:0 0 0 3px rgba(56,189,248,0.08)}
+  .submit-btn{width:100%;margin-top:14px;background:linear-gradient(90deg,#2563eb,#38bdf8);border:none;padding:14px;color:white;border-radius:12px;font-weight:800;cursor:pointer}
+  .row{display:flex;gap:10px}
+  .matricule-line{margin-top:10px;display:flex;gap:8px;align-items:center}
+  .small-btn{padding:8px 10px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+  #qrZone{margin-top:14px;text-align:center}
+  footer{width:100%;background:#111827;padding:14px;text-align:center;color:#94a3b8;margin-top:18px}
+  @media(max-width:700px){.row{flex-direction:column}}
   </style>
 </head>
 <body>
-  <button id="btnLogout" style="position:fixed;top:24px;right:32px;z-index:1000;background:#ecb43b;border:2px solid #acb5d1;color:#334681;font-weight:700;padding:0.6rem 1.5rem;border-radius:8px;box-shadow:0 2px 8px #0001;cursor:pointer;">Menue</button>
-  <div class="container">
-    <h1>Réserver mon bagage</h1>
-    <div class="notif" id="notif"></div>
-    <form id="reservationForm" autocomplete="on">
-      <label for="bagage_numero">Numéro de bagage</label>
-      <input id="bagage_numero" type="text" readonly autocomplete="off" />
-      <label for="exp_nom">Nom de l'expéditeur</label>
-      <input id="exp_nom" type="text" required placeholder="Nom expéditeur" autocomplete="family-name" />
-      <label for="exp_prenom">Prénom de l'expéditeur</label>
-      <input id="exp_prenom" type="text" required placeholder="Prénom expéditeur" autocomplete="given-name" />
-      <label for="exp_tel">Téléphone expéditeur (FR ou DZ)</label>
-      <input id="exp_tel" type="tel" required placeholder="Ex: +213... ou +33..." autocomplete="tel" />
-      <label for="dest_nom">Nom du destinataire</label>
-      <input id="dest_nom" type="text" required placeholder="Nom destinataire" autocomplete="family-name" />
-      <label for="dest_prenom">Prénom du destinataire</label>
-      <input id="dest_prenom" type="text" required placeholder="Prénom destinataire" autocomplete="given-name" />
-      <label for="dest_tel">Téléphone destinataire (FR ou DZ)</label>
-      <input id="dest_tel" type="tel" required placeholder="Ex: +213... ou +33..." autocomplete="tel" />
-      <label for="pays_dest">Pays de destination</label>
-      <select id="pays_dest" required autocomplete="country">
-        <option value="">Choisir...</option>
-        <option value="France">France</option>
-        <option value="Algérie">Algérie</option>
-      </select>
-      <div id="destination_zone"></div>
-      <label for="nb_bagages">Nombre de bagages</label>
-      <input id="nb_bagages" type="number" min="1" step="1" required placeholder="Ex: 2" autocomplete="off" />
-      <label for="poids">Poids total (kg)</label>
-      <input id="poids" type="number" min="0.1" step="0.1" required placeholder="Ex: 12.5" autocomplete="off" />
-      <label for="notes">Note pour le colis</label>
-      <textarea id="notes" placeholder="Note éventuelle" autocomplete="off"></textarea>
-      <label for="selected_date">Date de départ sélectionnée (admin)</label>
-      <input id="selected_date" type="text" readonly autocomplete="off" />
-      <label for="prix">Prix estimé (€)</label>
-      <input id="prix" type="text" readonly autocomplete="off" />
-      <div class="actions">
-        <button type="button" id="btnQr" class="btn">QR Code</button>
-        <button type="button" id="btnPdf" class="btn">Télécharger PDF</button>
-        <button type="submit" class="btn">Réserver</button>
-        <button type="button" id="btnReset" class="btn btn-clean">Nettoyer</button>
+  <header>
+    <div class="logo">GSM Express</div>
+    <button class="menu-btn" onclick="openMenu()">☰ Menu</button>
+  </header>
+
+  <nav id="sidebar" style="position:fixed;left:-300px;top:0;height:100vh;width:260px;background:#071028;padding:20px;transition:transform .25s ease;z-index:2000;box-shadow:8px 0 30px rgba(0,0,0,0.6);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <img src="image/polo1.png" alt="logo" style="width:56px;height:56px;object-fit:cover;border-radius:8px;opacity:0.08">
+      <div style="font-weight:800;color:#93c5fd">GSM Express</div>
+    </div>
+    <a href="index.html" style="display:block;color:#cfe9ff;margin:8px 0;text-decoration:none;font-weight:700">Accueil</a>
+    <a href="#reservation" style="display:block;color:#cfe9ff;margin:8px 0;text-decoration:none;font-weight:700">Réservation</a>
+    <a href="contact.html" style="display:block;color:#cfe9ff;margin:8px 0;text-decoration:none;font-weight:700">Contact</a>
+    <a href="privacy.html" style="display:block;color:#cfe9ff;margin:8px 0;text-decoration:none;font-weight:700">Privacy</a>
+    <a href="terms.html" style="display:block;color:#cfe9ff;margin:8px 0;text-decoration:none;font-weight:700">Termes</a>
+    <a href="#faq" style="display:block;color:#cfe9ff;margin:8px 0;text-decoration:none;font-weight:700">FAQ</a>
+    <button id="btnLogout" style="margin-top:14px;background:#dc2626;color:#fff;border:none;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:800">Déconnecter</button>
+  </nav>
+
+  <div id="sidebar-backdrop" style="position:fixed;left:0;top:0;width:100%;height:100vh;background:rgba(0,0,0,0.45);opacity:0;pointer-events:none;transition:opacity .2s;z-index:1999"></div>
+
+  <main>
+    <div class="container">
+      <h1>Réservation Bagage</h1>
+
+      <div id="matriculeLine" class="matricule-line" style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <strong>Matricule client:</strong>
+          <span id="matriculeDisplay" style="margin-left:8px;color:#cbd5e1;font-weight:700">—</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="matriculeInput" placeholder="Saisir matricule" style="width:220px;background:#0f172a;border:1px solid #23303b;padding:8px;border-radius:8px;color:#fff" />
+          <button id="saveMatBtn" class="small-btn" style="background:#16a34a;color:#fff">Sauvegarder</button>
+        </div>
       </div>
-    </form>
-    <div class="qr-section" id="qrZone"></div>
-  </div>
+
+      <form id="reservationForm">
+        <label>Pays de destination</label>
+        <select id="pays_dest" required>
+          <option value="">Choisir</option>
+          <option value="Algérie">Algérie</option>
+          <option value="France">France</option>
+        </select>
+        <div id="destinationZone"></div>
+
+        <label>Nom expéditeur</label>
+        <input id="exp_nom" type="text" required />
+
+        <label>Prénom expéditeur</label>
+        <input id="exp_prenom" type="text" required />
+
+        <label>Téléphone expéditeur</label>
+        <input id="exp_tel" type="tel" required />
+
+        <label>Nom destinataire</label>
+        <input id="dest_nom" type="text" required />
+
+        <label>Prénom destinataire</label>
+        <input id="dest_prenom" type="text" required />
+
+        <label>Téléphone destinataire</label>
+        <input id="dest_tel" type="tel" required />
+
+        <label>Nombre de bagages</label>
+        <input id="nb_bagages" type="number" min="1" required />
+
+        <label>Poids total (kg)</label>
+        <input id="poids" type="number" step="0.1" required />
+
+        <label>Note</label>
+        <textarea id="notes" placeholder="Note éventuelle"></textarea>
+
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button id="btnQr" type="button" class="small-btn" style="background:linear-gradient(90deg,#7c3aed,#6d28d9);color:#fff">QR Code</button>
+          <button id="btnDownloadPdf" type="button" class="small-btn" style="background:linear-gradient(90deg,#06b6d4,#0891b2);color:#fff">Télécharger PDF</button>
+          <button id="btnClear" type="button" class="small-btn" style="background:#374151;color:#fff">Nettoyer</button>
+        </div>
+
+        <button class="submit-btn" type="submit">Réserver</button>
+      </form>
+
+      <div id="qrZone"></div>
+      <div id="pdfStatus" style="display:none;margin-top:12px;background:linear-gradient(90deg,#062a4a,#063246);padding:12px;border-radius:10px;color:#d1fae5;font-weight:700"></div>
+    </div>
+  </main>
+
+  <footer>© 2026 GSM Express — MJ Tiddas Studio — Tous droits réservés</footer>
+
+  <!-- libs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
+
   <script>
-    // Determine server origin: localhost uses :3002 for local dev, otherwise use current origin (works on Render)
-    const SERVER_ORIGIN = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? (window.location.protocol + '//' + window.location.hostname + ':3002')
-      : window.location.origin;
-    const socket = io(SERVER_ORIGIN);
-    const notif = document.getElementById('notif');
-    // Disable notifications on this page (set true to hide all notifications/UI)
-    const DISABLE_NOTIFICATIONS_ON_PAGE = true;
-    if (DISABLE_NOTIFICATIONS_ON_PAGE) {
-      window.__NO_NOTIFICATIONS = true;
-      try { if (notif) notif.style.display = 'none'; } catch (e) {}
-      // Prevent the browser Notification permission prompt on this page
-      try {
-        if ('Notification' in window) Notification.requestPermission = () => Promise.resolve('denied');
-      } catch (e) {}
-      // Prevent socket events related to notifications (safe even if handlers not yet attached)
-      try {
-        if (socket && socket.off) {
-          socket.off('booking_notification');
-          socket.off('pending_notifications');
-        }
-      } catch (e) {}
-    }
-    // prevent double submit
-    let isSubmitting = false;
-    // helper to show confirmation/toast to user
-    function showClientNotif(message, success = true, timeout = 5000) {
-      try {
-        notif.style.display = 'block';
-        notif.style.background = success ? '#e6ffef' : '#ffe6e6';
-        notif.style.color = success ? '#0f5132' : '#7f1d1d';
-        notif.style.border = success ? '1px solid #8ef0b3' : '1px solid #f5c2c7';
-        notif.innerHTML = `${success ? '✔️' : '⚠️'} ${message}`;
-        if (timeout > 0) setTimeout(() => { try { notif.style.display = 'none'; } catch(e){} }, timeout);
-      } catch(e) { console.warn('showClientNotif error', e); }
-    }
-    // --- NOTIFICATIONS : version propre, unique, sans admin ---
-    // Zone d'affichage notifications (ajoutée dynamiquement) — skip si notifications désactivées
-    let notifDiv = document.getElementById('notif-reservations');
-    let listeDiv = document.getElementById('liste-reservations');
-    if (!window.__NO_NOTIFICATIONS) {
-      if (!notifDiv) {
-        notifDiv = document.createElement('div');
-        notifDiv.id = 'notif-reservations';
-        notifDiv.style = 'background:linear-gradient(90deg,#fffbe6,#e6ffe6);color:#1a4d2e;padding:1.2rem 1.7rem;border-radius:14px;margin:1.5rem auto 1rem auto;max-width:650px;box-shadow:0 4px 18px #0002;font-weight:700;font-size:1.15em;display:none;transition:background 0.3s;';
-        document.body.insertBefore(notifDiv, document.body.firstChild);
-      }
-      if (!listeDiv) {
-        listeDiv = document.createElement('div');
-        listeDiv.id = 'liste-reservations';
-        listeDiv.style = 'max-width:700px;margin:0 auto 2rem auto;';
-        document.body.insertBefore(listeDiv, notifDiv.nextSibling);
-      }
-    }
-    function getNotifications() {
-      return JSON.parse(localStorage.getItem('notifications') || '[]');
-    }
-    function saveNotifications(list) {
-      localStorage.setItem('notifications', JSON.stringify(list));
-    }
-    function addNotification(data) {
-      const list = getNotifications();
-      list.unshift({ ...data, read: false });
-      saveNotifications(list);
-      renderNotifications();
-    }
-    function markAllRead() {
-      const list = getNotifications().map(n => ({...n, read: true}));
-      saveNotifications(list);
-      renderNotifications();
-    }
-    function deleteReadNotifications() {
-      const list = getNotifications().filter(n => !n.read);
-      saveNotifications(list);
-      renderNotifications();
-    }
-    function deleteNotification(idx) {
-      const list = getNotifications();
-      list.splice(idx, 1);
-      saveNotifications(list);
-      renderNotifications();
-    }
-    function clearNotifications() {
-      localStorage.removeItem('notifications');
-      renderNotifications();
-    }
-    function renderNotifications() {
-      if (window.__NO_NOTIFICATIONS) return;
-      const notifications = getNotifications();
-      if (notifications.length === 0) {
-        listeDiv.innerHTML = '<p style="text-align:center;color:#888;">Aucune notification de réservation.</p>';
-        notifDiv.style.display = 'none';
-        return;
-      }
-      // Affichage notification en haut, gestion pro
-      const unread = notifications.find(n => !n.read);
-      if (unread) {
-        notifDiv.innerHTML = `
-          <span style=\"color:#d97706;font-size:1.3em;vertical-align:middle;\">⚡</span>
-          <span style=\"color:#1a4d2e;\">Nouvelle réservation reçue !</span>
-          <span style=\"background:#e6ffe6;color:#1a4d2e;border-radius:8px;padding:0.2em 0.7em;margin-left:1em;font-weight:700;\">Total : ${notifications.length}</span>
-          <button onclick=\"markAllRead()\" style=\"margin-left:1em;background:#1e40af;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout marquer comme lu</button>
-          <button onclick=\"deleteReadNotifications()\" style=\"margin-left:0.7em;background:#b91c1c;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Supprimer notifications lues</button>
-          <button onclick=\"clearNotifications()\" style=\"margin-left:0.7em;background:#64748b;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout supprimer</button>
-        `;
-        notifDiv.style.display = 'block';
-      } else {
-        notifDiv.innerHTML = `
-          <span style=\"color:#16a34a;font-size:1.2em;vertical-align:middle;\">✔️</span>
-          <span style=\"color:#1a4d2e;\">Toutes les notifications ont été lues.</span>
-          <span style=\"background:#e6ffe6;color:#1a4d2e;border-radius:8px;padding:0.2em 0.7em;margin-left:1em;font-weight:700;\">Total : ${notifications.length}</span>
-          <button onclick=\"deleteReadNotifications()\" style=\"margin-left:1em;background:#b91c1c;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Supprimer notifications lues</button>
-          <button onclick=\"clearNotifications()\" style=\"margin-left:0.7em;background:#64748b;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout supprimer</button>
-        `;
-        notifDiv.style.display = 'block';
-      }
-      // Affichage historique avec lien PDF bleu et suppression individuelle
-      listeDiv.innerHTML = notifications.map((n, idx) => `
-        <div style=\"background:#fff;border-radius:10px;box-shadow:0 1px 6px #0001;padding:1rem 1.2rem;margin-bottom:1.1rem;${n.read ? 'opacity:0.7;' : ''}\">
-          <b>Bagage #${n.bagage_numero}</b> – <b>${n.exp_nom} ${n.exp_prenom}</b> → <b>${n.dest_nom} ${n.dest_prenom}</b><br>
-          <span style=\\\"color:#1e40af;\\\">${n.pays_dest} / ${n.destination}${n.region ? ' / ' + n.region : ''}</span> | <b>${n.nb_bagages} bagage(s)</b> | <b>${n.poids} kg</b> | <b>${n.prix} €</b><br>
-          <span style=\\\"color:#64748b;\\\">Tél. expéditeur: ${n.exp_tel} – Tél. destinataire: ${n.dest_tel}</span>
-          ${n.notes ? `<div style='margin-top:0.5em;color:#555;'>Note: ${n.notes}</div>` : ''}
-          <div style='margin-top:0.7em;'>
-            <a href=\"${n.pdfLink || (SERVER_ORIGIN + '/pdfs/reservation_' + n.bagage_numero + '.pdf')}\" target=\"_blank\" style=\"color:#2563eb;font-weight:700;text-decoration:underline;font-size:1.08em;\">Télécharger PDF</a>
-            ${n.read ? '<span style=\\\"color:#16a34a;margin-left:1em;\\\">(Lue)</span>' : '<span style=\\\"color:#d97706;margin-left:1em;\\\">(Non lue)</span>'}
-            <button onclick=\"deleteNotification(${idx})\" style=\"margin-left:1em;background:#e11d48;color:#fff;border:none;padding:0.2em 0.7em;border-radius:7px;cursor:pointer;font-weight:600;font-size:0.95em;\">Supprimer</button>
-          </div>
-        </div>
-      `).join('');
-    }
-    // Écoute directe des notifications socket
-    socket.on('booking_notification', data => {
-      if (window.__NO_NOTIFICATIONS) return;
-      addNotification(data);
-    });
-    // Merge pending notifications sent by server (JSON array)
-    socket.on('pending_notifications', list => {
-      if (window.__NO_NOTIFICATIONS) return;
-      try {
-        if (!Array.isArray(list) || list.length === 0) return;
-        const cur = JSON.parse(localStorage.getItem('notifications') || '[]');
-        const seen = new Set(cur.map(n => (n.bagage_numero || '') + '|' + (n.createdAt || n.receivedAt || '')));
-        const merged = [...list.filter(n => {
-          const key = (n.bagage_numero || '') + '|' + (n.createdAt || n.receivedAt || '');
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        }), ...cur];
-        localStorage.setItem('notifications', JSON.stringify(merged));
-        renderNotifications();
-      } catch (e) { console.warn('pending_notifications handler error', e); }
-    });
-    // Écoute des mises à jour globales (note admin, date sélectionnée)
-    socket.on('settings_updated', (payload) => {
-      try {
-        if (!payload) return;
-        // Afficher la note admin si fournie
-        if (payload.note !== undefined) {
-          let adminNote = document.getElementById('admin-note-display');
-          if (!adminNote) {
-            adminNote = document.createElement('div');
-            adminNote.id = 'admin-note-display';
-            adminNote.style = 'max-width:700px;margin:0.8rem auto;padding:12px 14px;border-radius:12px;background:linear-gradient(90deg,#fffbe6,#ffe6e6);color:#1e293b;font-weight:600;';
-            const container = document.querySelector('.container') || document.body;
-            container.parentNode.insertBefore(adminNote, container);
-          }
-          adminNote.textContent = payload.note || '';
-          adminNote.style.display = payload.note ? 'block' : 'none';
-        }
-        // Afficher la date sélectionnée dans le formulaire
-        if (payload.selectedDate !== undefined) {
-          const dateInput = document.getElementById('selected_date');
-          if (dateInput) dateInput.value = payload.selectedDate || '';
-          try { localStorage.setItem('selectedDate', payload.selectedDate || ''); } catch (e) {}
-        }
-      } catch (e) { console.warn('settings_updated handler error', e); }
-    });
-    window.addEventListener('DOMContentLoaded', function() {
-      renderNotifications();
-      // Charger les settings globaux (note admin, selectedDate) au chargement
-      try { loadSettings(); } catch (e) { console.warn('loadSettings failed', e); }
-      // Préremplir un numéro de bagage charmant (avec matricule si présent)
-      try {
-        const bagInput = document.getElementById('bagage_numero');
-        if (bagInput && !bagInput.value) bagInput.value = generateBagageNumero();
-        const btnReset = document.getElementById('btnReset');
-        if (btnReset) btnReset.addEventListener('click', () => { try { if (bagInput) bagInput.value = generateBagageNumero(); } catch(e){} });
-      } catch (e) { console.warn('failed to prefill bagage numero', e); }
-    });
-    // ...reste du JS existant (formulaire, PDF, QR, etc.)...
-    function generateBagageNumero() {
-      const date = new Date();
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      const d = String(date.getDate()).padStart(2, '0');
-      const rand = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
-      // If a matricule exists (stored on registration), include it for clearer tracing
-      try {
-        const matricule = localStorage.getItem('gsm_matricule');
-        if (matricule) return `${matricule}/BAG-${y}${m}${d}-${rand}`;
-      } catch (e) { /* ignore localStorage errors */ }
-      return `BAG-${y}${m}${d}-${rand}`;
-    }
-    function calculerPrix(poids) {
-      if (!poids || isNaN(poids)) return '';
-      poids = parseFloat(poids);
-      // Nouvelle règle de tarification :
-      // - poids > 20 kg : tarif = 3 € / kg
-      // - poids < 10 kg : tarif = 4 € / kg
-      // - sinon (10 <= poids <= 20) : tarif = 3.5 € / kg
-      if (poids > 20) {
-        return (poids * 3).toFixed(2);
-      } else if (poids < 10) {
-        return (poids * 4).toFixed(2);
-      } else {
-        return (poids * 3.5).toFixed(2);
-      }
-    }
-    function getFormData() {
-      let pays = document.getElementById('pays_dest').value;
-      let destination = '';
-      let region = '';
-      if (pays === 'Algérie') {
-        destination = document.getElementById('wilaya_dest') ? document.getElementById('wilaya_dest').value : '';
-        if (destination === 'Tizi Ouzou') {
-          region = document.getElementById('region_tizi') ? document.getElementById('region_tizi').value : '';
-        } else if (destination) {
-          region = document.getElementById('region_autre') ? document.getElementById('region_autre').value : '';
-        }
-      } else if (pays === 'France') {
-        destination = document.getElementById('ville_fr') ? document.getElementById('ville_fr').value : '';
-        if (destination === 'Paris') {
-          region = document.getElementById('arr_paris') ? document.getElementById('arr_paris').value : '';
-        } else if (destination === 'Lyon') {
-          region = document.getElementById('arr_lyon') ? document.getElementById('arr_lyon').value : '';
-        } else if (destination === 'Marseille') {
-          region = document.getElementById('arr_marseille') ? document.getElementById('arr_marseille').value : '';
-        } else if (destination) {
-          region = document.getElementById('region_fr_autre') ? document.getElementById('region_fr_autre').value : '';
-        }
-      }
-      return {
-        bagage_numero: document.getElementById('bagage_numero').value,
-        exp_nom: document.getElementById('exp_nom').value,
-        exp_prenom: document.getElementById('exp_prenom').value,
-        exp_tel: document.getElementById('exp_tel').value,
-        dest_nom: document.getElementById('dest_nom').value,
-        dest_prenom: document.getElementById('dest_prenom').value,
-        dest_tel: document.getElementById('dest_tel').value,
-        pays_dest: pays,
-        destination: destination,
-        region: region,
-        nb_bagages: document.getElementById('nb_bagages').value,
-        poids: document.getElementById('poids').value,
-        notes: document.getElementById('notes').value,
-        prix: document.getElementById('prix').value
-      };
-    }
-    function showQr(data) {
-      const qrZone = document.getElementById('qrZone');
-      qrZone.innerHTML = '';
-      qrZone.style.display = 'block';
-      new QRCode(qrZone, {
-        text: JSON.stringify(data),
-        width: 160,
-        height: 160,
-        colorDark: '#1e40af',
-        colorLight: '#fff',
-        correctLevel: QRCode.CorrectLevel.H
+  // Server origin (supports local dev on :3002)
+  const SERVER_ORIGIN = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? (window.location.protocol + '//' + window.location.hostname + ':3002')
+    : window.location.origin;
+
+  const socket = io(SERVER_ORIGIN);
+
+  // Initialize matricule from localStorage
+  function loadMatricule() {
+    try { return localStorage.getItem('gsm_matricule') || ''; } catch (e) { return ''; }
+  }
+  function saveMatricule(v) { try { localStorage.setItem('gsm_matricule', v || ''); } catch (e) {} }
+
+  const matriculeDisplay = document.getElementById('matriculeDisplay');
+  const matriculeInput = document.getElementById('matriculeInput');
+  const saveMatBtn = document.getElementById('saveMatBtn');
+  function updateMatriculeUI() {
+    const m = loadMatricule();
+    matriculeDisplay.textContent = m || '—';
+    matriculeInput.value = m || '';
+  }
+  saveMatBtn.addEventListener('click', () => { const v = (matriculeInput.value||'').trim(); saveMatricule(v); updateMatriculeUI(); alert('Matricule sauvegardée'); });
+  updateMatriculeUI();
+
+  // Destination dynamic fields
+  const wilayas = ["Adrar","Chlef","Laghouat","Oum El Bouaghi","Batna","Béjaïa","Biskra","Béchar","Blida","Bouira","Tamanrasset","Tébessa","Tlemcen","Tiaret","Tizi Ouzou","Alger","Djelfa","Jijel","Sétif","Saïda","Skikda","Sidi Bel Abbès","Annaba","Guelma","Constantine","Médéa","Mostaganem","M'Sila","Mascara","Ouargla","Oran","El Bayadh","Illizi","Bordj Bou Arréridj","Boumerdès","El Tarf","Tindouf","Tissemsilt","El Oued","Khenchela","Souk Ahras","Tipaza","Mila","Aïn Defla","Naâma","Aïn Témouchent","Ghardaïa","Relizane"];
+  const regionsTizi = ["Azazga","Mekla","Michelet","Iferhounene","Illoula","Bouzeggane","Freha","Yakouren","Azefoun","Tigzirt","Tizi Ville","Draa Ben Khedda","Bni Douala","Ouad Aissi","Ouadhiya","Ouacif"];
+
+  document.getElementById('pays_dest').addEventListener('change', function(){
+    const pays = this.value; const zone = document.getElementById('destinationZone');
+    if(pays === 'Algérie'){
+      let options = '<option value="">Choisir une wilaya</option>';
+      wilayas.forEach(w => options += `<option value="${w}">${w}</option>`);
+      zone.innerHTML = `<label>Wilaya</label><select id="wilaya_select" required>${options}</select><div id="extraZone"></div>`;
+      document.getElementById('wilaya_select').addEventListener('change', function(){
+        const wilaya = this.value; const extra = document.getElementById('extraZone');
+        if(wilaya === 'Tizi Ouzou'){
+          let reg = '<option value="">Choisir région</option>';
+          regionsTizi.forEach(r => reg += `<option value="${r}">${r}</option>`);
+          extra.innerHTML = `<label>Région</label><select id="region_tizi" required>${reg}</select>`;
+        } else if(wilaya !== ''){
+          extra.innerHTML = `<label>Adresse exacte</label><textarea id="adresse_exacte" placeholder="Commune, rue..." required></textarea>`;
+        } else { extra.innerHTML = ''; }
       });
-    }
-    // Charger les settings globaux depuis le backend pour pré-remplir note et date
-    async function loadSettings() {
-      try {
-        const res = await fetch('/api/settings');
-        if (!res.ok) return;
-        const data = await res.json().catch(() => ({}));
-        if (!data) return;
-        if (data.note !== undefined) {
-          let adminNote = document.getElementById('admin-note-display');
-          if (!adminNote) {
-            adminNote = document.createElement('div');
-            adminNote.id = 'admin-note-display';
-            adminNote.style = 'max-width:700px;margin:0.8rem auto;padding:12px 14px;border-radius:12px;background:linear-gradient(90deg,#fffbe6,#ffe6e6);color:#1e293b;font-weight:600;';
-            const container = document.querySelector('.container') || document.body;
-            container.parentNode.insertBefore(adminNote, container);
-          }
-          adminNote.textContent = data.note || '';
-          adminNote.style.display = data.note ? 'block' : 'none';
-        }
-        if (data.selectedDate !== undefined) {
-          const dateInput = document.getElementById('selected_date');
-          if (dateInput) dateInput.value = data.selectedDate || '';
-          try { localStorage.setItem('selectedDate', data.selectedDate || ''); } catch (e) {}
-        }
-      } catch (e) { console.warn('Erreur chargement settings:', e); }
-    }
-    // Gestion déconnexion Firebase
-    document.getElementById('btnLogout').onclick = async function() {
-      if (window.firebase && window.firebase.auth) {
-        try {
-          await window.firebase.auth().signOut();
-        } catch (e) {}
-      }
-      window.location.href = '/index.html';
+    } else if(pays === 'France'){
+      zone.innerHTML = `<label>Ville</label><select id="ville_fr" required><option value="">Choisir</option><option value="Paris">Paris</option><option value="Lyon">Lyon</option><option value="Marseille">Marseille</option></select><label>Adresse exacte</label><textarea id="adresse_fr" placeholder="Numéro, rue..." required></textarea>`;
+    } else { zone.innerHTML = ''; }
+  });
+
+  // QR code
+  const qrZone = document.getElementById('qrZone');
+  document.getElementById('btnQr').addEventListener('click', function(){
+    const data = collectFormData();
+    qrZone.innerHTML = '';
+    try { new QRCode(qrZone, { text: JSON.stringify(data), width: 160, height: 160, colorDark: '#1e40af', colorLight: '#fff' }); } catch(e){ qrZone.textContent = 'QR failed'; }
+  });
+
+  // Clear
+  // prevent double submits: disable submit until user clicks Nettoyer
+  let formSubmitted = false;
+  const submitBtn = document.querySelector('.submit-btn');
+  const originalSubmitText = submitBtn ? submitBtn.textContent : 'Réserver';
+
+  document.getElementById('btnClear').addEventListener('click', function(){
+    document.getElementById('reservationForm').reset();
+    updateMatriculeUI();
+    qrZone.innerHTML='';
+    formSubmitted = false;
+    try { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = originalSubmitText; } } catch(e){}
+  });
+
+  // collect data and include matricule
+  function collectFormData(){
+    const pays = document.getElementById('pays_dest').value || '';
+    const wilaya = document.getElementById('wilaya_select') ? document.getElementById('wilaya_select').value : '';
+    const region = document.getElementById('region_tizi') ? document.getElementById('region_tizi').value : (document.getElementById('adresse_exacte') ? document.getElementById('adresse_exacte').value : '');
+    const ville = document.getElementById('ville_fr') ? document.getElementById('ville_fr').value : '';
+    const adresse_fr = document.getElementById('adresse_fr') ? document.getElementById('adresse_fr').value : '';
+    return {
+      bagage_numero: `BAG-${Date.now()}`,
+      matricule: loadMatricule(),
+      exp_nom: document.getElementById('exp_nom').value,
+      exp_prenom: document.getElementById('exp_prenom').value,
+      exp_tel: document.getElementById('exp_tel').value,
+      dest_nom: document.getElementById('dest_nom').value,
+      dest_prenom: document.getElementById('dest_prenom').value,
+      dest_tel: document.getElementById('dest_tel').value,
+      pays_dest: pays,
+      destination: pays === 'Algérie' ? wilaya : (pays === 'France' ? ville : ''),
+      region: pays === 'Algérie' ? region : adresse_fr,
+      nb_bagages: document.getElementById('nb_bagages').value,
+      poids: document.getElementById('poids').value,
+      notes: document.getElementById('notes').value
     };
-    // Génération PDF côté client supprimée.
-    // La génération s'effectue maintenant exclusivement sur le serveur qui émettra
-    // l'événement `pdf_generated` contenant { filename, url }.
-    function sendBellNotification(data) {
-      try {
-        socket.emit('bell_notification', {
-          name: data.nom + ' ' + data.prenom,
-          contact: data.contact,
-          message: `Nouvelle réservation de ${data.nom} ${data.prenom}`,
-          bagage_numero: data.bagage_numero,
-          prix: data.prix,
-          timestamp: new Date().toISOString()
-        });
-        showNotif('Notification cloche envoyée !');
-      } catch (e) {
-        showNotif('Erreur lors de l\'envoi de la notification cloche.', false);
+  }
+
+  // submit handler: POST /api/bookings and handle PDF link
+  document.getElementById('reservationForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    if (formSubmitted) { alert('Réservation en cours — utilisez Nettoyer pour en créer une nouvelle.'); return; }
+    formSubmitted = true;
+    try { if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Envoi...'; } } catch(e){}
+    const data = collectFormData();
+    try {
+      const res = await fetch(SERVER_ORIGIN + '/api/bookings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+      if (!res.ok) { alert('Erreur serveur: ' + (res.status || '')); return; }
+      const json = await res.json().catch(()=>({}));
+      alert('Réservation envoyée');
+      // remember last submitted bagage id so we can match pdf_generated events
+      try { window.lastBagageId = data.bagage_numero; } catch (e) { window.lastBagageId = null; }
+      // show waiting indicator
+      try { showPdfWaiting(); } catch (e){}
+      // If server returned immediate PDF link, open it and show ready
+      if (json && json.pdf) {
+        const url = json.pdf.startsWith('http') ? json.pdf : (SERVER_ORIGIN + json.pdf);
+        try { showPdfReady(url, json.pdf); window.open(url, '_blank'); } catch(e){}
       }
-    }
-    // Liste des wilayas d'Algérie
-    const wilayas = [
-      "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar", "Blida", "Bouira", "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Alger", "Djelfa", "Jijel", "Sétif", "Saïda", "Skikda", "Sidi Bel Abbès", "Annaba", "Guelma", "Constantine", "Médéa", "Mostaganem", "M'Sila", "Mascara", "Ouargla", "Oran", "El Bayadh", "Illizi", "Bordj Bou Arréridj", "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued", "Khenchela", "Souk Ahras", "Tipaza", "Mila", "Aïn Defla", "Naâma", "Aïn Témouchent", "Ghardaïa", "Relizane", "Timimoun", "Bordj Badji Mokhtar", "Ouled Djellal", "Béni Abbès", "In Salah", "In Guezzam", "Touggourt", "Djanet", "El M'Ghair", "El Meniaa"
-    ];
+      // keep the form disabled until user clears (Nettoyer) to avoid duplicate notifications
+    } catch (err) { console.warn('submit error', err); alert('Erreur envoi réservation'); }
+  });
 
-    const tiziRegions = [
-      "Azazga", "Tizi Ville", "Illoula", "Michelet", "Iferhounene", "Mikla", "Draa Ben Khedda", "Freha", "Tigzirt"
-    ];
+  // Download PDF button: will try to request server to regenerate PDF for last submitted bagage or ask user
+  document.getElementById('btnDownloadPdf').addEventListener('click', function(){
+    let bagId = window.lastBagageId || prompt('Entrez le numéro de bagage (ex: BAG-...):');
+    if (!bagId) return;
+    const url = SERVER_ORIGIN + '/generate-pdf/' + encodeURIComponent(bagId);
+    window.open(url, '_blank');
+  });
 
-    const franceVilles = ["Paris", "Lyon", "Marseille"];
+  // helper: show waiting and ready states
+  const pdfStatusElem = document.getElementById('pdfStatus');
+  function showPdfWaiting(){ if(pdfStatusElem){ pdfStatusElem.style.display='block'; pdfStatusElem.textContent = 'PDF en attente...'; } }
+  function showPdfReady(url, filename){ if(!pdfStatusElem) return; const link = `<a href="${url}" target="_blank" style="color:#a7f3d0;font-weight:800;text-decoration:underline;margin-right:10px">Ouvrir PDF</a>`; pdfStatusElem.innerHTML = `PDF prêt : ${link} <button id=\"pdfDownloadBtn\" style=\"background:#10b981;color:#042e1f;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-weight:700\">Télécharger</button>`; pdfStatusElem.style.display='block'; const btn = document.getElementById('pdfDownloadBtn'); if(btn){ btn.onclick = ()=>{ window.open(url, '_blank'); }} }
 
-    const parisArr = [
-      "1er", "2e", "3e", "4e", "5e", "6e", "7e", "8e", "9e", "10e", "11e", "12e", "13e", "14e", "15e", "16e", "17e", "18e", "19e", "20e"
-    ];
-
-    const lyonArr = ["1er", "2e", "3e", "4e", "5e", "6e", "7e", "8e", "9e" ];
-
-    const marseilleArr = [
-      "1er", "2e", "3e", "4e", "5e", "6e", "7e", "8e", "9e", "10e", "11e", "12e", "13e", "14e", "15e", "16e"
-    ];
-
-    function renderDestinationField() {
-      const pays = document.getElementById('pays_dest').value;
-      const zone = document.getElementById('destination_zone');
-      if (pays === 'Algérie') {
-        let options = '<option value="">Choisir la wilaya</option>';
-        wilayas.forEach(w => { options += `<option value="${w}">${w}</option>`; });
-        zone.innerHTML = `<label for="wilaya_dest">Wilaya de destination</label><select id="wilaya_dest" required>${options}</select><div id="region_zone"></div>`;
-        setTimeout(() => {
-          document.getElementById('wilaya_dest').addEventListener('change', renderRegionField);
-        }, 0);
-      } else if (pays === 'France') {
-        let options = '<option value="">Choisir la ville</option>';
-        franceVilles.forEach(v => { options += `<option value="${v}">${v}</option>`; });
-        zone.innerHTML = `<label for="ville_fr">Ville de destination</label><select id="ville_fr" required>${options}</select><div id="region_zone_fr"></div>`;
-        setTimeout(() => {
-          document.getElementById('ville_fr').addEventListener('change', renderRegionFranceField);
-        }, 0);
-      } else {
-        zone.innerHTML = '';
+  // Listen for pdf_generated events and show indicator when the generated PDF matches last submission or matricule
+  socket.on('pdf_generated', (payload) => {
+    try {
+      if (!payload || !payload.filename || !payload.url) return;
+      const fullUrl = payload.url.startsWith('http') ? payload.url : (SERVER_ORIGIN + payload.url);
+      const filename = payload.filename || '';
+      const watchMat = loadMatricule();
+      const lastBag = window.lastBagageId || '';
+      if ((lastBag && filename.includes(lastBag)) || (watchMat && filename.includes(watchMat))) {
+        try { showPdfReady(fullUrl, filename); } catch(e){}
       }
-    }
+    } catch (e) { console.warn('pdf_generated handler', e); }
+  });
 
-    function renderRegionField() {
-      const wilaya = document.getElementById('wilaya_dest').value;
-      const regionZone = document.getElementById('region_zone');
-      if (wilaya === 'Tizi Ouzou') {
-        let options = '<option value="">Choisir la région</option>';
-        tiziRegions.forEach(r => { options += `<option value="${r}">${r}</option>`; });
-        regionZone.innerHTML = `<label for="region_tizi">Région</label><select id="region_tizi" required>${options}</select>`;
-      } else if (wilaya) {
-        regionZone.innerHTML = `<label for="region_autre">Région</label><input id="region_autre" type="text" required placeholder="Région dans ${wilaya}" />`;
-      } else {
-        regionZone.innerHTML = '';
-      }
-    }
+  // keep UI matricule in sync
+  socket.on('connect', () => { updateMatriculeUI(); });
 
-    function renderRegionFranceField() {
-      const ville = document.getElementById('ville_fr').value;
-      const regionZone = document.getElementById('region_zone_fr');
-      if (ville === 'Paris') {
-        let options = '<option value="">Choisir l\'arrondissement</option>';
-        parisArr.forEach(a => { options += `<option value="${a}">${a} arrondissement</option>`; });
-        regionZone.innerHTML = `<label for="arr_paris">Arrondissement</label><select id="arr_paris" required>${options}</select>`;
-      } else if (ville === 'Lyon') {
-        let options = '<option value="">Choisir l\'arrondissement</option>';
-        lyonArr.forEach(a => { options += `<option value="${a}">${a} arrondissement</option>`; });
-        regionZone.innerHTML = `<label for="arr_lyon">Arrondissement</label><select id="arr_lyon" required>${options}</select>`;
-      } else if (ville === 'Marseille') {
-        let options = '<option value="">Choisir l\'arrondissement</option>';
-        marseilleArr.forEach(a => { options += `<option value="${a}">${a} arrondissement</option>`; });
-        regionZone.innerHTML = `<label for="arr_marseille">Arrondissement</label><select id="arr_marseille" required>${options}</select>`;
-      } else if (ville) {
-        regionZone.innerHTML = `<label for="region_fr_autre">Région</label><input id="region_fr_autre" type="text" required placeholder="Région dans ${ville}" />`;
-      } else {
-        regionZone.innerHTML = '';
-      }
-    }
+  </script>
+  <script>
+  // Sidebar controls
+  function openMenu(){ document.getElementById('sidebar').style.transform = 'translateX(300px)'; document.getElementById('sidebar-backdrop').style.opacity='1'; document.getElementById('sidebar-backdrop').style.pointerEvents='auto'; }
+  function closeMenu(){ document.getElementById('sidebar').style.transform = ''; document.getElementById('sidebar-backdrop').style.opacity='0'; document.getElementById('sidebar-backdrop').style.pointerEvents='none'; }
+  document.getElementById('sidebar-backdrop').addEventListener('click', closeMenu);
+  document.getElementById('btnLogout').addEventListener('click', function(){ try{ localStorage.removeItem('gsm_matricule'); sessionStorage.removeItem('gsm_code'); alert('Déconnecté'); window.location.href='/index.html'; }catch(e){} });
 
-    window.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('pays_dest').addEventListener('change', renderDestinationField);
-        renderDestinationField();
-      // Numéro de bagage auto
-      let num = localStorage.getItem('bagage_numero');
-      if (!num) {
-        num = generateBagageNumero();
-        localStorage.setItem('bagage_numero', num);
-      }
-      document.getElementById('bagage_numero').value = num;
-      // Prix dynamique
-      document.getElementById('poids').addEventListener('input', function () {
-        document.getElementById('prix').value = calculerPrix(this.value);
-      });
-      // QR code
-      document.getElementById('btnQr').onclick = function () {
-        const data = getFormData();
-        showQr(data);
-      };
-      // PDF button: local-only helper. The server will generate the PDF on submit.
-      document.getElementById('btnPdf').onclick = function () {
-        showClientNotif('Le PDF sera généré après réservation.', true);
-      };
-      // Nettoyer
-      document.getElementById('btnReset').onclick = function () {
-        document.getElementById('reservationForm').reset();
-        document.getElementById('bagage_numero').value = num;
-        document.getElementById('prix').value = '';
-        document.getElementById('qrZone').style.display = 'none';
-      };
-        // Réserver (submit)
-      document.getElementById('reservationForm').onsubmit = async function (e) {
-        e.preventDefault();
-        if (isSubmitting) return;
-        isSubmitting = true;
-        const data = getFormData();
-        // Envoi unique via REST : le serveur générera le PDF et diffusera la notification
-        let postOk = false;
-        try {
-          const res = await fetch('/api/bookings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-          });
-          if (res && res.ok) {
-            postOk = true;
-            const json = await res.json().catch(() => ({}));
-            console.log('Booking saved:', json);
-            // socket emit removed: rely on /api/bookings to generate PDF once
-          } else {
-            console.warn('Bookings API error', res && res.status);
-          }
-        } catch (err) {
-          console.warn('Could not save booking to /api/bookings:', err);
-        }
-        // Show QR locally to the user
-        showQr(data);
-        // Notify client UI
-        try {
-          if (postOk) {
-            showClientNotif('Réservation envoyée au serveur. Le PDF sera disponible bientôt.', true);
-          } else {
-            showClientNotif('Réservation enregistrée localement mais non transmise (connexion indisponible).', false, 8000);
-            try {
-              const q = JSON.parse(localStorage.getItem('pendingBookings')||'[]');
-              q.push({ data, at: new Date().toISOString() });
-              localStorage.setItem('pendingBookings', JSON.stringify(q));
-            } catch (e) { console.warn('failed to store pending booking', e); }
-          }
-        } catch(e) { console.warn('post-submit notify error', e); }
-        // Reset form after a short delay and rotate bagage number
-        setTimeout(() => {
-          document.getElementById('reservationForm').reset();
-          const newNum = generateBagageNumero();
-          localStorage.setItem('bagage_numero', newNum);
-          document.getElementById('bagage_numero').value = newNum;
-          document.getElementById('prix').value = '';
-          document.getElementById('qrZone').style.display = 'none';
-          // release submit lock after UX reset
-          isSubmitting = false;
-        }, 1200);
-      };
+  // add subtle background image to container
+  (function(){ try{ const c = document.querySelector('.container'); if(c){ c.style.backgroundImage = `radial-gradient(1200px 600px at 10% 10%, rgba(14,165,233,0.03), transparent), linear-gradient(120deg, rgba(30,64,175,0.06) 0%, rgba(14,165,233,0.02) 100%), url('image/polo1.png')`; c.style.backgroundSize = 'cover'; c.style.backgroundRepeat = 'no-repeat'; c.style.backgroundBlendMode = 'overlay'; c.style.backgroundPosition='left top'; } }catch(e){} })();
 
-      // Quand le serveur a généré un PDF, afficher le lien (l'admin recevra aussi cette notification)
-      socket.on('pdf_generated', (payload) => {
-        try {
-          if (!payload || !payload.url) return;
-          const curNum = document.getElementById('bagage_numero') ? document.getElementById('bagage_numero').value : '';
-          if (payload.filename && curNum && payload.filename.includes(curNum)) {
-            const fullUrl = (payload.url && payload.url.startsWith('http')) ? payload.url : (SERVER_ORIGIN + payload.url);
-            // automatically trigger download/open of the generated PDF for the current booking
-            try {
-              const a = document.createElement('a');
-              a.href = fullUrl;
-              a.target = '_blank';
-              // allow browser to infer filename; force download when possible
-              a.rel = 'noopener noreferrer';
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
-            } catch (err) {
-              // fallback: open in new tab
-              try { window.open(fullUrl, '_blank'); } catch (e) { /* ignore */ }
-            }
-          }
-        } catch (e) { console.warn('pdf_generated handler error', e); }
-      });
-    });
+  // enhance France fields: ensure address label visible and required
+  document.addEventListener('change', function(e){ try{ if(e.target && e.target.id === 'ville_fr'){ const extra = document.getElementById('destinationZone'); const addr = document.getElementById('adresse_fr'); if(addr) addr.required = true; } }catch(ex){} });
+
   </script>
 </body>
 </html>
