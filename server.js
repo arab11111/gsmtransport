@@ -7,9 +7,10 @@ const fsp = fs.promises;
 const PDFDocument = require('pdfkit');
 // Optional MongoDB integration (use MONGODB_URI env var)
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const jwt = require('jsonwebtoken');
+// JWT removed: admin auth uses simple code / socket register_admin
 let mongoClient = null;
 let usersCollection = null;
+let countersCollection = null;
 // initialize Mongo asynchronously if MONGODB_URI provided (users collection only)
 (async function initMongo() {
   try {
@@ -27,7 +28,9 @@ let usersCollection = null;
     await client.connect();
     const db = process.env.MONGODB_DB ? client.db(process.env.MONGODB_DB) : client.db();
     usersCollection = db.collection('users');
+    countersCollection = db.collection('counters');
     try { await usersCollection.createIndex({ matricule: 1 }, { unique: true }); } catch (e) {}
+    try { await countersCollection.createIndex({ _id: 1 }, { unique: true }); } catch (e) {}
     try { await usersCollection.createIndex({ whatsapp: 1 }); } catch (e) {}
     console.log('Connected to MongoDB (users only)');
   } catch (e) { console.warn('MongoDB init failed', e); }
@@ -88,13 +91,13 @@ const server = http.createServer(app);
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['https://gsmtransport.onrender.com'];
 const io = socketIo(server, { cors: { origin: ALLOWED_ORIGINS, methods: ['GET','POST'] } });
 
-// Require GSM admin code in env to avoid insecure default
-const GSM_CODE = process.env.GSM_ADMIN_CODE;
+// GSM admin code: use env if provided, otherwise use the provided fallback password
+// NOTE: using a hardcoded password is insecure; it's applied per user request.
+const GSM_CODE = process.env.GSM_ADMIN_CODE || 'Salim_Anis_2026';
 // Token signing secret (use a dedicated secret in production)
 const TOKEN_SECRET = process.env.GSM_TOKEN_SECRET || GSM_CODE;
-if (!GSM_CODE) {
-  console.error('GSM_ADMIN_CODE manquant — définissez la variable d\'environnement GSM_ADMIN_CODE');
-  process.exit(1);
+if (!process.env.GSM_ADMIN_CODE) {
+  console.warn('GSM_ADMIN_CODE not set in env — falling back to configured default password');
 }
 
 // Feature flag: disable notifications system when true (set DISABLE_NOTIFICATIONS=1 or true)
@@ -106,6 +109,7 @@ const BOOKINGS_FILE = path.join(__dirname, 'bookings.json');
 const NOTIF_FILE = path.join(__dirname, 'notifications.json');
 const USERS_FILE = path.join(__dirname, 'users.json');
 const SETTINGS_FILE = path.join(__dirname, 'settings.json');
+const MAT_COUNTER_FILE = path.join(__dirname, 'matricule_counter.json');
 
 // Ensure directories exist
 (async () => { try { await fsp.mkdir(PDFS_DIR, { recursive: true }); } catch (e) {} })();
@@ -143,6 +147,37 @@ async function persistNotification(payload) {
       }
     } catch (e) { console.warn('persistNotification mongo error', e); }
   } catch (e) { console.warn('persistNotification error', e); }
+}
+
+// Get next sequence number for named counter (MongoDB atomic counter if available,
+// else fallback to a small local file counter). Returns a Number.
+async function getNextSequence(name) {
+  try {
+    if (mongoClient && countersCollection) {
+      const db = process.env.MONGODB_DB ? mongoClient.db(process.env.MONGODB_DB) : mongoClient.db();
+      const col = db.collection('counters');
+      const res = await col.findOneAndUpdate(
+        { _id: name },
+        { $inc: { seq: 1 } },
+        { upsert: true, returnDocument: 'after' }
+      );
+      const seq = (res && res.value && typeof res.value.seq === 'number') ? res.value.seq : 1;
+      return seq;
+    }
+  } catch (e) {
+    console.warn('getNextSequence mongo error', e);
+  }
+  // Fallback: simple file-based counter (single-process safe)
+  try {
+    let cur = { seq: 0 };
+    try { const raw = await fsp.readFile(MAT_COUNTER_FILE, 'utf8'); cur = JSON.parse(raw || '{}'); } catch (e) {}
+    cur.seq = (cur.seq || 0) + 1;
+    await fsp.writeFile(MAT_COUNTER_FILE, JSON.stringify(cur, null, 2));
+    return cur.seq;
+  } catch (e) {
+    console.warn('getNextSequence file fallback failed', e);
+    return Date.now() % 1000000; // last-resort
+  }
 }
 
 // Centralized PDF generator — returns URL path
@@ -293,22 +328,7 @@ app.post('/api/auth/verify-code', async (req, res) => {
   } catch (e) { return res.status(500).json({ error: e.message }); }
 });
 
-// Issue a short-lived admin token (JWT) when correct GSM admin code provided
-app.post('/api/auth/token', async (req, res) => {
-  try {
-    const code = req.body && req.body.code ? String(req.body.code).trim() : '';
-    if (!code) return res.status(400).json({ error: 'missing_code' });
-    if (code !== GSM_CODE) return res.status(403).json({ error: 'invalid_code' });
-    // sign token
-    try {
-      const token = jwt.sign({ admin: true }, String(TOKEN_SECRET), { expiresIn: '1h' });
-      return res.json({ token });
-    } catch (e) {
-      console.warn('token sign failed', e);
-      return res.status(500).json({ error: 'token_error' });
-    }
-  } catch (e) { return res.status(500).json({ error: e.message }); }
-});
+// JWT token endpoint removed — admin uses server-side code verification and socket register_admin
 
 // Upload a PDF (used by clients who generate locally)
 app.post('/upload-pdf', async (req, res) => {
@@ -438,7 +458,9 @@ app.post('/api/register', async (req, res) => {
       }
     } catch (e) { /* ignore */ }
 
-    const matricule = `GSM-${new Date().getFullYear()}-${Math.floor(100000 + Math.random()*900000)}`;
+    // allocate sequential matricule (atomic in MongoDB, file fallback otherwise)
+    const seqNum = await getNextSequence('matricule');
+    const matricule = 'GSM' + String(seqNum).padStart(6, '0');
     // mask ID number for privacy before persisting
     const maskedId = id_number ? (String(id_number).slice(0,2) + '****') : '';
     const user = {
@@ -499,20 +521,8 @@ io.on('connection', async (socket) => {
 
   // simple admin registry: sockets can identify themselves as admins
   socket.data.isAdmin = false;
-  // Prefer token-based admin authentication: token passed in handshake auth
-  try {
-    const token = socket.handshake && socket.handshake.auth && socket.handshake.auth.token;
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, String(TOKEN_SECRET));
-        if (decoded && decoded.admin) {
-          socket.data.isAdmin = true;
-          try { socket.emit('admin_registered', { ok: true, token: true }); } catch (e) {}
-          console.log('Socket admin authenticated by token:', socket.id);
-        }
-      } catch (e) { /* invalid token - ignore */ }
-    }
-  } catch (e) { console.warn('socket token check failed', e); }
+  // Token-based admin authentication removed. Use `register_admin` socket event or
+  // `/api/auth/verify-code` endpoint to validate admin code.
   // fallback: allow explicit register_admin event (backwards compat)
   socket.on('register_admin', (code) => {
     try {
