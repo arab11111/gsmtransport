@@ -41,7 +41,7 @@
     <a href="index.html" style="display:block;color:#cfe9ff;margin:8px 0;text-decoration:none;font-weight:700">Accueil</a>
     <a href="#reservation" style="display:block;color:#cfe9ff;margin:8px 0;text-decoration:none;font-weight:700">Réservation</a>
     <a href="contact.html" style="display:block;color:#cfe9ff;margin:8px 0;text-decoration:none;font-weight:700">Contact</a>
-    <a href="privacy.html" style="display:block;color:#cfe9ff;margin:8px 0;text-decoration:none;font-weight:700">Privacy</a>
+    <a href="terms.html" style="display:block;color:#cfe9ff;margin:8px 0;text-decoration:none;font-weight:700">Conditions</a>
     <a href="terms.html" style="display:block;color:#cfe9ff;margin:8px 0;text-decoration:none;font-weight:700">Termes</a>
     <a href="#faq" style="display:block;color:#cfe9ff;margin:8px 0;text-decoration:none;font-weight:700">FAQ</a>
     <button id="btnLogout" style="margin-top:14px;background:#dc2626;color:#fff;border:none;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:800">Déconnecter</button>
@@ -123,7 +123,10 @@
     </div>
   </main>
 
-  <footer>© 2026 GSM Express — MJ Tiddas Studio — Tous droits réservés</footer>
+  <footer style="color:#ef4444;font-weight:700;padding:12px 8px;text-align:center;margin-top:18px;">
+    <div>© 2026 GSM Express — MJ Tiddas Studio — Tous droits réservés</div>
+    <div style="margin-top:6px"><a href="terms.html" style="color:#83e90e;font-weight:700;margin-right:8px">Conditions générales</a><a href="index.html" style="color:#ff6b6b;font-weight:700">Accueil</a></div>
+  </footer>
 
   <!-- libs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -355,10 +358,7 @@
 
   // enhance France fields: ensure address label visible and required
   document.addEventListener('change', function(e){ try{ if(e.target && e.target.id === 'ville_fr'){ const extra = document.getElementById('destinationZone'); const addr = document.getElementById('adresse_fr'); if(addr) addr.required = true; } }catch(ex){} });
- 
-    showNotification(
-    "Réservation envoyée avec succès ✅"
-  );
+
   </script>
 </body>
 </html>
