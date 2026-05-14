@@ -355,7 +355,10 @@
 
   // enhance France fields: ensure address label visible and required
   document.addEventListener('change', function(e){ try{ if(e.target && e.target.id === 'ville_fr'){ const extra = document.getElementById('destinationZone'); const addr = document.getElementById('adresse_fr'); if(addr) addr.required = true; } }catch(ex){} });
-
+ 
+    showNotification(
+    "Réservation envoyée avec succès ✅"
+  );
   </script>
 </body>
 </html>
