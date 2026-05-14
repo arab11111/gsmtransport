@@ -3,10 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="google-adsense-account" content="ca-pub-8308471028441999">
 
 <title>GSM Transport</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <meta name="description" content="Transport de bagages France Algérie avec GSM Transport. Réservation rapide et suivi colis.">
+    <meta name="keywords" content="transport bagage france algérie, gsm transport, colis algérie, réservation bagage">
+    <meta name="theme-color" content="#185a9d">
+
+<!-- Google AdSense: publisher ID inserted -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-8308471028441999"></script>
 
 <style>
 /* ... tout ton CSS existant inchangé ... */
@@ -23,7 +31,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow-x: hidden;
+    overflow-x: clip;
 }
 /* NAVBAR SaaS */
 .menu-bar {
@@ -145,15 +153,21 @@ h1 {
 /* NOTE */
 .note {
     background: linear-gradient(90deg,#fffbe6,#ffe6e6);
-    color: #222;
+    color: #3d0202;
     padding: 15px 18px;
     border-radius: 12px;
     margin-bottom: 18px;
     font-size: 1.05rem;
     font-weight: 500;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    box-shadow: 0 2px 12px rgba(255, 253, 253, 0.07);
     animation: fadein 1.3s 0.2s backwards;
 }
+/* Editorial / FAQ content styling */
+.editorial h2{color:#fff;font-size:1.35rem;margin-bottom:8px}
+.editorial h3{color:#fff;font-size:1.05rem;margin-top:12px;margin-bottom:6px}
+.editorial p{margin-bottom:10px;color:#eef2ff}
+.editorial ul{margin-left:20px;margin-bottom:10px;color:#eef2ff}
+
 /* APPS */
 .apps {
     display: grid;
@@ -232,9 +246,10 @@ footer {
 /* Mobile-first responsive tweaks (smartphone transport style) */
 @media (max-width: 640px) {
     body {
-        background: linear-gradient(180deg,#1be99a 0%, #a0e9fc 100%);
+        background: linear-gradient(180deg,#3a9974 0%, #2d798b 100%);
         padding: 12px 8px 80px 8px;
     }
+    html { -webkit-tap-highlight-color: transparent; }
     .menu-bar {
         height: 64px;
         padding: 0 12px;
@@ -268,15 +283,32 @@ footer {
     .menu-bar .login, .menu-bar .logout, .menu-bar .whatsapp { padding: 10px 12px; }
     button, .menu-bar button, .menu-bar a { touch-action: manipulation; }
     .menu-bar { backdrop-filter: blur(8px); }
+    .editorial{font-size:0.98rem;line-height:1.7;padding:10px 6px;margin-top:18px;color:#fff}
+    .editorial h2{font-size:1.15rem}
+    .editorial h3{font-size:1rem}
     .container, .calendar-section, .note { background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); }
     .logo-btn { background: linear-gradient(90deg,#ffd54f,#ffb300); color: #042029; box-shadow: 0 6px 20px rgba(0,0,0,0.45); }
     .btn, .menu-bar button, .menu-bar a { border-radius: 12px; }
     .apps > * { box-shadow: 0 8px 30px rgba(236, 170, 27, 0.55); border-radius: 12px; }
     .notif, #notif-reservations { font-size: 1rem; padding: 12px; border-radius: 12px; }
     footer { font-size: 0.95rem; padding: 12px 0; }
+    #mobile-menu-btn { display: block !important; }
 }
-</style>
-</style>
+/* Mobile drawer styles */
+#mobile-menu-drawer{
+    position:fixed;top:0;right:0;width:85%;max-width:360px;height:100vh;background:#fff;color:#111;z-index:3000;box-shadow:-8px 0 40px rgba(0,0,0,0.32);padding:18px 16px;overflow:auto;border-left:1px solid rgba(0,0,0,0.06);
+    transform:translateX(100%);transition:transform 300ms ease;will-change:transform;
+}
+#mobile-menu-drawer.open{transform:translateX(0);} 
+#mobile-menu-backdrop{position:fixed;left:0;top:0;width:100%;height:100vh;background:rgba(0,0,0,0.45);z-index:2999;opacity:0;pointer-events:none;transition:opacity 220ms ease}
+#mobile-menu-backdrop.visible{opacity:1;pointer-events:auto}
+#mobile-menu-drawer nav a{display:block;padding:12px 0;border-bottom:1px solid #eee;color:#111;text-decoration:none;font-weight:700}
+#mobile-auth-area{margin-top:14px;padding:10px 0;border-top:1px solid #f1f5f9}
+#mobile-auth-area .user-email{font-weight:700;color:#0f172a;margin-bottom:8px}
+#mobile-auth-area button{display:inline-block;margin-right:8px;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+#mobile-auth-area .btn-login{background:linear-gradient(90deg,#43cea2,#185a9d);color:#fff}
+#mobile-auth-area .btn-logout{background:linear-gradient(90deg,#ff512f,#dd2476);color:#fff}
+    </style>
 </head>
 
 <body>
@@ -286,6 +318,26 @@ footer {
 <div class="menu-bar">
     <button id="client-login-btn" class="login"><span style="font-size:1.1em;">🔑</span> Connecter</button>
     <button id="client-logout-btn" class="logout" style="display:none;"><span style="font-size:1.1em;">🚪</span> Déconnecter</button>
+    <button id="mobile-menu-btn" aria-label="Menu mobile" style="display:none;background:transparent;border:none;font-size:1.4rem;padding:8px;margin-left:8px;">☰</button>
+    <div style="display:flex;align-items:center;gap:10px;margin-left:auto;">
+        <!-- single menu button -->
+        <div id="main-menu-wrap" style="position:relative;">
+            <button id="main-menu-btn" style="background:linear-gradient(90deg,#1e40af,#0ea5e9);color:#fff;padding:10px 14px;border-radius:12px;border:none;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(30,64,175,0.18);">☰ Menu</button>
+            <div id="main-menu-panel" style="display:none;position:absolute;right:0;top:46px;background:#fff;color:#0f172a;border-radius:10px;box-shadow:0 12px 40px rgba(2,6,23,0.18);min-width:220px;padding:10px;z-index:400;">
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <button id="menu-connect" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;">🔑 Se connecter</button>
+                    <button id="menu-logout" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;display:none;">🚪 Se déconnecter</button>
+                    <button id="menu-admin" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;">🔒 Mode Admin</button>
+                    <button id="menu-panel" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;display:none;">⚙️ Panneau Admin</button>
+                    <button id="menu-notifs" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;display:none;">🔔 Notifications</button>
+                    <a href="gsmexpress.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">🚚 GSM Express</a>
+                    <a href="bagages.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">📋 Gestion Bagages</a>
+                    <a href="privacy.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">🔎 Politique</a>
+                    <a href="contact.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">✉️ Contact</a>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Modal de connexion/inscription client -->
     <div id="client-auth-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,34,44,0.55);z-index:2000;align-items:center;justify-content:center;">
         <div style="background:linear-gradient(135deg,#ffffff 0%,#f3f8ff 100%);padding:2.4em 2.6em;border-radius:18px;box-shadow:0 12px 40px rgba(2,6,23,0.14);min-width:320px;max-width:95vw;border:1px solid rgba(30,58,138,0.06);backdrop-filter: blur(6px);">
@@ -330,6 +382,38 @@ footer {
             </form>
         </div>
     </div>
+    
+    <!-- Modal inscription GSM Express (client) -->
+    <div id="gsm-register-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,34,44,0.65);z-index:2500;align-items:center;justify-content:center;">
+        <div style="background:linear-gradient(135deg,#fff 0%,#f7fbff 100%);padding:1.8em;border-radius:14px;min-width:320px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 12px 36px rgba(2,6,23,0.14);">
+            <h3 style="margin-top:0;color:#0f172a;text-align:center;">Inscription — Réserver un bagage</h3>
+            <form id="gsm-register-form">
+                <input id="reg-nom" type="text" placeholder="Nom" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <input id="reg-prenom" type="text" placeholder="Prénom" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <select id="reg-pays" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                    <option value="">Pays de résidence</option>
+                    <option value="France">France</option>
+                    <option value="Algérie">Algérie</option>
+                    <option value="Autre">Autre</option>
+                </select>
+                <input id="reg-adresse-fr" type="text" placeholder="Adresse exacte en France (si applicable)" style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <input id="reg-adresse-dz" type="text" placeholder="Adresse exacte en Algérie (si applicable)" style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <input id="reg-id-number" type="text" placeholder="N° de carte d'identité / CIN" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <!-- ID photo removed: not required anymore -->
+                <input id="reg-whatsapp" type="tel" placeholder="Numéro WhatsApp (ex: +33...)" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <input id="reg-email" type="email" placeholder="Email (pour connexion & vérification)" required style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <input id="reg-password" type="password" placeholder="Mot de passe (min 6 caractères)" required minlength="6" style="width:100%;margin-bottom:0.6em;padding:0.6em 0.9em;border-radius:8px;border:1.2px solid #cfcfcf;font-size:1.02em;">
+                <div style="margin:8px 0;font-size:0.95em;color:#0f172a;display:flex;align-items:center;gap:8px">
+                    <input id="reg-accept-privacy" type="checkbox" style="width:18px;height:18px;" />
+                    <label for="reg-accept-privacy" style="font-size:0.95em;color:#0f172a">J'accepte les <a href="terms.html" target="_blank" style="color:#0f62ff;text-decoration:underline">conditions générales de transport</a></label>
+                </div>
+                <div id="reg-error" style="color:#b91c1c;font-size:0.95em;margin-bottom:0.6em;display:none;"></div>
+                <div id="reg-success" style="color:#065f46;font-size:0.98em;margin-bottom:0.6em;display:none;"></div>
+                <button type="submit" style="width:100%;background:#0ea5e9;color:#fff;padding:0.7em 0;border-radius:8px;font-weight:700;font-size:1.02em;border:none;">S'inscrire et recevoir ma matricule</button>
+                <button type="button" id="reg-cancel" style="width:100%;margin-top:0.6em;background:#888;color:#fff;padding:0.6em 0;border-radius:8px;font-weight:600;font-size:1.0em;border:none;">Annuler</button>
+            </form>
+        </div>
+    </div>
     <button id="adminBtn" class="login" style="background:linear-gradient(90deg,#d80824,#444);color:#fff;">GSM</button>
     <button id="quit-admin-btn" class="logout" style="display:none;background:linear-gradient(90deg,#888,#444);color:#fff;">Quitter mode admin</button>
     <button id="open-admin-panel-btn" class="login" style="display:none;margin-left:8px;background:linear-gradient(90deg,#1e40af,#0ea5e9);color:#fff;">Panneau Admin</button>
@@ -343,15 +427,7 @@ footer {
     </div>
 
     <div>
-        <div class="note">
-            🚚 <b>Bienvenue chez GSM Transport !</b><br>
-            <ul style="margin:10px 0 0 18px;padding:0 0 0 0.5em;font-size:1.07em;">
-                <li>Consultez les <b>dates de départ</b> en rouge sur le calendrier.</li>
-                <li>Préparez vos colis à l’avance pour garantir leur prise en charge.</li>
-                <li>Après inscription, <b>vérifiez vos spams</b> sur Gmail pour valider votre compte.</li>
-                <li>Pour toute question ou suivi, contactez-nous directement sur <b>WhatsApp</b> !</li>
-            </ul>
-        </div>
+        
 
         <!-- Affichage public de la note admin -->
         <div id="display-note" class="note" style="display:none;margin-top:12px;"></div>
@@ -359,6 +435,35 @@ footer {
         <h1>📦 GSM Transport</h1>
         <div class="subtitle">France ⇄ Algérie</div>
 
+        <section class="editorial" style="margin-top:25px;line-height:1.9;color:#fff;">
+            <h2>Transport de bagages France - Algérie</h2>
+
+            <p>
+                GSM Transport est un service spécialisé dans le transport
+                de bagages et colis entre la France et l’Algérie.
+            </p>
+
+            <p>
+                Nous proposons des départs réguliers, un suivi des réservations
+                et une assistance WhatsApp rapide pour tous nos clients.
+            </p>
+
+            <p>
+                Notre plateforme permet :
+            </p>
+
+            <ul style="margin-left:20px;">
+                <li>Réservation de bagages</li>
+                <li>Suivi colis</li>
+                <li>Gestion des départs</li>
+                <li>Notifications clients</li>
+                <li>Support France ⇄ Algérie</li>
+            </ul>
+
+            <p>
+                Nos services sont disponibles pour particuliers et professionnels.
+            </p>
+        </section>
         <div class="apps">
             <a href="gsmexpress.html" id="gsmexpress-link" class="card">
                 <div class="card-icon">🚚</div>
@@ -370,6 +475,29 @@ footer {
                 <div><strong>Gestion Bagages</strong></div>
                 <div>Suivi des colis</div>
             </a>
+        </div>
+
+        <!-- AdSense ad slot (replace data-ad-client & data-ad-slot) -->
+        <section class="editorial faq" style="margin-top:30px;color:#fff;">
+            <h2>FAQ</h2>
+
+            <h3>Quels pays sont desservis ?</h3>
+            <p>France et Algérie.</p>
+
+            <h3>Comment réserver un bagage ?</h3>
+            <p>Utilisez GSM Express directement depuis le site.</p>
+
+            <h3>Comment suivre mon colis ?</h3>
+            <p>Via la section Gestion Bagages.</p>
+        </section>
+        <div style="margin:16px 0;text-align:center;">
+              <ins class="adsbygoogle"
+                  style="display:block;max-width:728px;margin:0 auto"
+                  data-ad-client="ca-pub-8308471028441999"
+                  data-ad-slot="REPLACE_WITH_AD_SLOT"
+                  data-ad-format="auto"
+                  data-full-width-responsive="true"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
         </div>
 
         <!-- Zone de note admin -->
@@ -384,8 +512,13 @@ footer {
     </div>
 </div>
 
-<footer>
-MJ Tiddas Studio | GSM Transport France - Algérie
+<footer style="padding:18px 12px;text-align:center;background:rgba(0,0,0,0.04);color:#111;margin-top:28px;">
+    <div>MJ Tiddas Studio | GSM Transport France - Algérie</div>
+    <div style="margin-top:6px;font-size:0.95em;color:#374151">
+        <a href="privacy.html" style="color:#1e40af;margin-right:10px;">Politique de confidentialité</a>
+        <a href="contact.html" style="color:#1e40af;margin-right:10px;">Contact</a>
+        <a href="gsmexpress.html" style="color:#1e40af;">GSM Express</a>
+    </div>
 </footer>
 
 <!-- Fenêtre notifications admin -->
@@ -459,37 +592,16 @@ clientAuthForm.addEventListener('submit', function(e) {
 });
 
 clientRegisterBtn.addEventListener('click', function() {
-    const email = document.getElementById('client-email').value;
-    const password = document.getElementById('client-password').value;
-    if (!email || !password) {
-        clientAuthError.textContent = 'Veuillez remplir email et mot de passe.';
-        clientAuthError.style.display = 'block';
-        return;
-    }
-    auth.createUserWithEmailAndPassword(email, password)
-        .then(async userCred => {
-            try {
-                // Générer une matricule unique et mémoriser côté serveur (Firestore) et localStorage
-                const user = userCred.user;
-                const matricule = `GSM-${new Date().getFullYear()}-${Math.floor(100000 + Math.random()*900000)}`;
-                try { await db.collection('users').doc(user.uid).set({ email: email, matricule: matricule }); } catch (e) { console.warn('failed to save user matricule', e); }
-                try { localStorage.setItem('gsm_matricule', matricule); } catch (e) { /* ignore */ }
-                user.sendEmailVerification();
-                clientVerifyEmail.textContent = 'Inscription réussie ! Matricule: ' + matricule + '. Vérifiez votre email pour valider votre compte.';
-                clientVerifyEmail.style.display = 'block';
-                clientAuthError.style.display = 'none';
-                // sign out to enforce email verification before next login
-                auth.signOut();
-            } catch (errInner) {
-                console.error('register then error', errInner);
-                clientAuthError.textContent = 'Erreur interne lors de l\'inscription.';
-                clientAuthError.style.display = 'block';
-            }
-        })
-        .catch(err => {
-            clientAuthError.textContent = 'Erreur : ' + (err.message || 'Impossible de créer le compte');
-            clientAuthError.style.display = 'block';
-        });
+    // Instead of creating a Firebase account immediately, require the full GSM registration
+    // Hide the simple auth modal and show the detailed GSM registration modal so the user
+    // provides name, prénom, WhatsApp, adresse, N° CI and photo as required.
+    try {
+        clientAuthError.style.display = 'none';
+        clientVerifyEmail.style.display = 'none';
+    } catch (e) {}
+    // close the auth modal and open the GSM register modal
+    try { hideClientAuthModal(); } catch (e) {}
+    try { document.getElementById('gsm-register-modal').style.display = 'flex'; } catch (e) { console.warn('gsm register modal not found', e); }
 });
 
 if (clientForgotBtn) {
@@ -596,23 +708,30 @@ if (bagagesLink) {
 adminCodeForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     try {
-        const code = (adminCodeInput && adminCodeInput.value) ? adminCodeInput.value.trim() : '';
-        // Allow admin mode with the GSM code without Firebase authentication
-        if (code === 'GSM2026') {
-            hideAdminCodeModal();
-            isAdmin = true;
-            try { sessionStorage.setItem('gsm_code', code); } catch (e) {}
-            setAdminUI(true);
-            if (pendingNavigationTarget) {
-                const target = pendingNavigationTarget;
-                pendingNavigationTarget = null;
-                window.location.href = target;
+            const code = (adminCodeInput && adminCodeInput.value) ? adminCodeInput.value.trim() : '';
+            // Try server-side verification of the GSM admin code (prevents exposing the code in client sources)
+            try {
+                const res = await fetch(`${SERVER_ORIGIN}/api/auth/verify-code`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code })
+                });
+                if (res.ok) {
+                    hideAdminCodeModal();
+                    isAdmin = true;
+                    try { sessionStorage.setItem('gsm_code', '1'); } catch (e) {}
+                    setAdminUI(true);
+                    if (pendingNavigationTarget) {
+                        const target = pendingNavigationTarget;
+                        pendingNavigationTarget = null;
+                        window.location.href = target;
+                    }
+                    return;
+                }
+            } catch (e) {
+                console.warn('verify-code request failed', e);
             }
-            return;
-        }
 
-        // Fallback to existing Firebase-based admin check
-        const user = auth.currentUser;
+            // Fallback to existing Firebase-based admin check (if server verification did not pass)
+            const user = auth.currentUser;
         if (!user || !user.emailVerified) {
             adminCodeError.textContent = 'Vous devez être connecté et avoir vérifié votre email.';
             adminCodeError.style.display = 'block';
@@ -659,6 +778,7 @@ function setAdminUI(admin) {
         adminBtn.style.display = 'none';
         quitAdminBtn.style.display = '';
         const panelBtn = document.getElementById('open-admin-panel-btn'); if (panelBtn) panelBtn.style.display = '';
+        const menuNotifsBtn = document.getElementById('menu-notifs'); if (menuNotifsBtn) menuNotifsBtn.style.display = '';
         notifDiv.style.display = '';
         listeDiv.style.display = '';
         // Ensure socket is connected so admin receives booking notifications
@@ -668,6 +788,7 @@ function setAdminUI(admin) {
     } else {
         adminBtn.style.display = '';
         quitAdminBtn.style.display = 'none';
+        const menuNotifsBtn = document.getElementById('menu-notifs'); if (menuNotifsBtn) menuNotifsBtn.style.display = 'none';
         const panelBtn = document.getElementById('open-admin-panel-btn'); if (panelBtn) panelBtn.style.display = 'none';
         if (controls) controls.style.display = 'none';
         notifDiv.style.display = 'none';
@@ -922,11 +1043,156 @@ function enableCalendarSwipe() {
 
 
 // --- NOTIFICATIONS : version admin uniquement ---
+
+// GSM Express: intercept click, show registration modal and POST to /api/register
+try {
+    const gsmLink = document.getElementById('gsmexpress-link');
+    const gsmModal = document.getElementById('gsm-register-modal');
+    const gsmForm = document.getElementById('gsm-register-form');
+    const regCancel = document.getElementById('reg-cancel');
+    const regError = document.getElementById('reg-error');
+    const regSuccess = document.getElementById('reg-success');
+
+        if (gsmLink && gsmModal && gsmForm) {
+        gsmLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            regError.style.display = 'none';
+            regSuccess.style.display = 'none';
+            // Prefer showing the client auth modal so users can choose to se connecter
+            try {
+                if (typeof showClientAuthModal === 'function' && document.getElementById('client-auth-modal')) {
+                    showClientAuthModal();
+                    return;
+                }
+            } catch (ex) {}
+            // Fallback: open detailed GSM register modal
+            gsmModal.style.display = 'flex';
+        });
+        // Also intercept other plain links to gsmexpress.html (menu, anchors) to show auth/register
+        try {
+            const otherGsmAnchors = document.querySelectorAll('a[href="gsmexpress.html"]');
+            otherGsmAnchors.forEach(a => {
+                if (a.id === 'gsmexpress-link') return;
+                a.addEventListener('click', function(ev){ ev.preventDefault(); try{ if (typeof showClientAuthModal === 'function' && document.getElementById('client-auth-modal')) { showClientAuthModal(); return; } } catch(ex){} try{ document.getElementById('gsm-register-modal').style.display = 'flex'; } catch(e) { window.location.href = 'gsmexpress.html'; } });
+            });
+        } catch (ex) {}
+
+        regCancel && regCancel.addEventListener('click', function() { gsmModal.style.display = 'none'; });
+
+        gsmForm.addEventListener('submit', async function(ev) {
+            ev.preventDefault();
+            regError.style.display = 'none'; regSuccess.style.display = 'none';
+            const nom = (document.getElementById('reg-nom').value || '').trim();
+            const prenom = (document.getElementById('reg-prenom').value || '').trim();
+            const pays = (document.getElementById('reg-pays').value || '').trim();
+            const adresse_fr = (document.getElementById('reg-adresse-fr').value || '').trim();
+            const adresse_dz = (document.getElementById('reg-adresse-dz').value || '').trim();
+            const id_number = (document.getElementById('reg-id-number').value || '').trim();
+            const whatsapp = (document.getElementById('reg-whatsapp').value || '').trim();
+                // require acceptance of privacy policy
+                const accepted = !!(document.getElementById('reg-accept-privacy') && document.getElementById('reg-accept-privacy').checked);
+                if (!accepted) { regError.textContent = 'Vous devez accepter nos conditions avant de vous inscrire.'; regError.style.display = 'block'; return; }
+                if (!nom || !prenom || !pays || !id_number || !whatsapp) {
+                    regError.textContent = 'Veuillez remplir tous les champs obligatoires.'; regError.style.display = 'block'; return;
+                }
+            // if residence is France require adresse_fr, if Algérie require adresse_dz; otherwise both optional
+            if (pays === 'France' && !adresse_fr) { regError.textContent = 'Veuillez fournir votre adresse exacte en France.'; regError.style.display = 'block'; return; }
+            if (pays === 'Algérie' && !adresse_dz) { regError.textContent = 'Veuillez fournir votre adresse exacte en Algérie.'; regError.style.display = 'block'; return; }
+
+            try {
+                const email = (document.getElementById('reg-email').value || '').trim();
+                const password = (document.getElementById('reg-password').value || '').trim();
+                if (!email || !password || password.length < 6) { regError.textContent = 'Veuillez fournir un email valide et un mot de passe d\'au moins 6 caractères.'; regError.style.display = 'block'; return; }
+                const accepted = !!(document.getElementById('reg-accept-privacy') && document.getElementById('reg-accept-privacy').checked);
+                const payload = { nom, prenom, whatsapp, pays_residence: pays, adresse_france: adresse_fr, adresse_algerie: adresse_dz, id_number, email, accepted_privacy: accepted };
+                const res = await fetch('/api/register', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const j = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    regError.textContent = j && j.error ? j.error : ('Erreur serveur: ' + res.status);
+                    regError.style.display = 'block';
+                    return;
+                }
+                const matricule = j && j.matricule ? j.matricule : null;
+                // Log matricule for debugging (visible in browser console)
+                try { console.info('API /api/register returned matricule:', matricule, j); } catch (e) {}
+                // Show alert with matricule for user feedback
+                try { if (matricule) alert('Inscription réussie — Matricule: ' + matricule); } catch (e) {}
+                if (matricule) {
+                    try { localStorage.setItem('gsm_matricule', matricule); } catch (e) {}
+                    // Now create Firebase account automatically and send verification
+                    try {
+                        await auth.createUserWithEmailAndPassword(email, password);
+                        const user = auth.currentUser;
+                        if (user) {
+                            try { await user.sendEmailVerification(); } catch (e) { console.warn('sendEmailVerification failed', e); }
+                            try { await auth.signOut(); } catch (e) {}
+                        }
+                        regSuccess.textContent = 'Inscription réussie — Matricule: ' + matricule + '. Un email de vérification a été envoyé.';
+                        regSuccess.style.display = 'block';
+                        setTimeout(() => { gsmModal.style.display = 'none'; window.location.href = 'gsmexpress.html?matricule=' + encodeURIComponent(matricule); }, 1400);
+                        return;
+                    } catch (fbErr) {
+                        console.error('Firebase createUser error', fbErr);
+                        // If email already in use, offer reset password or open login modal prefilled
+                        if (fbErr && (fbErr.code === 'auth/email-already-in-use' || fbErr.code === 'auth/email-already-exists')) {
+                            regError.innerHTML = 'Cet email est déjà utilisé. <button id="reg-send-reset" style="margin-left:8px;background:#f59e0b;border:none;padding:6px 10px;border-radius:6px;">Envoyer réinitialisation</button> <button id="reg-open-login" style="margin-left:8px;background:#185a9d;color:#fff;border:none;padding:6px 10px;border-radius:6px;">Se connecter</button>';
+                            regError.style.display = 'block';
+                            setTimeout(() => {
+                                const resetBtn = document.getElementById('reg-send-reset');
+                                const loginBtn = document.getElementById('reg-open-login');
+                                if (resetBtn) {
+                                    resetBtn.addEventListener('click', async () => {
+                                        try {
+                                            await auth.sendPasswordResetEmail(email);
+                                            regSuccess.textContent = 'Email de réinitialisation envoyé.';
+                                            regSuccess.style.display = 'block';
+                                            regError.style.display = 'none';
+                                        } catch (e) {
+                                            regError.textContent = 'Erreur lors de l\'envoi du reset : ' + (e && e.message ? e.message : e);
+                                            regError.style.display = 'block';
+                                        }
+                                    });
+                                }
+                                if (loginBtn) {
+                                    loginBtn.addEventListener('click', () => {
+                                        try { hideClientAuthModal(); } catch (e) {}
+                                        try { showClientAuthModal(); } catch (e) {}
+                                        try { document.getElementById('client-email').value = email; } catch (e) {}
+                                        try { document.getElementById('client-password').value = ''; } catch (e) {}
+                                    });
+                                }
+                            }, 60);
+                            return;
+                        }
+                        regError.textContent = 'Compte Firebase non créé : ' + (fbErr && fbErr.message ? fbErr.message : fbErr);
+                        regError.style.display = 'block';
+                        return;
+                    }
+                }
+                regError.textContent = 'Inscription incomplète.'; regError.style.display = 'block';
+            } catch (err) {
+                regError.textContent = 'Erreur réseau lors de l\'inscription.'; regError.style.display = 'block';
+                console.error('register error', err);
+            }
+        });
+    }
+} catch (e) { console.warn('gsm register init failed', e); }
+
 // Determine server origin: use localhost:3002 during local dev, otherwise use current origin (works on Render)
 const SERVER_ORIGIN = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? (window.location.protocol + '//' + window.location.hostname + ':3002')
     : window.location.origin;
 const socket = io(SERVER_ORIGIN, { autoConnect: false });
+// Disable booking/pending notification handlers on main page
+try {
+    if (socket && socket.on) {
+        const __orig_on = socket.on.bind(socket);
+        socket.on = function(event, cb) { if (event === 'booking_notification' || event === 'pending_notifications') return; return __orig_on(event, cb); };
+    }
+} catch (e) {}
 
 // Start realtime settings handling once socket is available
 loadSettingsRealtime();
@@ -945,71 +1211,25 @@ socket.on('departures_updated', payload => {
     } catch (e) { console.error('departures_updated handler error', e); }
 });
 
-// Merge pending notifications sent by server (JSON array)
-socket.on('pending_notifications', list => {
+// Notification handlers removed; admin notifications will be handled in admin-notifications.html
+
+// Notification UI and helpers removed from main page; admin notifications will be centralized in admin-notifications.html
+
+// Open admin notifications in a dedicated window
+function openAdminNotificationsWindow() {
     try {
-        if (!Array.isArray(list) || list.length === 0) return;
-        const cur = JSON.parse(localStorage.getItem('notifications') || '[]');
-        // prepend new items while avoiding duplicates by timestamp+bagage_numero
-        const seen = new Set(cur.map(n => (n.bagage_numero || '') + '|' + (n.createdAt || n.receivedAt || '')));
-        const merged = [...list.filter(n => {
-            const key = (n.bagage_numero || '') + '|' + (n.createdAt || n.receivedAt || '');
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        }), ...cur];
-        localStorage.setItem('notifications', JSON.stringify(merged));
-        renderNotifications();
-    } catch (e) { console.warn('pending_notifications handler error', e); }
-});
-
-function getNotifications() { return JSON.parse(localStorage.getItem('notifications') || '[]'); }
-function saveNotifications(list) { localStorage.setItem('notifications', JSON.stringify(list)); }
-function addNotification(data) { const list = getNotifications(); list.unshift({ ...data, read: false }); saveNotifications(list); renderNotifications(); }
-function markAllRead() { const list = getNotifications().map(n => ({...n, read: true})); saveNotifications(list); renderNotifications(); }
-function deleteReadNotifications() { const list = getNotifications().filter(n => !n.read); saveNotifications(list); renderNotifications(); }
-function deleteNotification(idx) { const list = getNotifications(); list.splice(idx, 1); saveNotifications(list); renderNotifications(); }
-function clearNotifications() { localStorage.removeItem('notifications'); renderNotifications(); }
-
-function renderNotifications() {
-    if (!isAdmin) { notifDiv.style.display = 'none'; listeDiv.style.display = 'none'; return; }
-    const notifications = getNotifications();
-    if (notifications.length === 0) { listeDiv.innerHTML = '<p style="text-align:center;color:#888;">Aucune notification de réservation.</p>'; notifDiv.style.display = 'none'; return; }
-    const unread = notifications.find(n => !n.read);
-    if (unread) {
-        notifDiv.innerHTML = `
-            <span style="color:#d97706;font-size:1.3em;vertical-align:middle;">⚡</span>
-            <span style="color:#1a4d2e;">Nouvelle réservation reçue !</span>
-            <span style="background:#e6ffe6;color:#1a4d2e;border-radius:8px;padding:0.2em 0.7em;margin-left:1em;font-weight:700;">Total : ${notifications.length}</span>
-            <button onclick="markAllRead()" style="margin-left:1em;background:#1e40af;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;">Tout marquer comme lu</button>
-            <button onclick="deleteReadNotifications()" style="margin-left:0.7em;background:#b91c1c;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;">Supprimer notifications lues</button>
-            <button onclick="clearNotifications()" style="margin-left:0.7em;background:#64748b;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;">Tout supprimer</button>
-        `;
-        notifDiv.style.display = 'block';
-    } else {
-        notifDiv.innerHTML = `
-            <span style="color:#16a34a;font-size:1.2em;vertical-align:middle;">✔️</span>
-            <span style="color:#1a4d2e;">Toutes les notifications ont été lues.</span>
-            <span style="background:#e6ffe6;color:#1a4d2e;border-radius:8px;padding:0.2em 0.7em;margin-left:1em;font-weight:700;">Total : ${notifications.length}</span>
-            <button onclick="deleteReadNotifications()" style="margin-left:1em;background:#b91c1c;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;">Supprimer notifications lues</button>
-            <button onclick="clearNotifications()" style="margin-left:0.7em;background:#64748b;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;">Tout supprimer</button>
-        `;
-        notifDiv.style.display = 'block';
-    }
-    listeDiv.innerHTML = notifications.map((n, idx) => `
-        <div style="background:#fff;border-radius:10px;box-shadow:0 1px 6px #0001;padding:1rem 1.2rem;margin-bottom:1.1rem;${n.read ? 'opacity:0.7;' : ''}">
-            <b>Bagage #${n.bagage_numero}</b> – <b>${n.exp_nom} ${n.exp_prenom}</b> → <b>${n.dest_nom} ${n.dest_prenom}</b><br>
-            <span style=\"color:#1e40af;\">${n.pays_dest} / ${n.destination}${n.region ? ' / ' + n.region : ''}</span> | <b>${n.nb_bagages} bagage(s)</b> | <b>${n.poids} kg</b> | <b>${n.prix} €</b><br>
-            <span style=\"color:#64748b;\">Tél. expéditeur: ${n.exp_tel} – Tél. destinataire: ${n.dest_tel}</span>
-            ${n.notes ? `<div style='margin-top:0.5em;color:#555;'>Note: ${n.notes}</div>` : ''}
-            <div style='margin-top:0.7em;'>
-                <a href="${SERVER_ORIGIN}/generate-pdf/${encodeURIComponent(n.bagage_numero)}" target="_blank" style="color:#2563eb;font-weight:700;text-decoration:underline;font-size:1.08em;">Télécharger PDF</a>
-                ${n.read ? '<span style="color:#16a34a;margin-left:1em;">(Lue)</span>' : '<span style="color:#d97706;margin-left:1em;">(Non lue)</span>'}
-                <button onclick="deleteNotification(${idx})" style="margin-left:1em;background:#e11d48;color:#fff;border:none;padding:0.2em 0.7em;border-radius:7px;cursor:pointer;font-weight:600;font-size:0.95em;">Supprimer</button>
-            </div>
-        </div>
-    `).join('');
+        const url = '/admin-notifications.html';
+        const features = 'width=480,height=720,menubar=no,toolbar=no,location=no,status=no';
+        const w = window.open(url, 'gsm_admin_notifications', features);
+        if (!w) alert('Impossible d\'ouvrir la fenêtre (bloquée par le navigateur).');
+    } catch (e) { console.warn('openAdminNotificationsWindow failed', e); }
 }
+
+// wire menu-notifs button
+try {
+    const menuNotifs = document.getElementById('menu-notifs');
+    if (menuNotifs) menuNotifs.addEventListener('click', (e) => { e.stopPropagation(); try { openAdminNotificationsWindow(); if (mainMenuPanel) mainMenuPanel.style.display='none'; } catch (err) {} });
+} catch (e) {}
 
 // socket handlers
 
@@ -1175,6 +1395,107 @@ if (adminPanelSave) adminPanelSave.addEventListener('click', async () => {
         if (adminPanelModal) adminPanelModal.style.display = 'none';
     } catch (e) { console.error(e); alert('Échec enregistrement. Voir console.'); }
 });
+
+// --- Main menu interactions (single button) ---
+try {
+    const mainMenuBtn = document.getElementById('main-menu-btn');
+    const mainMenuPanel = document.getElementById('main-menu-panel');
+    const menuConnect = document.getElementById('menu-connect');
+    const menuLogout = document.getElementById('menu-logout');
+    const menuAdmin = document.getElementById('menu-admin');
+    const menuPanel = document.getElementById('menu-panel');
+
+    function updateMenuAuth(connected) {
+        if (menuConnect && menuLogout) {
+            menuConnect.style.display = connected ? 'none' : '';
+            menuLogout.style.display = connected ? '' : 'none';
+        }
+        if (menuPanel) menuPanel.style.display = isAdmin ? '' : 'none';
+    }
+
+    if (mainMenuBtn) {
+        mainMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!mainMenuPanel) return;
+            mainMenuPanel.style.display = mainMenuPanel.style.display === 'none' ? 'block' : 'none';
+        });
+    }
+
+    // close menu on outside click
+    document.addEventListener('click', () => { try { if (mainMenuPanel) mainMenuPanel.style.display = 'none'; } catch (e) {} });
+
+    if (menuConnect) menuConnect.addEventListener('click', (e) => { e.stopPropagation(); try { showClientAuthModal(); if (mainMenuPanel) mainMenuPanel.style.display='none'; } catch (e) {} });
+    if (menuLogout) menuLogout.addEventListener('click', (e) => { e.stopPropagation(); try { clientLogoutBtn.click(); if (mainMenuPanel) mainMenuPanel.style.display='none'; } catch (e) {} });
+    if (menuAdmin) menuAdmin.addEventListener('click', (e) => { e.stopPropagation(); try { showAdminCodeModal(); if (mainMenuPanel) mainMenuPanel.style.display='none'; } catch (e) {} });
+    if (menuPanel) menuPanel.addEventListener('click', (e) => { e.stopPropagation(); try { if (openAdminPanelBtn) openAdminPanelBtn.click(); if (mainMenuPanel) mainMenuPanel.style.display='none'; } catch (e) {} });
+
+    // update menu based on auth changes
+    try { updateMenuAuth(!!auth.currentUser && auth.currentUser.emailVerified); } catch (e) {}
+    auth.onAuthStateChanged(u => { updateMenuAuth(!!u && u.emailVerified); });
+} catch (e) { console.warn('main menu init failed', e); }
 </script>
+    <!-- Mobile navigation drawer -->
+    <div id="mobile-menu-drawer">
+        <button id="mobile-menu-close" aria-label="Fermer le menu" style="background:none;border:none;font-size:1.2rem;float:right;">✕</button>
+        <nav style="margin-top:18px;">
+            <a href="index.html">Accueil</a>
+            <a href="gsmexpress.html">GSM Express</a>
+            <a href="privacy.html">Politique de confidentialité</a>
+            <a href="contact.html">Contact</a>
+        </nav>
+        <div id="mobile-auth-area">
+            <div id="mobile-user-info" style="display:none">
+                <div class="user-email"></div>
+                <button id="mobile-logout" class="btn-logout">Se déconnecter</button>
+            </div>
+            <div id="mobile-guest-actions" style="display:none">
+                <button id="mobile-open-login" class="btn-login">Se connecter</button>
+                <button id="mobile-open-register" class="btn-login">S'inscrire</button>
+            </div>
+        </div>
+    </div>
+    <div id="mobile-menu-backdrop"></div>
+
+    <script>
+    (function(){
+        const btn = document.getElementById('mobile-menu-btn');
+        const drawer = document.getElementById('mobile-menu-drawer');
+        const closeBtn = document.getElementById('mobile-menu-close');
+        const backdrop = document.getElementById('mobile-menu-backdrop');
+        const userInfoWrap = document.getElementById('mobile-user-info');
+        const guestWrap = document.getElementById('mobile-guest-actions');
+        function show(){ if(drawer){ drawer.classList.add('open'); if(backdrop) backdrop.classList.add('visible'); document.body.style.overflow='hidden'; } }
+        function hide(){ if(drawer){ drawer.classList.remove('open'); if(backdrop) backdrop.classList.remove('visible'); document.body.style.overflow=''; } }
+        if(btn) btn.addEventListener('click', show);
+        if(closeBtn) closeBtn.addEventListener('click', hide);
+        if(backdrop) backdrop.addEventListener('click', hide);
+        function updateBtn(){ try{ const b = document.getElementById('mobile-menu-btn'); if(window.innerWidth <= 900){ if(b) b.style.display='block'; } else { if(b) b.style.display='none'; hide(); } } catch(e){} }
+        updateBtn(); window.addEventListener('resize', updateBtn);
+
+        // Mobile auth integration: works if `auth` is defined (Firebase). Otherwise show links to index.
+        async function updateMobileAuth(user){
+            try{
+                if(user){
+                    guestWrap.style.display='none'; userInfoWrap.style.display='block';
+                    const emailEl = userInfoWrap.querySelector('.user-email'); if(emailEl) emailEl.textContent = user.email || user.displayName || '';
+                } else {
+                    userInfoWrap.style.display='none'; guestWrap.style.display='block';
+                }
+            } catch(e){}
+        }
+
+        // Attach actions
+        document.getElementById('mobile-open-login').addEventListener('click', ()=>{ hide(); try{ showClientAuthModal(); }catch(e){ window.location.href='index.html'; } });
+        document.getElementById('mobile-open-register').addEventListener('click', ()=>{ hide(); try{ if (typeof showClientAuthModal === 'function' && document.getElementById('client-auth-modal')) { showClientAuthModal(); } else { document.getElementById('gsm-register-modal').style.display='flex'; } }catch(e){ window.location.href='index.html'; } });
+        document.getElementById('mobile-logout').addEventListener('click', async ()=>{ try{ if(window.auth) await auth.signOut(); hide(); setClientUI(false);}catch(e){ console.warn('mobile logout failed', e); } });
+
+        // If Firebase auth exists, listen for state changes, otherwise default guest view
+        if(window.auth && typeof window.auth.onAuthStateChanged === 'function'){
+            auth.onAuthStateChanged(u=> updateMobileAuth(u));
+        } else {
+            updateMobileAuth(null);
+        }
+    })();
+    </script>
 </body>
 </html>
