@@ -52,6 +52,10 @@
   <main>
     <div class="container">
       <h1>Réservation Bagage</h1>
+      <div id="adminInfo" style="margin:8px 0;padding:10px;border-radius:8px;background:#071b2a;color:#cde7ff;font-size:0.95em;display:none">
+        <div id="adminNote" style="margin-bottom:6px"></div>
+        <div id="departureDate" style="font-weight:700"></div>
+      </div>
 
       <div id="matriculeLine" class="matricule-line" style="display:flex;justify-content:space-between;align-items:center;">
         <div>
@@ -96,6 +100,7 @@
 
         <label>Poids total (kg)</label>
         <input id="poids" type="number" step="0.1" required />
+        <div id="priceInfo" style="margin-top:8px;color:#9be7c6;font-weight:700;display:none"></div>
 
         <label>Note</label>
         <textarea id="notes" placeholder="Note éventuelle"></textarea>
@@ -111,6 +116,10 @@
 
       <div id="qrZone"></div>
       <div id="pdfStatus" style="display:none;margin-top:12px;background:linear-gradient(90deg,#062a4a,#063246);padding:12px;border-radius:10px;color:#d1fae5;font-weight:700"></div>
+      <div id="confirmationBanner" style="display:none;margin-top:12px;background:linear-gradient(90deg,#062a4a,#083047);padding:16px;border-radius:12px;color:#fff;font-weight:800;text-align:center">
+        <div style="font-size:18px;opacity:0.85">Confirmation — Montant à payer</div>
+        <div id="confirmPrice" style="font-size:32px;margin-top:6px;color:#a7f3d0"></div>
+      </div>
     </div>
   </main>
 
@@ -190,6 +199,7 @@
     qrZone.innerHTML='';
     formSubmitted = false;
     try { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = originalSubmitText; } } catch(e){}
+    try { const b = document.getElementById('confirmationBanner'); if (b) { b.style.display = 'none'; } const cp = document.getElementById('confirmPrice'); if(cp) cp.textContent = ''; if (pdfStatusElem) pdfStatusElem.style.display='none'; if (priceInfo) priceInfo.style.display='none'; } catch(e){}
   });
 
   // collect data and include matricule
@@ -213,9 +223,61 @@
       region: pays === 'Algérie' ? region : adresse_fr,
       nb_bagages: document.getElementById('nb_bagages').value,
       poids: document.getElementById('poids').value,
+      prix: computePriceValue(),
       notes: document.getElementById('notes').value
     };
   }
+
+  // Price calculation rules
+  function rateForWeight(w){
+    const weight = parseFloat(w) || 0;
+    if (weight <= 0) return 0;
+    if (weight < 10) return 4.0;
+    if (weight >= 10 && weight <= 20) return 3.5;
+    return 3.0;
+  }
+  function computePriceValue(){
+    const w = parseFloat(document.getElementById('poids').value || 0);
+    if (!w || w <= 0) return 0;
+    const rate = rateForWeight(w);
+    const total = Math.round((w * rate) * 100) / 100;
+    return total;
+  }
+  // update price display
+  const priceInfo = document.getElementById('priceInfo');
+  function updatePriceDisplay(){
+    try {
+      const w = parseFloat(document.getElementById('poids').value || 0);
+      if (!w || w <= 0) { priceInfo.style.display='none'; priceInfo.textContent=''; return; }
+      const rate = rateForWeight(w);
+      const total = computePriceValue();
+      priceInfo.style.display='block';
+      priceInfo.textContent = `Tarif: ${rate} €/kg — Total estimé: ${total} €`;
+    } catch(e){ }
+  }
+  document.getElementById('poids').addEventListener('input', updatePriceDisplay);
+  // initialize price if valeur present
+  updatePriceDisplay();
+
+  // fetch admin settings (note and selectedDate)
+  async function loadAdminSettings(){
+    try {
+      const res = await fetch(SERVER_ORIGIN + '/api/settings');
+      if (!res.ok) return;
+      const s = await res.json().catch(()=>null);
+      if (!s) return;
+      const noteEl = document.getElementById('adminNote');
+      const dateEl = document.getElementById('departureDate');
+      if ((s.note && s.note.toString().trim()) || s.selectedDate) {
+        document.getElementById('adminInfo').style.display = 'block';
+      }
+      if (s.note) noteEl.textContent = 'Note admin: ' + s.note;
+      if (s.selectedDate) dateEl.textContent = 'Date de départ: ' + s.selectedDate;
+    } catch(e) { /* ignore */ }
+  }
+  loadAdminSettings();
+  // update live via socket
+  try { socket.on && socket.on('settings_updated', (s)=>{ if(s){ try{ if(s.note) document.getElementById('adminNote').textContent = 'Note admin: ' + s.note; if(s.selectedDate) document.getElementById('departureDate').textContent = 'Date de départ: ' + s.selectedDate; document.getElementById('adminInfo').style.display='block'; }catch(e){} } }); } catch(e){}
 
   // submit handler: POST /api/bookings and handle PDF link
   document.getElementById('reservationForm').addEventListener('submit', async function(e){
@@ -231,6 +293,14 @@
       alert('Réservation envoyée');
       // remember last submitted bagage id so we can match pdf_generated events
       try { window.lastBagageId = data.bagage_numero; } catch (e) { window.lastBagageId = null; }
+      // show confirmation banner with price
+      try {
+        const total = (data && data.prix) ? data.prix : computePriceValue();
+        const cp = document.getElementById('confirmPrice');
+        const b = document.getElementById('confirmationBanner');
+        if (cp) cp.textContent = (typeof total === 'number' ? (Math.round(total*100)/100) : total) + ' €';
+        if (b) b.style.display = 'block';
+      } catch(e){}
       // show waiting indicator
       try { showPdfWaiting(); } catch (e){}
       // If server returned immediate PDF link, open it and show ready
