@@ -3,20 +3,508 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>À propos — GSM Transport</title>
-  <meta name="description" content="À propos de GSM Transport — transport de bagages France Algérie, services, contact et assistance.">
-  <style>body{font-family:Arial,Helvetica,sans-serif;line-height:1.6;padding:24px;background:#f7fbff;color:#0b1724}h1{color:#1e40af}a{color:#0ea5e9}</style>
+
+  <title>À propos — GSM Transport France ⇄ Algérie</title>
+
+  <meta name="description"
+        content="GSM Transport assure le transport de bagages et colis entre la France et l’Algérie avec suivi, assistance WhatsApp et service fiable.">
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+
+    :root{
+      --primary:#1e40af;
+      --secondary:#0ea5e9;
+      --dark:#0f172a;
+      --light:#f8fafc;
+      --gray:#64748b;
+      --white:#ffffff;
+    }
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    body{
+      font-family:'Poppins',sans-serif;
+      background:linear-gradient(135deg,#eff6ff,#f8fafc);
+      color:var(--dark);
+      line-height:1.8;
+    }
+
+    /* HEADER */
+
+    .topbar{
+      background:linear-gradient(90deg,#1e40af,#0ea5e9);
+      color:#fff;
+      padding:18px 25px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      flex-wrap:wrap;
+      box-shadow:0 4px 18px rgba(0,0,0,0.1);
+    }
+
+    .logo{
+      font-size:1.4rem;
+      font-weight:700;
+    }
+
+    .menu{
+      display:flex;
+      gap:18px;
+      flex-wrap:wrap;
+    }
+
+    .menu a{
+      color:#fff;
+      text-decoration:none;
+      font-weight:500;
+      transition:0.3s;
+    }
+
+    .menu a:hover{
+      opacity:0.8;
+    }
+
+    /* HERO */
+
+    .hero{
+      padding:70px 20px 50px;
+      text-align:center;
+    }
+
+    .hero h1{
+      font-size:2.7rem;
+      color:var(--primary);
+      margin-bottom:18px;
+    }
+
+    .hero p{
+      max-width:900px;
+      margin:auto;
+      color:var(--gray);
+      font-size:1.08rem;
+    }
+
+    /* MAIN */
+
+    .container{
+      max-width:1200px;
+      margin:auto;
+      padding:20px;
+    }
+
+    .card{
+      background:var(--white);
+      border-radius:24px;
+      padding:35px;
+      margin-bottom:28px;
+      box-shadow:0 10px 30px rgba(15,23,42,0.06);
+    }
+
+    .card h2{
+      color:var(--primary);
+      margin-bottom:18px;
+      font-size:1.7rem;
+    }
+
+    .card p{
+      margin-bottom:16px;
+      color:#334155;
+    }
+
+    .services{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:20px;
+      margin-top:25px;
+    }
+
+    .service-box{
+      background:#f8fafc;
+      border:1px solid #e2e8f0;
+      border-radius:18px;
+      padding:22px;
+      transition:0.3s;
+    }
+
+    .service-box:hover{
+      transform:translateY(-4px);
+      box-shadow:0 10px 20px rgba(0,0,0,0.06);
+    }
+
+    .service-box h3{
+      color:var(--primary);
+      margin-bottom:10px;
+    }
+
+    ul{
+      padding-left:20px;
+      color:#334155;
+    }
+
+    li{
+      margin-bottom:10px;
+    }
+
+    .steps{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:20px;
+      margin-top:20px;
+    }
+
+    .step{
+      background:#eff6ff;
+      border-left:5px solid var(--secondary);
+      padding:20px;
+      border-radius:16px;
+    }
+
+    .step strong{
+      color:var(--primary);
+      display:block;
+      margin-bottom:10px;
+    }
+
+    .locations{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+      gap:18px;
+      margin-top:20px;
+    }
+
+    .location-box{
+      background:#f8fafc;
+      border-radius:16px;
+      padding:18px;
+      border:1px solid #e2e8f0;
+    }
+
+    .location-box h3{
+      color:var(--primary);
+      margin-bottom:8px;
+    }
+
+    .trust{
+      background:linear-gradient(90deg,#1e40af,#0ea5e9);
+      color:#fff;
+      text-align:center;
+      padding:35px;
+      border-radius:24px;
+    }
+
+    .trust h2{
+      margin-bottom:15px;
+      color:#fff;
+    }
+
+    footer{
+      margin-top:40px;
+      background:#0f172a;
+      color:#cbd5e1;
+      text-align:center;
+      padding:25px 15px;
+    }
+
+    footer a{
+      color:#93c5fd;
+      text-decoration:none;
+    }
+
+    @media(max-width:900px){
+
+      .hero h1{
+        font-size:2rem;
+      }
+
+      .topbar{
+        flex-direction:column;
+        gap:12px;
+        text-align:center;
+      }
+
+      .menu{
+        justify-content:center;
+      }
+
+      .card{
+        padding:25px;
+      }
+
+    }
+
+  </style>
 </head>
+
 <body>
-  <h1>À propos de GSM Transport</h1>
-  <p>GSM Transport est spécialisé dans le transport de bagages et colis entre la France et l'Algérie. Nous opérons des départs réguliers et proposons un suivi des réservations simple et sécurisé.</p>
-  <p>Nous mettons l'accent sur la rapidité, la disponibilité via WhatsApp et la transparence des prix.</p>
-  <h2>Nos engagements</h2>
-  <ul>
-    <li>Départs réguliers et organisation fiable</li>
-    <li>Suivi des colis et assistance client</li>
-    <li>Respect des délais et des règles douanières</li>
-  </ul>
-  <p>Pour nous contacter, utilisez la page <a href="contact.html">Contact</a> ou consultez notre <a href="privacy.html">Politique de confidentialité</a>.</p>
+
+  <!-- HEADER -->
+
+  <header class="topbar">
+
+    <div class="logo">
+      📦 GSM Transport
+    </div>
+
+    <nav class="menu">
+      <a href="index.html">Accueil</a>
+      <a href="gsmexpress.html">GSM Express</a>
+      <a href="contact.html">Contact</a>
+      <a href="privacy.html">Confidentialité</a>
+    </nav>
+
+  </header>
+
+  <!-- HERO -->
+
+  <section class="hero">
+
+    <h1>
+      GSM Transport France ⇄ Algérie
+    </h1>
+
+    <p>
+      GSM Transport est spécialisé dans le transport de bagages,
+      colis et effets personnels entre la France et l’Algérie.
+      Notre mission est d’offrir un service professionnel,
+      sécurisé et fiable pour tous nos clients particuliers
+      et professionnels.
+    </p>
+
+  </section>
+
+  <!-- CONTENT -->
+
+  <div class="container">
+
+    <!-- ABOUT -->
+
+    <section class="card">
+
+      <h2>À propos de notre entreprise</h2>
+
+      <p>
+        Depuis plusieurs années, GSM Transport accompagne
+        les voyageurs et familles entre la France et l’Algérie
+        avec un service sérieux, rapide et organisé.
+      </p>
+
+      <p>
+        Nous mettons l’accent sur :
+      </p>
+
+      <ul>
+        <li>✔️ La sécurité des bagages</li>
+        <li>✔️ La ponctualité des départs</li>
+        <li>✔️ Le suivi des réservations</li>
+        <li>✔️ L’assistance WhatsApp rapide</li>
+        <li>✔️ Une relation de confiance avec nos clients</li>
+      </ul>
+
+    </section>
+
+    <!-- SERVICES -->
+
+    <section class="card">
+
+      <h2>Nos services</h2>
+
+      <div class="services">
+
+        <div class="service-box">
+          <h3>📦 Transport Bagages</h3>
+          <p>
+            Transport sécurisé de bagages et effets personnels
+            entre la France et l’Algérie.
+          </p>
+        </div>
+
+        <div class="service-box">
+          <h3>🚚 Ramassage</h3>
+          <p>
+            Nos ramasseurs peuvent récupérer vos bagages
+            directement à votre adresse.
+          </p>
+        </div>
+
+        <div class="service-box">
+          <h3>📄 Réservation PDF</h3>
+          <p>
+            Chaque réservation génère un PDF avec QR code
+            et informations du client.
+          </p>
+        </div>
+
+        <div class="service-box">
+          <h3>📱 Assistance WhatsApp</h3>
+          <p>
+            Support rapide et assistance client disponible
+            avant et après le départ.
+          </p>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- INSCRIPTION -->
+
+    <section class="card">
+
+      <h2>Comment s’inscrire ?</h2>
+
+      <div class="steps">
+
+        <div class="step">
+          <strong>1️⃣ Créer un compte</strong>
+
+          Cliquez sur GSM Express puis remplissez
+          le formulaire d’inscription.
+        </div>
+
+        <div class="step">
+          <strong>2️⃣ Réserver vos bagages</strong>
+
+          Entrez les informations du bagage,
+          destination et coordonnées.
+        </div>
+
+        <div class="step">
+          <strong>3️⃣ Générer le PDF</strong>
+
+          Un PDF de réservation est automatiquement créé.
+        </div>
+
+        <div class="step">
+          <strong>4️⃣ Coller le PDF</strong>
+
+          Imprimez et scotchez le PDF sur les bagages
+          avant le passage du ramasseur ou avant dépôt au dépôt.
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- BAGAGES -->
+
+    <section class="card">
+
+      <h2>Préparer vos bagages avant le départ</h2>
+
+      <ul>
+
+        <li>
+          ✔️ Fermer correctement les valises et colis.
+        </li>
+
+        <li>
+          ✔️ Imprimer le PDF de réservation.
+        </li>
+
+        <li>
+          ✔️ Scotcher le PDF ou QR code sur chaque bagage.
+        </li>
+
+        <li>
+          ✔️ Vérifier que le nom et numéro WhatsApp sont corrects.
+        </li>
+
+        <li>
+          ✔️ Préparer les bagages avant le passage du ramasseur.
+        </li>
+
+        <li>
+          ✔️ Possibilité de déposer directement vos bagages dans nos dépôts.
+        </li>
+
+      </ul>
+
+    </section>
+
+    <!-- TRUST -->
+
+    <section class="trust">
+
+      <h2>Pourquoi nous faire confiance ?</h2>
+
+      <p>
+        GSM Transport travaille avec sérieux et transparence.
+        Nous assurons un suivi des réservations,
+        une assistance client rapide et un service organisé
+        pour garantir la satisfaction de nos clients
+        en France et en Algérie.
+      </p>
+
+    </section>
+
+    <!-- LOCATIONS -->
+
+    <section class="card">
+
+      <h2>Nos points de dépôt</h2>
+
+      <div class="locations">
+
+        <div class="location-box">
+          <h3>🇫🇷 France</h3>
+
+          <p>
+            93380 Pierrefitte-sur-Seine<br>
+            54 Avenue Lénine
+          </p>
+        </div>
+
+        <div class="location-box">
+          <h3>🇩🇿 Azazga</h3>
+
+          <p>
+            Tersathine — Azazga
+          </p>
+        </div>
+
+        <div class="location-box">
+          <h3>🇩🇿 Tizi Ouzou</h3>
+
+          <p>
+            Tizi Ouzou Ville
+          </p>
+        </div>
+
+        <div class="location-box">
+          <h3>🇩🇿 Alger</h3>
+
+          <p>
+            Dépôt et point de réception
+          </p>
+        </div>
+
+      </div>
+
+    </section>
+
+  </div>
+
+  <!-- FOOTER -->
+
+  <footer>
+
+    <div>
+      © 2026 GSM Transport France ⇄ Algérie
+    </div>
+
+    <div style="margin-top:10px;">
+      <a href="index.html">Accueil</a> |
+      <a href="contact.html">Contact</a> |
+      <a href="privacy.html">Politique de confidentialité</a>
+    </div>
+
+  </footer>
+
 </body>
 </html>
