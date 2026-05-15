@@ -269,18 +269,36 @@
       if (!res.ok) return;
       const s = await res.json().catch(()=>null);
       if (!s) return;
-      const noteEl = document.getElementById('adminNote');
-      const dateEl = document.getElementById('departureDate');
-      if ((s.note && s.note.toString().trim()) || s.selectedDate) {
-        document.getElementById('adminInfo').style.display = 'block';
-      }
-      if (s.note) noteEl.textContent = 'Note admin: ' + s.note;
-      if (s.selectedDate) dateEl.textContent = 'Date de départ: ' + s.selectedDate;
+      updateAdminInfo(s.note, s.selectedDate);
     } catch(e) { /* ignore */ }
   }
   loadAdminSettings();
   // update live via socket
-  try { socket.on && socket.on('settings_updated', (s)=>{ if(s){ try{ if(s.note) document.getElementById('adminNote').textContent = 'Note admin: ' + s.note; if(s.selectedDate) document.getElementById('departureDate').textContent = 'Date de départ: ' + s.selectedDate; document.getElementById('adminInfo').style.display='block'; }catch(e){} } }); } catch(e){}
+  // helper to update admin note + date in the UI
+  function updateAdminInfo(note, selectedDate){
+    try{
+      const info = document.getElementById('adminInfo');
+      const noteEl = document.getElementById('adminNote');
+      const dateEl = document.getElementById('departureDate');
+      if(!info || !noteEl || !dateEl) return;
+      note = (note && note.toString && note.toString().trim()) ? note.toString().trim() : '';
+      selectedDate = selectedDate || '';
+      noteEl.textContent = note ? ('Note admin: ' + note) : '';
+      dateEl.textContent = selectedDate ? ('Date de départ: ' + selectedDate) : '';
+      info.style.display = (note || selectedDate) ? 'block' : 'none';
+    }catch(e){console.warn('updateAdminInfo error', e)}
+  }
+
+  try {
+    if (socket && socket.on) {
+      socket.on('settings_updated', (s) => {
+        try{
+          if (!s) return;
+          updateAdminInfo(s.note, s.selectedDate);
+        }catch(e){console.warn('settings_updated handler', e)}
+      });
+    }
+  } catch(e) { console.warn('socket settings handler init failed', e); }
 
   // submit handler: POST /api/bookings and handle PDF link
   document.getElementById('reservationForm').addEventListener('submit', async function(e){
