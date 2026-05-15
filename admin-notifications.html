@@ -518,11 +518,11 @@
             🕒 ${new Date(n.createdAt || n.receivedAt || Date.now()).toLocaleString('fr-FR')}
           </div>
 
-          ${n.pdf_url || n.pdf ? `
+          ${(n.pdfLink || n.pdf_url || n.pdf) ? `
             <div class="pdf-box">
               <div class="pdf-thumb">📄</div>
               <div class="pdf-meta">
-                <div class="pdf-name">${n.pdf_name || (n.pdf_url || n.pdf).split('/').pop()}</div>
+                <div class="pdf-name">${n.pdf_name || (n.pdfLink || n.pdf_url || n.pdf).split('/').pop()}</div>
                 <div style="display:flex;gap:8px">
                   <button class="small-btn btn-light" onclick="openPdf(${idx})">Voir</button>
                   <button class="small-btn btn-light" onclick="downloadPdf(${idx})">Télécharger</button>
@@ -532,7 +532,7 @@
             </div>
 
             <div class="pdf-frame" id="pdfframe-${idx}" style="display:none;">
-              <iframe src="${n.pdf_url || n.pdf}" width="100%" height="300" frameborder="0"></iframe>
+              <iframe src="${n.pdfLink || n.pdf_url || n.pdf}" width="100%" height="300" frameborder="0"></iframe>
             </div>
           ` : ''}
 
@@ -715,6 +715,31 @@
 
     }
 
+  });
+
+  // When server generates a PDF, update matching notifications so admin can download it
+  socket.on('pdf_generated', payload => {
+    try {
+      if (!payload || (!payload.filename && !payload.url)) return;
+      const list = load();
+      let updated = false;
+      const url = payload.url && payload.url.startsWith('http') ? payload.url : (SERVER_ORIGIN + (payload.url || ''));
+      list.forEach(item => {
+        try {
+          const fname = payload.filename || '';
+          if (!fname) return;
+          if ((item.bagage_numero && fname.includes(item.bagage_numero)) || (item.matricule && fname.includes(item.matricule))) {
+            item.pdfLink = url;
+            updated = true;
+          }
+        } catch (e) {}
+      });
+      if (updated) {
+        save(list);
+        render();
+        showToast('PDF généré et attaché à la notification');
+      }
+    } catch (e) { console.warn('pdf_generated handler error', e); }
   });
 
   document.getElementById('btnAuth')
