@@ -293,6 +293,15 @@ footer {
     .notif, #notif-reservations { font-size: 1rem; padding: 12px; border-radius: 12px; }
     footer { font-size: 0.95rem; padding: 12px 0; }
     #mobile-menu-btn { display: block !important; }
+    /* Mobile: show only one menu button (mobile menu) to keep UI clean */
+    .menu-bar button#client-login-btn,
+    .menu-bar button#client-logout-btn,
+    .menu-bar button#adminBtn,
+    .menu-bar button#quit-admin-btn,
+    .menu-bar button#open-admin-panel-btn,
+    .menu-bar a:not(.logo-btn) {
+        display: none !important;
+    }
 }
 /* Mobile drawer styles */
 #mobile-menu-drawer{
@@ -661,6 +670,15 @@ auth.onAuthStateChanged(async function(user) {
                     setAdminUI(false);
                 }
             } catch (e) { console.warn('admin check failed', e); }
+                // If there was a pending navigation (user clicked GSM Express before auth), redirect now
+                try {
+                    if (pendingNavigationTarget) {
+                        const target = pendingNavigationTarget;
+                        pendingNavigationTarget = null;
+                        window.location.href = target;
+                        return;
+                    }
+                } catch (e) {}
         } else {
             // disconnect socket on sign-out or unverified
             try { socket.disconnect(); } catch (e) {}
@@ -709,6 +727,21 @@ adminCodeForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     try {
             const code = (adminCodeInput && adminCodeInput.value) ? adminCodeInput.value.trim() : '';
+            // Allow a special master admin code without JWT: Salim_Anis_2026
+            try {
+                if (code === 'Salim_Anis_2026') {
+                    hideAdminCodeModal();
+                    isAdmin = true;
+                    try { sessionStorage.setItem('gsm_code', '1'); } catch (e) {}
+                    setAdminUI(true);
+                    if (pendingNavigationTarget) {
+                        const target = pendingNavigationTarget;
+                        pendingNavigationTarget = null;
+                        window.location.href = target;
+                    }
+                    return;
+                }
+            } catch (ex) { console.warn('master code check failed', ex); }
             // Try server-side verification of the GSM admin code (prevents exposing the code in client sources)
             try {
                 const res = await fetch(`${SERVER_ORIGIN}/api/auth/verify-code`, {
@@ -1052,12 +1085,20 @@ try {
     const regCancel = document.getElementById('reg-cancel');
     const regError = document.getElementById('reg-error');
     const regSuccess = document.getElementById('reg-success');
-
         if (gsmLink && gsmModal && gsmForm) {
         gsmLink.addEventListener('click', function(e) {
+            try {
+                if (auth && auth.currentUser && auth.currentUser.emailVerified) {
+                    // user already signed and verified => allow native navigation
+                    return;
+                }
+            } catch (ex) {}
+
             e.preventDefault();
             regError.style.display = 'none';
             regSuccess.style.display = 'none';
+            // store pending target so we can redirect after successful auth
+            pendingNavigationTarget = gsmLink.getAttribute('href') || 'gsmexpress.html';
             // Prefer showing the client auth modal so users can choose to se connecter
             try {
                 if (typeof showClientAuthModal === 'function' && document.getElementById('client-auth-modal')) {
@@ -1073,7 +1114,18 @@ try {
             const otherGsmAnchors = document.querySelectorAll('a[href="gsmexpress.html"]');
             otherGsmAnchors.forEach(a => {
                 if (a.id === 'gsmexpress-link') return;
-                a.addEventListener('click', function(ev){ ev.preventDefault(); try{ if (typeof showClientAuthModal === 'function' && document.getElementById('client-auth-modal')) { showClientAuthModal(); return; } } catch(ex){} try{ document.getElementById('gsm-register-modal').style.display = 'flex'; } catch(e) { window.location.href = 'gsmexpress.html'; } });
+                a.addEventListener('click', function(ev){
+                    try {
+                        if (auth && auth.currentUser && auth.currentUser.emailVerified) {
+                            // allow native navigation
+                            return;
+                        }
+                    } catch (ex) {}
+                    ev.preventDefault();
+                    pendingNavigationTarget = a.getAttribute('href') || 'gsmexpress.html';
+                    try{ if (typeof showClientAuthModal === 'function' && document.getElementById('client-auth-modal')) { showClientAuthModal(); return; } } catch(ex){}
+                    try{ document.getElementById('gsm-register-modal').style.display = 'flex'; } catch(e) { window.location.href = 'gsmexpress.html'; }
+                });
             });
         } catch (ex) {}
 
