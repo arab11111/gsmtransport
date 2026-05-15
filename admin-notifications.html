@@ -293,6 +293,54 @@
       transform:translateY(0);
     }
 
+    /* PDF preview styles */
+    .pdf-box{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-top:14px;
+      background:#567da3;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid #9ec5fc;
+    }
+
+    .pdf-thumb{
+      width:56px;
+      height:56px;
+      border-radius:8px;
+      background:linear-gradient(180deg,#fff 0%,#b3c4e6 100%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:24px;
+      color:var(--primary);
+      border:1px solid #b296c5;
+    }
+
+    .pdf-meta{
+      flex:1;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+    }
+
+    .pdf-name{
+      font-weight:600;
+      color:var(--text);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .pdf-frame{
+      margin-top:12px;
+      border-radius:10px;
+      overflow:hidden;
+      border:1px solid #e6eef9;
+    }
+
     @media(max-width:768px){
       .title h1{
         font-size:24px;
@@ -470,6 +518,24 @@
             🕒 ${new Date(n.createdAt || n.receivedAt || Date.now()).toLocaleString('fr-FR')}
           </div>
 
+          ${n.pdf_url || n.pdf ? `
+            <div class="pdf-box">
+              <div class="pdf-thumb">📄</div>
+              <div class="pdf-meta">
+                <div class="pdf-name">${n.pdf_name || (n.pdf_url || n.pdf).split('/').pop()}</div>
+                <div style="display:flex;gap:8px">
+                  <button class="small-btn btn-light" onclick="openPdf(${idx})">Voir</button>
+                  <button class="small-btn btn-light" onclick="downloadPdf(${idx})">Télécharger</button>
+                  <button class="small-btn btn-light" onclick="togglePdfFrame(${idx})">Aperçu</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="pdf-frame" id="pdfframe-${idx}" style="display:none;">
+              <iframe src="${n.pdf_url || n.pdf}" width="100%" height="300" frameborder="0"></iframe>
+            </div>
+          ` : ''}
+
           <div class="actions">
 
             <button class="small-btn read-btn"
@@ -541,6 +607,33 @@
     render();
 
     showToast('Notification supprimée');
+  }
+
+  function openPdf(index){
+    const list = load();
+    const item = list[index];
+    const url = item && (item.pdf_url || item.pdf);
+    if(!url){ showToast('Aucun PDF associé'); return; }
+    window.open(url, '_blank');
+  }
+
+  function downloadPdf(index){
+    const list = load();
+    const item = list[index];
+    const url = item && (item.pdf_url || item.pdf);
+    if(!url){ showToast('Aucun PDF à télécharger'); return; }
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = item.pdf_name || url.split('/').pop();
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  function togglePdfFrame(index){
+    const el = document.getElementById('pdfframe-' + index);
+    if(!el) return;
+    el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
   }
 
   function playSound(){
