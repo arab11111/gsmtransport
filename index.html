@@ -338,6 +338,7 @@ footer {
                     <button id="menu-logout" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;display:none;">🚪 Se déconnecter</button>
                     <button id="menu-admin" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;">🔒 Mode Admin</button>
                     <div style="height:1px;background:#eef2f7;margin:6px 0;border-radius:2px"></div>
+                    <button id="menu-notifs" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;display:none;">🔔 Notifications Admin</button>
                     <a href="bagages.html" id="menu-bagages" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">📋 Gestion Bagages</a>
                     <a href="contact.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">✉️ Contact</a>
                     <a href="about.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">ℹ️ À propos</a>
@@ -812,6 +813,7 @@ function setAdminUI(admin) {
         quitAdminBtn.style.display = '';
         const panelBtn = document.getElementById('open-admin-panel-btn'); if (panelBtn) panelBtn.style.display = '';
         const menuNotifsBtn = document.getElementById('menu-notifs'); if (menuNotifsBtn) menuNotifsBtn.style.display = '';
+        const mobileMenuNotifs = document.getElementById('mobile-menu-notifs'); if (mobileMenuNotifs) mobileMenuNotifs.style.display = '';
         notifDiv.style.display = '';
         listeDiv.style.display = '';
         // Ensure socket is connected so admin receives booking notifications
@@ -822,6 +824,7 @@ function setAdminUI(admin) {
         adminBtn.style.display = '';
         quitAdminBtn.style.display = 'none';
         const menuNotifsBtn = document.getElementById('menu-notifs'); if (menuNotifsBtn) menuNotifsBtn.style.display = 'none';
+        const mobileMenuNotifs = document.getElementById('mobile-menu-notifs'); if (mobileMenuNotifs) mobileMenuNotifs.style.display = 'none';
         const panelBtn = document.getElementById('open-admin-panel-btn'); if (panelBtn) panelBtn.style.display = 'none';
         if (controls) controls.style.display = 'none';
         notifDiv.style.display = 'none';
@@ -1277,11 +1280,7 @@ function openAdminNotificationsWindow() {
     } catch (e) { console.warn('openAdminNotificationsWindow failed', e); }
 }
 
-// wire menu-notifs button
-try {
-    const menuNotifs = document.getElementById('menu-notifs');
-    if (menuNotifs) menuNotifs.addEventListener('click', (e) => { e.stopPropagation(); try { openAdminNotificationsWindow(); if (mainMenuPanel) mainMenuPanel.style.display='none'; } catch (err) {} });
-} catch (e) {}
+// (previously wired admin notifications button — removed)
 
 // socket handlers
 
@@ -1473,6 +1472,24 @@ try {
         });
     }
 
+    // wire menu-notifs button (open admin-notifications.html)
+    try {
+        const menuNotifs = document.getElementById('menu-notifs');
+        if (menuNotifs) menuNotifs.addEventListener('click', (e) => { e.stopPropagation(); try { openAdminNotificationsWindow(); if (mainMenuPanel) mainMenuPanel.style.display='none'; } catch (err) {} });
+    } catch (e) {}
+
+    // mobile drawer: open admin notifications and close drawer
+    try {
+        const mobileNotifs = document.getElementById('mobile-menu-notifs');
+        const drawer = document.getElementById('mobile-menu-drawer');
+        const backdrop = document.getElementById('mobile-menu-backdrop');
+        if (mobileNotifs) mobileNotifs.addEventListener('click', (e) => {
+            e.preventDefault();
+            try { openAdminNotificationsWindow(); } catch (err) {}
+            try { if(drawer) drawer.classList.remove('open'); if(backdrop) backdrop.classList.remove('visible'); document.body.style.overflow=''; } catch(e){}
+        });
+    } catch(e) {}
+
     // Menu: Gestion Bagages requires admin code when not already admin
     try {
         const menuBagages = document.getElementById('menu-bagages');
@@ -1509,6 +1526,7 @@ try {
     <div id="mobile-menu-drawer">
         <button id="mobile-menu-close" aria-label="Fermer le menu" style="background:none;border:none;font-size:1.2rem;float:right;">✕</button>
             <nav style="margin-top:18px;">
+                <a href="#" id="mobile-menu-notifs" style="display:none;">🔔 Notifications Admin</a>
                 <a href="contact.html">Contact</a>
                 <a href="terms.html">Conditions générales</a>
                 <a href="about.html">À propos</a>
