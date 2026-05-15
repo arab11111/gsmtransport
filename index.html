@@ -292,7 +292,7 @@ footer {
     .apps > * { box-shadow: 0 8px 30px rgba(236, 170, 27, 0.55); border-radius: 12px; }
     .notif, #notif-reservations { font-size: 1rem; padding: 12px; border-radius: 12px; }
     footer { font-size: 0.95rem; padding: 12px 0; }
-    #mobile-menu-btn { display: block !important; }
+    #mobile-menu-btn { display: none !important; }
     /* Mobile: show only one menu button (mobile menu) to keep UI clean */
     .menu-bar button#client-login-btn,
     .menu-bar button#client-logout-btn,
@@ -337,12 +337,12 @@ footer {
                     <button id="menu-connect" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;">🔑 Se connecter</button>
                     <button id="menu-logout" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;display:none;">🚪 Se déconnecter</button>
                     <button id="menu-admin" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;">🔒 Mode Admin</button>
-                    <button id="menu-panel" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;display:none;">⚙️ Panneau Admin</button>
-                    <button id="menu-notifs" style="background:transparent;border:none;text-align:left;padding:8px;border-radius:8px;cursor:pointer;font-weight:700;display:none;">🔔 Notifications</button>
-                    <a href="gsmexpress.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">🚚 GSM Express</a>
-                    <a href="bagages.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">📋 Gestion Bagages</a>
-                    <a href="terms.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">🔎 Conditions</a>
+                    <div style="height:1px;background:#eef2f7;margin:6px 0;border-radius:2px"></div>
+                    <a href="bagages.html" id="menu-bagages" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">📋 Gestion Bagages</a>
                     <a href="contact.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">✉️ Contact</a>
+                    <a href="about.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">ℹ️ À propos</a>
+                    <a href="terms.html" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">🔎 Conditions</a>
+                    <a href="index.html#faq" style="text-decoration:none;color:inherit;padding:8px;border-radius:8px;display:block;font-weight:700;">❓ FAQ</a>
                 </div>
             </div>
         </div>
@@ -1473,6 +1473,25 @@ try {
         });
     }
 
+    // Menu: Gestion Bagages requires admin code when not already admin
+    try {
+        const menuBagages = document.getElementById('menu-bagages');
+        if (menuBagages) {
+            menuBagages.addEventListener('click', function(e){
+                e.stopPropagation();
+                const href = menuBagages.getAttribute('href') || 'bagages.html';
+                if (isAdmin) {
+                    window.location.href = href;
+                    return;
+                }
+                e.preventDefault();
+                pendingNavigationTarget = href;
+                showAdminCodeModal();
+                if (mainMenuPanel) mainMenuPanel.style.display='none';
+            });
+        }
+    } catch (e) { console.warn('menu-bagages handler failed', e); }
+
     // close menu on outside click
     document.addEventListener('click', () => { try { if (mainMenuPanel) mainMenuPanel.style.display = 'none'; } catch (e) {} });
 
@@ -1521,7 +1540,7 @@ try {
         if(btn) btn.addEventListener('click', show);
         if(closeBtn) closeBtn.addEventListener('click', hide);
         if(backdrop) backdrop.addEventListener('click', hide);
-        function updateBtn(){ try{ const b = document.getElementById('mobile-menu-btn'); if(window.innerWidth <= 900){ if(b) b.style.display='block'; } else { if(b) b.style.display='none'; hide(); } } catch(e){} }
+        function updateBtn(){ try{ const mobileBtn = document.getElementById('mobile-menu-btn'); const mainBtn = document.getElementById('main-menu-btn'); if(window.innerWidth <= 900){ if(mobileBtn) mobileBtn.style.display='none'; if(mainBtn) mainBtn.style.display='block'; } else { if(mobileBtn) mobileBtn.style.display='none'; if(mainBtn) mainBtn.style.display='block'; hide(); } } catch(e){} }
         updateBtn(); window.addEventListener('resize', updateBtn);
 
         // Mobile auth integration: works if `auth` is defined (Firebase). Otherwise show links to index.
