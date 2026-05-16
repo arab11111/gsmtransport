@@ -255,13 +255,13 @@
     }
 
     .read-btn{
-      background:#dcfce7;
-      color:#166534;
+      background:#05ff5c;
+      color:#71bd8e;
     }
 
     .delete-btn{
-      background:#fee2e2;
-      color:#991b1b;
+      background:#6becab;
+      color:#eb6969;
     }
 
     .empty{
@@ -353,6 +353,37 @@
       .btn{
         width:100%;
         justify-content:center;
+      }
+      /* Make PDF name and action buttons stack on small screens so the download
+         button stays visible and tappable */
+      .pdf-box{
+        gap:10px;
+        align-items:center;
+      }
+
+      .pdf-meta{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:8px;
+      }
+
+      .pdf-meta > div{
+        width:100%;
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+        justify-content:flex-start;
+      }
+
+      .pdf-name{
+        max-width:100%;
+        white-space:normal;
+        overflow:visible;
+      }
+
+      .small-btn{
+        padding:8px 10px;
+        font-size:14px;
       }
     }
   </style>
