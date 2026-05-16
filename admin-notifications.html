@@ -398,7 +398,7 @@
 
 /* Mobile admin panel styles */
 #mobileAdminBtn{
-  display:none;
+  display:flex;
   position:fixed;
   right:16px;
   bottom:16px;
@@ -531,7 +531,8 @@
       ? (window.location.protocol + '//' + window.location.hostname + ':3002')
       : window.location.origin;
 
-  const socket = io(SERVER_ORIGIN);
+  // Connect socket to same origin as the page to avoid CORS during local testing
+  const socket = io();
 
   const storageKey = 'admin_notifications';
 
@@ -713,7 +714,8 @@
     try{ localStorage.setItem('admin_mobile_date', date); localStorage.setItem('admin_mobile_note', note); }catch(e){}
     // send to server to broadcast to all clients
     try{
-      fetch(SERVER_ORIGIN + '/api/settings', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ selectedDate: date, note }) }).catch(()=>{});
+      // use relative path so same-origin pages work without CORS issues
+      fetch('/api/settings', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ selectedDate: date, note }) }).catch(()=>{});
     }catch(e){}
     showToast('Note enregistrée');
     closeMobileAdmin();
