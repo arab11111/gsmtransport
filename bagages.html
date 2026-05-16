@@ -13,193 +13,9 @@
   --primary:#1e40af;
   --primary-light:#3b82f6;
   --secondary:#0f766e;
-  --danger:#dc2626;
-  --warning:#d97706;
-  --success:#16a34a;
-  --bg:#f8fafc;
-  --bg-secondary:#ecf0f5;
-  --card:#ffffff;
-  --text-primary:#0f1729;
-  --text-secondary:#64748b;
-  --border:#e2e8f0;
-  --shadow-sm:0 1px 2px 0 rgba(0,0,0,0.05);
-  --shadow-md:0 4px 6px -1px rgba(0,0,0,0.1);
-  --shadow-lg:0 10px 15px -3px rgba(0,0,0,0.1);
-  --shadow-xl:0 20px 25px -5px rgba(0,0,0,0.1);
-  --rounded-sm:6px;
-  --rounded-md:10px;
-  --rounded-lg:16px;
-}
-
-*{box-sizing:border-box;margin:0;padding:0}
-body{
-  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
-  background:linear-gradient(135deg,rgba(255, 255, 255, 0.295) 0%,rgba(255, 255, 255, 0.185) 100%),url('image/arriereplant.jpg') center/cover fixed;
-  color:var(--text-primary);
-  min-height:100vh;
-  line-height:1.6;
-}
-
-/* Navigation */
-nav{
-  background:linear-gradient(135deg,var(--primary) 0%,#1e3a8a 100%);
-  color:white;
-  padding:0;
-  box-shadow:var(--shadow-lg);
-  position:sticky;
-  top:0;
-  z-index:1000;
-}
-
-nav .nav-container{
-  max-width:1400px;
-  margin:0 auto;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 2rem;
-  height:70px;
-}
-
-nav .logo-section{
-  display:flex;
-  align-items:center;
-  gap:1rem;
-  font-weight:700;
-  font-size:1.4rem;
-  font-family:'Poppins',sans-serif;
-}
-
-nav .logo-section img{
-  width:48px;
-  height:48px;
-  border-radius:10px;
-  background:rgba(255,255,255,0.1);
-  padding:4px;
-  object-fit:contain;
-}
-
-nav .nav-subtitle{
-  font-size:0.85rem;
-  opacity:0.9;
-  font-weight:400;
-}
-
-.wrap{max-width:1400px;margin:0 auto;padding:2rem}
-
-header.page-header{
-  background:var(--card);
-  border-radius:var(--rounded-lg);
-  padding:2.5rem;
-  margin-bottom:2rem;
-  box-shadow:var(--shadow-md);
-  border-left:5px solid var(--primary);
-}
-
-header.page-header h1{
-  font-family:'Poppins',sans-serif;
-  font-size:2.2rem;
-  margin-bottom:0.5rem;
-  color:var(--text-primary);
-}
-
-header.page-header .breadcrumb{
-  color:var(--text-secondary);
-  font-size:0.95rem;
-}
-
-.grid{display:grid;grid-template-columns:1fr 380px;gap:2rem;margin-bottom:2rem}
-
-.card{
-  background:var(--card);
-  border-radius:var(--rounded-lg);
-  padding:2rem;
-  box-shadow:var(--shadow-md);
-  border:1px solid var(--border);
-  transition:box-shadow 0.3s ease;
-}
-
-.card:hover{box-shadow:var(--shadow-lg)}
-
-.card-title{
-  font-size:1.2rem;
-  font-weight:600;
-  margin-bottom:1.5rem;
-  color:var(--text-primary);
-  font-family:'Poppins',sans-serif;
-  display:flex;
-  align-items:center;
-  gap:0.75rem;
-}
-
-.card-title::before{
-  content:'';
-  width:4px;
-  height:24px;
-  background:var(--primary-light);
-  border-radius:2px;
-}
-
-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1.5rem}
-
-.form-group{display:flex;flex-direction:column;gap:0.5rem}
-
-label{
-  display:block;
-  font-size:0.95rem;
-  font-weight:500;
-  color:var(--text-primary);
-  margin-bottom:0.25rem;
-}
-
-input[type=text], input[type=number], select, textarea{
-  width:100%;
-  padding:0.85rem 1rem;
-  border:1.5px solid var(--border);
-  border-radius:var(--rounded-sm);
-  font-size:0.95rem;
-  font-family:inherit;
-  transition:border-color 0.3s ease,box-shadow 0.3s ease;
-  background:var(--card);
-}
-
-input[type=text]:focus, input[type=number]:focus, select:focus, textarea:focus{
-  outline:none;
-  border-color:var(--primary);
-  box-shadow:0 0 0 3px rgba(30,64,175,0.1);
-}
-
-textarea{min-height:100px;resize:vertical}
-
-.btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:0.5rem;
-  padding:0.85rem 1.5rem;
-  border:none;
-  border-radius:var(--rounded-sm);
-  font-size:0.95rem;
-  font-weight:600;
-  cursor:pointer;
-  transition:all 0.3s ease;
-  text-decoration:none;
-  white-space:nowrap;
-  font-family:inherit;
-}
-
-.btn-primary{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:white;box-shadow:var(--shadow-md)}
-
-.btn-primary:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
-
-.btn-secondary{background:var(--bg-secondary);color:var(--text-primary);border:1.5px solid var(--border)}
-
-.btn-secondary:hover{background:var(--border);box-shadow:var(--shadow-md)}
-
-.btn-danger{background:var(--danger);color:white;box-shadow:var(--shadow-md)}
-
-.btn-danger:hover{opacity:0.9;transform:translateY(-2px)}
-
+  </body>
+  <script>/* notification system removed from this page; admin notifications will be centralized in admin-notifications.html */</script>
+  </html>
 .btn-small{padding:0.6rem 1rem;font-size:0.85rem}
 
 .controls{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem}
@@ -264,106 +80,14 @@ tr:last-child td{border-bottom:none}
   display:inline-block;
   padding:0.35rem 0.85rem;
   border-radius:50px;
-  font-size:0.85rem;
-  font-weight:600;
-}
-
-.badge-success{background:#dcfce7;color:var(--success)}
-
-.badge-danger{background:#fee2e2;color:var(--danger)}
-
-.badge-secondary{background:#e5e7eb;color:#374151}
-
-.action-buttons{display:flex;gap:0.5rem;align-items:center}
-
-.btn-icon{
-  background:transparent;
-  border:none;
-  padding:0.5rem;
-  cursor:pointer;
-  font-size:1.1rem;
-  border-radius:6px;
-  transition:background 0.2s ease;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.btn-icon:hover{background:var(--bg-secondary)}
-
-.muted-cell{color:var(--text-secondary);font-style:italic}
-
-.form-row{grid-column:1/-1;display:flex;gap:1rem;justify-content:flex-end;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
-
-.empty-state{
-  text-align:center;
-  padding:3rem 2rem;
-  color:var(--text-secondary);
-}
-
-.empty-state svg{
-  width:80px;
-  height:80px;
-  margin-bottom:1rem;
-  opacity:0.3;
-}
-
-@media (max-width:1024px){
-  .grid{grid-template-columns:1fr}
-  .controls{flex-direction:column;align-items:flex-start}
-  .filters{flex-direction:column;align-items:flex-start}
-  nav .nav-container{padding:0 1rem}
-}
-
-@media (max-width:640px){
-  .wrap{padding:1rem}
-  header.page-header{padding:1.5rem;border-left-width:3px}
-  header.page-header h1{font-size:1.5rem}
-  .card{padding:1.5rem}
-  form{grid-template-columns:1fr}
-  .search-box{width:100%;max-width:none}
-  table{font-size:0.85rem}
-  th,td{padding:0.75rem}
-  .controls{margin-bottom:1rem}
-  nav .logo-section{font-size:1rem}
-}
-</style>
-</head>
-<script src="/socket.io/socket.io.js"></script>
-<body>
-  <script>
-    (function(){
-      const ADMIN_CODE = 'GSM2026';
-      const STORAGE_KEY = 'GSM_ADMIN';
-      try{
-          if (localStorage.getItem(STORAGE_KEY) === '1') return;
-          const input = prompt('Code admin requis pour accéder à cette page:');
-          if (input === ADMIN_CODE) {
-            localStorage.setItem(STORAGE_KEY, '1');
-            return;
-          }
-        alert('Code invalide. Redirection vers la page d\'accueil.');
-        window.location.href = '/';
-      } catch (e) {
-        window.location.href = '/';
-      }
-    })();
-  </script>
-  <div id="notif-reservations" style="background:linear-gradient(90deg,#fffbe6,#e6ffe6);color:#1a4d2e;padding:1.2rem 1.7rem;border-radius:14px;margin:1.5rem auto 1rem auto;max-width:650px;box-shadow:0 4px 18px #0002;font-weight:700;font-size:1.15em;display:none;transition:background 0.3s;"></div>
-  <div id="liste-reservations" style="max-width:700px;margin:0 auto 2rem auto;"></div>
-<!-- Navigation Bar -->
-<nav>
-  <div class="nav-container">
-    <div class="logo-section">
-      <img id="headerLogo" alt="logo" src="image/logo1.png" onerror="this.style.visibility='hidden'" style="margin-right:0.5rem;">
-      <div>
-        <div>GSM Transport de Bagages</div>
-        <div class="nav-subtitle">France = Algérie</div>
+  </body>
+  <script>/* notification system removed from this page; admin notifications will be centralized in admin-notifications.html */</script>
+  </html>
       </div>
     </div>
     <button id="mobile-menu-btn" aria-label="Menu mobile" style="display:none;background:transparent;border:none;color:#fff;font-size:1.4rem;padding:8px;margin-left:12px;">☰</button>
     <div style="display:flex;align-items:center;gap:12px">
-      <a href="privacy.html" style="color:#fff;text-decoration:none;font-weight:600;margin-right:8px">Politique</a>
+      <a href="terms.html" style="color:#fff;text-decoration:none;font-weight:600;margin-right:8px">Conditions</a>
       <a href="contact.html" style="color:#fff;text-decoration:none;font-weight:600">Contact</a>
     </div>
   </div>
@@ -557,6 +281,21 @@ tr:last-child td{border-bottom:none}
 document.getElementById('bell-btn').addEventListener('click', function(e) {
   window.open('cloche.html', '_blank', 'width=420,height=420');
 });
+(async function gateAdmin(){
+  try{
+    // If admin already active in this browser session, allow access
+    if (sessionStorage && sessionStorage.getItem && sessionStorage.getItem('gsm_code')) return;
+  }catch(e){}
+  // Prompt for admin code to access this page
+  try{
+    const code = prompt('Entrez le code admin pour accéder à la gestion des bagages :');
+    if (!code) { alert('Accès admin requis'); window.location.href = 'index.html'; return; }
+    if (code === 'Salim_Anis_2026') { try{ sessionStorage.setItem('gsm_code','1'); }catch(e){}; return; }
+    const res = await fetch('/api/auth/verify-code', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ code }) });
+    if (res.ok) { try{ sessionStorage.setItem('gsm_code','1'); }catch(e){}; return; }
+    alert('Code invalide'); window.location.href = 'index.html';
+  }catch(e){ console.warn('admin gate error', e); alert('Erreur vérification admin'); window.location.href='index.html'; }
+})();
 (function(){
   const STORAGE_KEY = 'liste_bagages_v9';
   const regionOptions = ["Hors Wilaya","Tizi Ouzou","Azazga","Alger","Michelet","Bejaia","Iloula","Autre","Region non reconnu"];
@@ -581,104 +320,34 @@ document.getElementById('bell-btn').addEventListener('click', function(e) {
     if(v===undefined||v===null||v==='') return '';
     return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:2}).format(Number(v));
       filtered.forEach((it,idx)=>{
+  // Notifications removed: provide no-op helpers so existing calls remain safe
   const socket = io();
-  const notifDiv = document.getElementById('notif-reservations');
-  const listeDiv = document.getElementById('liste-reservations');
-
-  // Gestion notifications sans mode admin
-  function getNotifications() {
-    return JSON.parse(localStorage.getItem('notifications') || '[]');
-  }
-  function saveNotifications(list) {
-    localStorage.setItem('notifications', JSON.stringify(list));
-  }
-  function addNotification(data) {
-    const list = getNotifications();
-    list.unshift({ ...data, read: false });
-    saveNotifications(list);
-    renderNotifications();
-  }
-  function markAllRead() {
-    const list = getNotifications().map(n => ({...n, read: true}));
-    saveNotifications(list);
-    renderNotifications();
-  }
-  function deleteReadNotifications() {
-    const list = getNotifications().filter(n => !n.read);
-    saveNotifications(list);
-    renderNotifications();
-  }
-  function deleteNotification(idx) {
-    const list = getNotifications();
-    list.splice(idx, 1);
-    saveNotifications(list);
-    renderNotifications();
-  }
-  function clearNotifications() {
-    localStorage.removeItem('notifications');
-    renderNotifications();
-  }
-  function renderNotifications() {
-    const notifications = getNotifications();
-    if (notifications.length === 0) {
-      listeDiv.innerHTML = '<p style="text-align:center;color:#888;">Aucune notification de réservation.</p>';
-      notifDiv.style.display = 'none';
-      return;
+  // Disable booking/pending notification handlers on this page
+  try {
+    if (socket && socket.on) {
+      const __orig_on = socket.on.bind(socket);
+      socket.on = function(event, cb) { if (event === 'booking_notification' || event === 'pending_notifications') return; return __orig_on(event, cb); };
     }
-    // Affichage notification en haut, gestion pro
-    const unread = notifications.find(n => !n.read);
-    if (unread) {
-      notifDiv.innerHTML = `
-        <span style=\"color:#d97706;font-size:1.3em;vertical-align:middle;\">⚡</span>
-        <span style=\"color:#1a4d2e;\">Nouvelle réservation reçue !</span>
-        <span style=\"background:#e6ffe6;color:#1a4d2e;border-radius:8px;padding:0.2em 0.7em;margin-left:1em;font-weight:700;\">Total : ${notifications.length}</span>
-        <button onclick=\"markAllRead()\" style=\"margin-left:1em;background:#1e40af;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout marquer comme lu</button>
-        <button onclick=\"deleteReadNotifications()\" style=\"margin-left:0.7em;background:#b91c1c;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Supprimer notifications lues</button>
-        <button onclick=\"clearNotifications()\" style=\"margin-left:0.7em;background:#64748b;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout supprimer</button>
-      `;
-      notifDiv.style.display = 'block';
-    } else {
-      notifDiv.innerHTML = `
-        <span style=\"color:#16a34a;font-size:1.2em;vertical-align:middle;\">✔️</span>
-        <span style=\"color:#1a4d2e;\">Toutes les notifications ont été lues.</span>
-        <span style=\"background:#e6ffe6;color:#1a4d2e;border-radius:8px;padding:0.2em 0.7em;margin-left:1em;font-weight:700;\">Total : ${notifications.length}</span>
-        <button onclick=\"deleteReadNotifications()\" style=\"margin-left:1em;background:#b91c1c;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Supprimer notifications lues</button>
-        <button onclick=\"clearNotifications()\" style=\"margin-left:0.7em;background:#64748b;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout supprimer</button>
-      `;
-      notifDiv.style.display = 'block';
-    }
-    // Affichage historique avec lien PDF bleu et suppression individuelle
-    listeDiv.innerHTML = notifications.map((n, idx) => `
-      <div style=\"background:#fff;border-radius:10px;box-shadow:0 1px 6px #0001;padding:1rem 1.2rem;margin-bottom:1.1rem;${n.read ? 'opacity:0.7;' : ''}\">
-        <b>Bagage #${n.bagage_numero}</b> – <b>${n.exp_nom} ${n.exp_prenom}</b> → <b>${n.dest_nom} ${n.dest_prenom}</b><br>
-        <span style=\\\"color:#1e40af;\\\">${n.pays_dest} / ${n.destination}${n.region ? ' / ' + n.region : ''}</span> | <b>${n.nb_bagages} bagage(s)</b> | <b>${n.poids} kg</b> | <b>${n.prix} €</b><br>
-        <span style=\\\"color:#64748b;\\\">Tél. expéditeur: ${n.exp_tel} – Tél. destinataire: ${n.dest_tel}</span>
-        ${n.notes ? `<div style='margin-top:0.5em;color:#555;'>Note: ${n.notes}</div>` : ''}
-        <div style='margin-top:0.7em;'>
-          <a href=\"/pdfs/reservation_${n.bagage_numero}.pdf\" target=\"_blank\" style=\"color:#2563eb;font-weight:700;text-decoration:underline;font-size:1.08em;\">Télécharger PDF</a>
-          ${n.read ? '<span style=\\\"color:#16a34a;margin-left:1em;\\\">(Lue)</span>' : '<span style=\\\"color:#d97706;margin-left:1em;\\\">(Non lue)</span>'}
-          <button onclick=\"deleteNotification(${idx})\" style=\"margin-left:1em;background:#e11d48;color:#fff;border:none;padding:0.2em 0.7em;border-radius:7px;cursor:pointer;font-weight:600;font-size:0.95em;\">Supprimer</button>
-        </div>
-      </div>
-    `).join('');
-  }
+  } catch(e){}
+  function getNotifications() { return []; }
+  function saveNotifications(list) { /* noop */ }
+  function addNotification(data) { /* noop */ }
+  function markAllRead() { /* noop */ }
+  function deleteReadNotifications() { /* noop */ }
+  function deleteNotification(idx) { /* noop */ }
+  function clearNotifications() { /* noop */ }
+  function renderNotifications() { /* noop */ }
 
-  // Écoute directe des notifications socket
-  socket.on('booking_notification', data => {
-    addNotification(data);
-  });
-
-  window.addEventListener('DOMContentLoaded', function() {
-    renderNotifications();
-  });
+  // Notification listeners removed; calls to addNotification/renderNotifications are now no-ops
 
         tr.appendChild(dzTd);
+    // notification stubs: no-op
     addNotification(data);
-    renderNotifications();
   });
 
   window.addEventListener('DOMContentLoaded', function() {
     checkAdmin();
+    // notification stubs: no-op
     renderNotifications();
   });
         
@@ -1224,7 +893,7 @@ document.getElementById('bell-btn').addEventListener('click', function(e) {
     <nav style="margin-top:18px;">
       <a href="index.html">Accueil</a>
       <a href="gsmexpress.html">GSM Express</a>
-      <a href="privacy.html">Politique de confidentialité</a>
+      <a href="terms.html">Conditions générales</a>
       <a href="contact.html">Contact</a>
     </nav>
     <div id="mobile-auth-area">
@@ -1266,12 +935,12 @@ document.getElementById('bell-btn').addEventListener('click', function(e) {
   })();
   </script>
 
-<footer style="padding:18px 12px;text-align:center;background:rgba(0,0,0,0.04);color:#111;margin-top:28px;">
-  <div>GSM Transport — Gestion des bagages</div>
-  <div style="margin-top:6px;font-size:0.95em;color:#374151">
-    <a href="privacy.html" style="color:#1e40af;margin-right:10px;">Politique de confidentialité</a>
-    <a href="contact.html" style="color:#1e40af;margin-right:10px;">Contact</a>
-    <a href="index.html" style="color:#1e40af;">Accueil</a>
+<footer style="padding:18px 12px;text-align:center;background:rgba(0,0,0,0.04);color:#ef4444;margin-top:28px;">
+  <div style="color:#ef4444;font-weight:700">GSM Transport — Gestion des bagages</div>
+  <div style="margin-top:6px;font-size:0.95em;color:#ef4444">
+    <a href="terms.html" style="color:#ff6b6b;margin-right:10px;font-weight:700;">Conditions générales</a>
+    <a href="contact.html" style="color:#ff6b6b;margin-right:10px;font-weight:700;">Contact</a>
+    <a href="index.html" style="color:#ff6b6b;font-weight:700;">Accueil</a>
   </div>
 </footer>
 </body>
