@@ -386,6 +386,48 @@
         font-size:14px;
       }
     }
+
+/* Mobile admin panel styles */
+#mobileAdminBtn{
+  display:none;
+  position:fixed;
+  right:16px;
+  bottom:16px;
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  align-items:center;
+  justify-content:center;
+  z-index:1002;
+  box-shadow:var(--shadow);
+  font-size:20px;
+}
+
+#mobileAdminPanel{
+  display:none;
+}
+
+@media(max-width:768px){
+  #mobileAdminBtn{ display:flex; background:var(--primary); color:#fff; border:none; }
+  #mobileAdminPanel{
+    display:block;
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    background:var(--bg);
+    padding:12px;
+    border-top-left-radius:12px;
+    border-top-right-radius:12px;
+    box-shadow:0 -6px 30px rgba(0,0,0,0.12);
+    transform:translateY(110%);
+    transition:transform .25s ease;
+    z-index:1001;
+  }
+  #mobileAdminPanel.show{ transform:translateY(0); }
+  #mobileAdminPanel input, #mobileAdminPanel textarea{ width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); }
+  .mobile-admin-actions .btn{ flex:1; }
+}
   </style>
 </head>
 <body>
@@ -435,6 +477,11 @@
     </div>
   </div>
 
+  <div id="admin-settings-display" style="max-width:800px;margin:12px auto 0 auto;">
+    <div id="public-selected-date" style="font-size:1rem;font-weight:700;color:#f1c70b;text-align:center;padding:8px 6px;border-radius:8px;background:rgba(0,0,0,0.06);">Aucune date définie</div>
+    <div id="display-note" class="note" style="display:none;margin-top:8px;background:linear-gradient(90deg,#fffbe6,#ffe6e6);color:#3d0202;padding:10px;border-radius:10px;max-width:800px;margin-left:auto;margin-right:auto"></div>
+  </div>
+
   <div class="notifications" id="list">
     <div class="empty">
       <h3>Aucune notification</h3>
@@ -445,6 +492,19 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Mobile admin panel and toggle button -->
+<button id="mobileAdminBtn" title="Admin" aria-label="Ouvrir panneau admin" style="display:none">✏️</button>
+<div id="mobileAdminPanel" aria-hidden="true" style="display:none">
+  <label style="font-weight:600">Sélectionner la date</label>
+  <input type="date" id="mobileAdminDate" />
+  <label style="font-weight:600;margin-top:8px;display:block">Laisser une note</label>
+  <textarea id="mobileAdminNote" rows="3" placeholder="Message aux utilisateurs..." style="resize:vertical"></textarea>
+  <div class="mobile-admin-actions" style="margin-top:8px;display:flex;gap:8px">
+    <button class="btn btn-light" id="mobileAdminClose">Fermer</button>
+    <button class="btn btn-primary" id="mobileAdminSave">Enregistrer</button>
+  </div>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 
@@ -459,6 +519,22 @@
   const storageKey = 'admin_notifications';
 
   const listEl = document.getElementById('list');
+
+  // Load current settings and listen for realtime updates (note + selectedDate)
+  function loadSettingsRealtime(){
+    try{
+      (async ()=>{
+        try{
+          const res = await fetch('/api/settings');
+          if(res.ok){ const s = await res.json().catch(()=>null); if(s){ const date = s.selectedDate || s.adminSelectedDate || null; const note = s.note || s.adminNote || ''; const dn = document.getElementById('display-note'); const pd = document.getElementById('public-selected-date'); if(dn){ if(note && note.trim()){ dn.style.display=''; dn.innerHTML = note.replace(/\n/g,'<br>'); } else { dn.style.display='none'; dn.innerHTML=''; } } if(pd){ if(date) pd.textContent = date; else pd.textContent = 'Aucune date définie'; } } }
+        }catch(e){ console.warn('fetch /api/settings failed', e); }
+      })();
+
+      try{ socket.on('settings_updated', payload => { try{ const date = payload && (payload.selectedDate || payload.adminSelectedDate) ? (payload.selectedDate || payload.adminSelectedDate) : ''; const note = payload && (payload.note || payload.adminNote) ? (payload.note || payload.adminNote) : ''; const dn = document.getElementById('display-note'); const pd = document.getElementById('public-selected-date'); if(dn){ if(note && note.trim()){ dn.style.display=''; dn.innerHTML = note.replace(/\n/g,'<br>'); } else { dn.style.display='none'; dn.innerHTML=''; } } if(pd){ pd.textContent = date || 'Aucune date définie'; } }catch(e){ console.warn('settings_updated handler error', e); } }); }catch(e){}
+    }catch(e){ console.warn('loadSettingsRealtime error', e); }
+  }
+
+  loadSettingsRealtime();
 
   function showToast(message){
     const toast = document.getElementById('toast');
@@ -585,6 +661,89 @@
       `;
     }).join('');
   }
+
+  // --- Mobile admin panel logic ---
+  function openMobileAdmin(){
+    // require admin code to open
+    try{
+      if(sessionStorage.getItem('gsm_code') !== '1'){
+        const code = prompt('Entrez le code admin');
+        if(!code) return;
+        const res = fetch('/api/auth/verify-code', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code}) }).then(r=>{ if(!r.ok) throw new Error('invalid'); sessionStorage.setItem('gsm_code','1'); openMobileAdmin(); }).catch(()=>{ alert('Code invalide'); });
+        return;
+      }
+    }catch(e){}
+    const panel = document.getElementById('mobileAdminPanel');
+    if(!panel) return;
+    panel.classList.add('show');
+    panel.style.display = 'block';
+    panel.setAttribute('aria-hidden','false');
+  }
+
+  function closeMobileAdmin(){
+    const panel = document.getElementById('mobileAdminPanel');
+    if(!panel) return;
+    panel.classList.remove('show');
+    panel.setAttribute('aria-hidden','true');
+    setTimeout(()=>{ panel.style.display = 'none'; },260);
+  }
+
+  function saveMobileAdmin(){
+    const date = document.getElementById('mobileAdminDate').value || '';
+    const note = document.getElementById('mobileAdminNote').value || '';
+    try{ localStorage.setItem('admin_mobile_date', date); localStorage.setItem('admin_mobile_note', note); }catch(e){}
+    // send to server to broadcast to all clients
+    try{
+      fetch(SERVER_ORIGIN + '/api/settings', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ selectedDate: date, note }) }).catch(()=>{});
+    }catch(e){}
+    showToast('Note enregistrée');
+    closeMobileAdmin();
+  }
+
+  function loadMobileAdmin(){
+    const d = localStorage.getItem('admin_mobile_date') || '';
+    const n = localStorage.getItem('admin_mobile_note') || '';
+    const dateEl = document.getElementById('mobileAdminDate');
+    const noteEl = document.getElementById('mobileAdminNote');
+    if(dateEl) dateEl.value = d;
+    if(noteEl) noteEl.value = n;
+  }
+
+  // attach events for mobile admin controls
+  (function(){
+    const btn = document.getElementById('mobileAdminBtn');
+    const closeBtn = document.getElementById('mobileAdminClose');
+    const saveBtn = document.getElementById('mobileAdminSave');
+    if(btn) btn.addEventListener('click', async function(){
+      // require admin for opening
+      if(sessionStorage.getItem('gsm_code') !== '1'){
+        const code = prompt('Entrez le code admin');
+        if(!code) return;
+        try{
+          const res = await fetch('/api/auth/verify-code', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code}) });
+          if(!res.ok){ alert('Code invalide'); return; }
+          sessionStorage.setItem('gsm_code','1');
+        }catch(e){ alert('Erreur de vérification'); return; }
+      }
+      openMobileAdmin();
+    });
+    if(closeBtn) closeBtn.addEventListener('click', closeMobileAdmin);
+    if(saveBtn) saveBtn.addEventListener('click', saveMobileAdmin);
+    // load stored values
+    loadMobileAdmin();
+    // make floating button draggable
+    try{
+      if(btn){
+        const posRaw = localStorage.getItem('adminMobileBtnPos');
+        if(posRaw){ const p = JSON.parse(posRaw); if(p.left!=null && p.top!=null){ btn.style.left = p.left + 'px'; btn.style.top = p.top + 'px'; btn.style.right = 'auto'; btn.style.bottom = 'auto'; } }
+        let dragging=false, sx=0, sy=0, sl=0, st=0;
+        function onDown(e){ e.preventDefault(); dragging=true; const p=(e.touches && e.touches[0])||e; sx=p.clientX; sy=p.clientY; const r=btn.getBoundingClientRect(); sl=r.left; st=r.top; document.addEventListener('mousemove', onMove); document.addEventListener('touchmove', onMove, {passive:false}); document.addEventListener('mouseup', onUp); document.addEventListener('touchend', onUp); }
+        function onMove(e){ if(!dragging) return; e.preventDefault(); const p=(e.touches && e.touches[0])||e; const nx=sl + (p.clientX - sx); const ny=st + (p.clientY - sy); btn.style.left = Math.max(8, Math.min(window.innerWidth - btn.offsetWidth - 8, nx)) + 'px'; btn.style.top = Math.max(8, Math.min(window.innerHeight - btn.offsetHeight - 8, ny)) + 'px'; }
+        function onUp(){ if(!dragging) return; dragging=false; document.removeEventListener('mousemove', onMove); document.removeEventListener('touchmove', onMove); document.removeEventListener('mouseup', onUp); document.removeEventListener('touchend', onUp); try{ localStorage.setItem('adminMobileBtnPos', JSON.stringify({ left: parseInt(btn.style.left||0,10), top: parseInt(btn.style.top||0,10) })); }catch(e){} }
+        btn.addEventListener('mousedown', onDown); btn.addEventListener('touchstart', onDown, {passive:false});
+      }
+    }catch(e){}
+  })();
 
   function add(note){
 
