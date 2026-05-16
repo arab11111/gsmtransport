@@ -85,6 +85,15 @@ body {
     align-items: center;
     gap: 8px;
 }
+/* admin/public settings banner animation */
+.settings-highlight{animation:settingsFlash 1.6s ease both}
+@keyframes settingsFlash{
+    0%{ transform:translateY(-6px); opacity:0 }
+    20%{ transform:translateY(0); opacity:1 }
+    80%{ transform:translateY(0); opacity:1 }
+    100%{ transform:translateY(-2px); opacity:1 }
+}
+.display-note-strong{background:linear-gradient(90deg,#fffbe6,#ffe6e6);color:#3d0202;padding:14px;border-radius:12px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,0.12)}
 .login {
     background: linear-gradient(90deg,#43cea2,#185a9d);
     color: #fff;
@@ -418,6 +427,7 @@ footer {
             <input id="admin-panel-date" type="date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc;margin-top:6px;" />
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
                 <button id="admin-panel-save" style="background:#1e40af;color:#fff;padding:8px 14px;border-radius:8px;border:none;font-weight:700;">Enregistrer</button>
+                <button id="admin-panel-clear" style="background:#d33737;color:#e0b4b4;padding:8px 14px;border-radius:8px;border:none;font-weight:700;margin-right:auto;">Effacer note</button>
                 <button id="admin-panel-close" style="background:#888;color:#fff;padding:8px 14px;border-radius:8px;border:none;font-weight:700;">Fermer</button>
             </div>
         </div>
@@ -923,9 +933,19 @@ function loadSettingsRealtime() {
             try {
                 const date = payload && (payload.selectedDate || payload.adminSelectedDate) ? (payload.selectedDate || payload.adminSelectedDate) : null;
                 const note = payload && (payload.note || payload.adminNote) ? (payload.note || payload.adminNote) : '';
-                if (note && note.trim()) { displayNoteDiv.style.display = ''; displayNoteDiv.innerHTML = note.replace(/\n/g,'<br>'); }
-                else { displayNoteDiv.style.display = 'none'; displayNoteDiv.innerHTML = ''; }
+                if (note && note.trim()) { displayNoteDiv.style.display = ''; displayNoteDiv.innerHTML = note.replace(/\n/g,'<br>'); } else { displayNoteDiv.style.display = 'none'; displayNoteDiv.innerHTML = ''; }
                 displaySelectedDate(date);
+                // add highlight animation
+                try{
+                    displayNoteDiv.classList.remove('settings-highlight');
+                    const pd = document.getElementById('public-selected-date');
+                    if(pd){ pd.classList.remove('settings-highlight'); }
+                    // trigger reflow then add
+                    void displayNoteDiv.offsetWidth;
+                    displayNoteDiv.classList.add('settings-highlight');
+                    if(pd){ void pd.offsetWidth; pd.classList.add('settings-highlight'); }
+                    setTimeout(()=>{ try{ displayNoteDiv.classList.remove('settings-highlight'); if(pd) pd.classList.remove('settings-highlight'); }catch(e){} }, 1600);
+                }catch(e){}
             } catch (err) { console.error('settings_updated handler error', err); }
         });
     } catch (e) { console.error('loadSettingsRealtime error', e); }
@@ -1488,6 +1508,32 @@ if (adminPanelSave) adminPanelSave.addEventListener('click', async () => {
         alert('Enregistré. La date et la note ont été diffusées.');
         if (adminPanelModal) adminPanelModal.style.display = 'none';
     } catch (e) { console.error(e); alert('Échec enregistrement. Voir console.'); }
+});
+// Effacer note (admin panel)
+const adminPanelClear = document.getElementById('admin-panel-clear');
+if (adminPanelClear) adminPanelClear.addEventListener('click', async () => {
+    if (!isAdmin) return alert('Activez le mode admin pour supprimer.');
+    if (!confirm('Supprimer la note et la date pour tous les clients ?')) return;
+    try {
+        const res = await fetch('/api/settings', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ note: '', selectedDate: null })
+        });
+        if (!res.ok) throw new Error('Erreur serveur');
+        // UI update will happen via socket; also clear local display immediately
+        displayNoteDiv.textContent = '';
+        displayNoteDiv.style.display = 'none';
+        displaySelectedDate(null);
+        if (adminPanelModal) adminPanelModal.style.display = 'none';
+        alert('Note et date effacées.');
+    } catch (e) { console.error('failed to clear settings', e); alert('Échec suppression'); }
+});
+
+// Quitter mode admin (menu button)
+const quitAdminBtnEl = document.getElementById('quit-admin-btn');
+if (quitAdminBtnEl) quitAdminBtnEl.addEventListener('click', () => {
+    try { sessionStorage.removeItem('gsm_code'); } catch (e) {}
+    isAdmin = false; setAdminUI(false);
+    alert('Mode admin désactivé');
 });
 
 // --- Main menu interactions (single button) ---
