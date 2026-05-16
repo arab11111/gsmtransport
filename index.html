@@ -366,18 +366,7 @@ footer {
     <!-- Zone notifications réservation -->
     <div id="notif-reservations" style="background:linear-gradient(90deg,#fffbe6,#e6ffe6);color:#1a4d2e;padding:1.2rem 1.7rem;border-radius:14px;margin:1.5rem auto 1rem auto;max-width:650px;box-shadow:0 4px 18px #0002;font-weight:700;font-size:1.15em;display:none;transition:background 0.3s;"></div>
     <div id="liste-reservations" style="max-width:700px;margin:0 auto 2rem auto;"></div>
-    <!-- Mobile admin toggle and panel -->
-    <button id="mobileAdminBtn" title="Admin" aria-label="Ouvrir panneau admin">✏️</button>
-    <div id="mobileAdminPanel" aria-hidden="true">
-        <label for="mobileAdminDate">Sélectionner la date</label>
-        <input type="date" id="mobileAdminDate" />
-        <label for="mobileAdminNote">Laisser une note</label>
-        <textarea id="mobileAdminNote" rows="3" placeholder="Message aux utilisateurs..."></textarea>
-        <div class="mobile-admin-actions">
-            <button class="btn btn-light" id="mobileAdminClose">Fermer</button>
-            <button class="btn btn-primary" id="mobileAdminSave">Enregistrer</button>
-        </div>
-    </div>
+    <!-- Mobile admin toggle removed on non-admin pages -->
 <div class="menu-bar">
     <button id="client-login-btn" class="login"><span style="font-size:1.1em;">🔑</span> Connecter</button>
     <button id="client-logout-btn" class="logout" style="display:none;"><span style="font-size:1.1em;">🚪</span> Déconnecter</button>
@@ -1641,52 +1630,6 @@ try {
     })();
     </script>
 
-    <script>
-    // Mobile admin panel behaviour: open/close, save note+date to localStorage and show to users
-    (function(){
-        const btn = document.getElementById('mobileAdminBtn');
-        const panel = document.getElementById('mobileAdminPanel');
-        const closeBtn = document.getElementById('mobileAdminClose');
-        const saveBtn = document.getElementById('mobileAdminSave');
-        const dateEl = document.getElementById('mobileAdminDate');
-        const noteEl = document.getElementById('mobileAdminNote');
-        const notif = document.getElementById('notif-reservations');
-
-        function open(){ if(!panel) return; panel.classList.add('show'); panel.style.display='block'; panel.setAttribute('aria-hidden','false'); }
-        function close(){ if(!panel) return; panel.classList.remove('show'); panel.setAttribute('aria-hidden','true'); setTimeout(()=>{ panel.style.display='none'; },260); }
-
-        function showNote(note, date){
-            if(!notif) return;
-            if(!note || note.trim()===''){ notif.style.display='none'; notif.textContent=''; return; }
-            notif.style.display='block';
-            const datePart = date ? (' — ' + new Date(date).toLocaleDateString('fr-FR')) : '';
-            notif.textContent = note + datePart;
-        }
-
-        function save(){
-            const d = dateEl ? dateEl.value : '';
-            const n = noteEl ? noteEl.value : '';
-            localStorage.setItem('site_admin_date', d);
-            localStorage.setItem('site_admin_note', n);
-            showNote(n, d);
-            close();
-        }
-
-        function load(){
-            try{
-                const d = localStorage.getItem('site_admin_date') || '';
-                const n = localStorage.getItem('site_admin_note') || '';
-                if(dateEl) dateEl.value = d;
-                if(noteEl) noteEl.value = n;
-                showNote(n, d);
-            }catch(e){}
-        }
-
-        if(btn) btn.addEventListener('click', open);
-        if(closeBtn) closeBtn.addEventListener('click', close);
-        if(saveBtn) saveBtn.addEventListener('click', save);
-        load();
-    })();
-    </script>
+    <!-- Mobile admin panel script removed from non-admin page -->
 </body>
 </html>
