@@ -13,6 +13,10 @@
   .menu-btn{background:#2563eb;color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
   main{flex:1;display:flex;align-items:center;justify-content:center;padding:28px 16px}
   .container{width:100%;max-width:780px;background:#0b1220;padding:22px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.45)}
+  /* admin note/date highlight */
+  #adminInfo.show{animation:settingsPop .9s ease both}
+  @keyframes settingsPop{0%{transform:translateY(-8px);opacity:0}30%{transform:none;opacity:1}100%{transform:translateY(0);opacity:1}}
+  #adminInfo .note-strong{background:linear-gradient(90deg,#fffbe6,#ffe6e6);color:#3d0202;padding:10px;border-radius:10px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,0.2)}
   .container h1{color:#38bdf8;margin-bottom:12px;text-align:center}
   label{display:block;margin-top:12px;margin-bottom:6px;color:#cbd5e1;font-weight:700}
   input,select,textarea{width:100%;padding:12px;border-radius:10px;border:none;background:#1f2937;color:#fff}
@@ -25,6 +29,11 @@
   #qrZone{margin-top:14px;text-align:center}
   footer{width:100%;background:#111827;padding:14px;text-align:center;color:#94a3b8;margin-top:18px}
   @media(max-width:700px){.row{flex-direction:column}}
+  /* Hide left sidebar on small screens (mobile) to avoid duplicate menus */
+  @media(max-width:700px){
+    #sidebar{display:none !important}
+    #sidebar-backdrop{display:none !important}
+  }
   </style>
 </head>
 <body>
@@ -285,7 +294,18 @@
       selectedDate = selectedDate || '';
       noteEl.textContent = note ? ('Note admin: ' + note) : '';
       dateEl.textContent = selectedDate ? ('Date de départ: ' + selectedDate) : '';
-      info.style.display = (note || selectedDate) ? 'block' : 'none';
+      if(note || selectedDate){
+        info.style.display = 'block';
+        info.classList.remove('show');
+        // reflow then add to trigger animation
+        void info.offsetWidth;
+        info.classList.add('show');
+        try{ if(noteEl) noteEl.classList.add('note-strong'); }catch(e){}
+        // transient highlight on both elements
+        try{ noteEl.classList.remove('settings-highlight'); dateEl.classList.remove('settings-highlight'); void noteEl.offsetWidth; noteEl.classList.add('settings-highlight'); dateEl.classList.add('settings-highlight'); setTimeout(()=>{ noteEl.classList.remove('settings-highlight'); dateEl.classList.remove('settings-highlight'); },1400); }catch(e){}
+      } else {
+        info.style.display = 'none';
+      }
     }catch(e){console.warn('updateAdminInfo error', e)}
   }
 
