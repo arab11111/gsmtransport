@@ -5,6 +5,10 @@ const path = require('path');
 const fs = require('fs');
 const fsp = fs.promises;
 const PDFDocument = require('pdfkit');
+const helmet = require('helmet');
+const compression = require('compression');
+const morgan = require('morgan');
+const Queue = require('bull');
 // Optional MongoDB integration (use MONGODB_URI env var)
 const { MongoClient, ServerApiVersion } = require('mongodb');
 // JWT removed: admin auth uses simple code / socket register_admin
@@ -32,6 +36,7 @@ let countersCollection = null;
     try { await usersCollection.createIndex({ matricule: 1 }, { unique: true }); } catch (e) {}
     try { await countersCollection.createIndex({ _id: 1 }, { unique: true }); } catch (e) {}
     try { await usersCollection.createIndex({ whatsapp: 1 }); } catch (e) {}
+    try { await db.collection('notifications').createIndex({ createdAt: -1 }); } catch (e) {}
     console.log('Connected to MongoDB (users only)');
   } catch (e) { console.warn('MongoDB init failed', e); }
 })();
@@ -91,6 +96,15 @@ const server = http.createServer(app);
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['https://gsmtransport.onrender.com'];
 const io = socketIo(server, { cors: { origin: ALLOWED_ORIGINS, methods: ['GET','POST'] } });
 
+// middleware: security, compression, logging
+app.use(helmet());
+app.use(compression());
+app.use(morgan('combined'));
+
+// Redis / Bull queue for background PDF generation
+const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+const pdfQueue = new Queue('pdf-generation', REDIS_URL);
+
 // GSM admin code: use env if provided, otherwise use the provided fallback password
 // NOTE: using a hardcoded password is insecure; it's applied per user request.
 const GSM_CODE = process.env.GSM_ADMIN_CODE || 'Salim_Anis_2026';
@@ -116,8 +130,15 @@ const MAT_COUNTER_FILE = path.join(__dirname, 'matricule_counter.json');
 // ensure user photos directory exists
 // photos removed: no user_photos directory needed
 
-// In-memory dedupe for PDF generation
-const generatedPdfs = new Set();
+// In-memory dedupe for PDF generation with TTL to avoid unbounded memory growth
+const generatedPdfs = new Map();
+const PDF_CACHE_TTL = parseInt(process.env.PDF_CACHE_TTL_MS, 10) || (1000 * 60 * 60); // default 1 hour
+function rememberPdf(id){
+  try{
+    generatedPdfs.set(id, Date.now());
+    setTimeout(()=>{ try{ generatedPdfs.delete(id); }catch(e){} }, PDF_CACHE_TTL);
+  }catch(e){/* noop */}
+}
 
 // limit JSON body to 5MB to mitigate large base64 uploads
 app.use(express.json({ limit: '5mb' }));
@@ -133,19 +154,31 @@ async function writeJson(filePath, data) { try { await fsp.writeFile(filePath, J
 async function persistNotification(payload) {
   if (DISABLE_NOTIFICATIONS) return;
   try {
-    const list = await readJson(NOTIF_FILE, []);
-    list.unshift({ ...payload, receivedAt: new Date().toISOString(), read: false });
-    if (list.length > 200) list.length = 200;
-    await writeJson(NOTIF_FILE, list);
-    // also persist to MongoDB if available
-    try {
-      if (mongoClient) {
+    // Prefer storing notifications in MongoDB when available. Use file fallback only when Mongo not configured.
+    const doc = { ...(payload || {}), createdAt: new Date().toISOString(), read: false };
+    if (mongoClient) {
+      try {
         const db = process.env.MONGODB_DB ? mongoClient.db(process.env.MONGODB_DB) : mongoClient.db();
         const col = db.collection('notifications');
-        const doc = { ...payload, createdAt: new Date().toISOString() };
         await col.insertOne(doc).catch(() => {});
+      } catch (e) {
+        console.warn('persistNotification mongo error', e);
+        // fallback to file if mongo write fails
+        try {
+          const list = await readJson(NOTIF_FILE, []);
+          list.unshift({ ...(payload || {}), receivedAt: new Date().toISOString(), read: false });
+          if (list.length > 200) list.length = 200;
+          await writeJson(NOTIF_FILE, list);
+        } catch (ef) { console.warn('persistNotification file fallback error', ef); }
       }
-    } catch (e) { console.warn('persistNotification mongo error', e); }
+    } else {
+      try {
+        const list = await readJson(NOTIF_FILE, []);
+        list.unshift({ ...(payload || {}), receivedAt: new Date().toISOString(), read: false });
+        if (list.length > 200) list.length = 200;
+        await writeJson(NOTIF_FILE, list);
+      } catch (e) { console.warn('persistNotification file fallback error', e); }
+    }
   } catch (e) { console.warn('persistNotification error', e); }
 }
 
@@ -161,7 +194,7 @@ async function getNextSequence(name) {
         { $inc: { seq: 1 } },
         { upsert: true, returnDocument: 'after' }
       );
-      const seq = (res && res.value && typeof res.value.seq === 'number') ? res.value.seq : 1;
+      const seq = res?.value?.seq || 1;
       return seq;
     }
   } catch (e) {
@@ -192,7 +225,7 @@ async function generatePdfForBooking(booking) {
   const urlPath = `/pdfs/${filename}`;
 
   if (generatedPdfs.has(safeKey)) return urlPath;
-  generatedPdfs.add(safeKey);
+  rememberPdf(safeKey);
 
   const filePath = path.join(PDFS_DIR, filename);
   await new Promise((resolve, reject) => {
@@ -228,23 +261,26 @@ async function generatePdfForBooking(booking) {
     } catch (err) { reject(err); }
   });
 
-  try {
-    // emit pdf_generated only to admin sockets
-    try {
-      for (const [id, s] of Object.entries(io.sockets.sockets)) {
-        try {
-          const sock = io.sockets.sockets.get ? io.sockets.sockets.get(id) : s;
-          if (sock && sock.data && sock.data.isAdmin) {
-            sock.emit('pdf_generated', { filename, url: urlPath });
-          }
-        } catch (e) {}
-      }
-    } catch (e) {
-      try { io.emit('pdf_generated', { filename, url: urlPath }); } catch (ex) { /* ignore */ }
-    }
-  } catch (e) {}
+  // PDF file created and saved to disk. Emission to admins is handled by the queue worker or caller.
   return urlPath;
 }
+
+// Background worker: process PDF generation jobs and notify admin room
+try {
+  pdfQueue.process(async (job) => {
+    try {
+      const booking = job.data && job.data.booking ? job.data.booking : null;
+      if (!booking) throw new Error('missing booking data');
+      const url = await generatePdfForBooking(booking);
+      const filename = path.basename(url);
+      try { io.to('admins').emit('pdf_generated', { filename, url }); } catch (e) { console.warn('emit pdf_generated failed', e); }
+      return { success: true, url };
+    } catch (err) {
+      console.warn('pdfQueue job failed', err);
+      throw err;
+    }
+  });
+} catch (e) { console.warn('pdfQueue process init failed', e); }
 
 // ROUTES
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
@@ -295,7 +331,17 @@ app.get('/api/users/:key', async (req, res) => {
 
 app.get('/api/notifications', async (req, res) => {
   try {
-    // Firestore disabled — use local JSON fallback
+    // Prefer MongoDB if configured, else fallback to local JSON
+    if (mongoClient) {
+      try {
+        const db = process.env.MONGODB_DB ? mongoClient.db(process.env.MONGODB_DB) : mongoClient.db();
+        const col = db.collection('notifications');
+        const docs = await col.find({}).sort({ createdAt: -1 }).limit(200).toArray();
+        return res.json(docs || []);
+      } catch (e) {
+        console.warn('/api/notifications mongo read failed', e);
+      }
+    }
     const list = await readJson(NOTIF_FILE, []);
     return res.json(list);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -303,13 +349,16 @@ app.get('/api/notifications', async (req, res) => {
 
 app.post('/api/settings', async (req, res) => {
   try {
-    const { note } = req.body || {};
+    const { note, visible } = req.body || {};
     const provided = req.body && req.body.selectedDate;
     const selectedDate = provided || new Date().toISOString().slice(0,10);
     let cur = await readJson(SETTINGS_FILE, {});
     cur = { ...cur, ...(note !== undefined ? { note } : {}), selectedDate };
+    if (visible !== undefined) cur.visible = !!visible;
     await writeJson(SETTINGS_FILE, cur);
     try { io.emit('settings_updated', cur); } catch (e) {}
+    // also notify admin room explicitly with admin_notifications for backward compatibility
+    try { io.to('admins').emit('admin_notifications', cur); } catch (e) { try { io.emit('admin_notifications', cur); } catch (ex) {} }
     res.json(cur);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -343,8 +392,8 @@ app.post('/upload-pdf', async (req, res) => {
       // emit once per safe id
       const safeId = basename.replace(/^reservation_/, '').replace(/\.pdf$/i, '');
       if (!generatedPdfs.has(safeId)) {
-        generatedPdfs.add(safeId);
-        io.emit('pdf_generated', { filename: basename, url: `/pdfs/${basename}` });
+        rememberPdf(safeId);
+        try { io.to('admins').emit('pdf_generated', { filename: basename, url: `/pdfs/${basename}` }); } catch (e) { try { io.emit('pdf_generated', { filename: basename, url: `/pdfs/${basename}` }); } catch (ex) {} }
       }
       res.json({ success: true, url: `/pdfs/${basename}` });
     } catch (e) { res.status(500).json({ error: e.message }); }
@@ -399,29 +448,25 @@ app.post('/api/bookings', async (req, res) => {
 
     // Firestore disabled — bookings persisted to local JSON (or MongoDB if configured)
 
-    // Generate PDF once (await)
+    // Enqueue PDF generation so booking request returns quickly
     let pdfLink = null;
-    try { pdfLink = await generatePdfForBooking(booking); } catch (e) { console.warn('generatePdfForBooking failed', e); }
+    try {
+      if (pdfQueue) {
+        await pdfQueue.add({ booking }, { attempts: 3, backoff: 5000 });
+      } else {
+        // fallback to synchronous generation
+        pdfLink = await generatePdfForBooking(booking);
+      }
+    } catch (e) {
+      console.warn('enqueue/generatePdfForBooking failed', e);
+      try { pdfLink = await generatePdfForBooking(booking); } catch (ee) { console.warn('generatePdfForBooking fallback failed', ee); }
+    }
 
     const payload = { ...booking, pdfLink };
     if (!DISABLE_NOTIFICATIONS) {
       try { await persistNotification({ ...payload, type: 'booking' }); } catch (e) {}
-      // emit single booking_notification
-      try {
-        // emit only to registered admin sockets
-        try {
-          for (const [id, s] of Object.entries(io.sockets.sockets)) {
-            try {
-              const sock = io.sockets.sockets.get ? io.sockets.sockets.get(id) : s;
-              if (sock && sock.data && sock.data.isAdmin) {
-                sock.emit('booking_notification', payload);
-              }
-            } catch (e) {}
-          }
-        } catch (e) {
-          try { io.emit('booking_notification', payload); } catch (ex) { console.warn('emit booking_notification failed', ex); }
-        }
-      } catch (e) { console.warn('emit booking_notification failed', e); }
+        // emit single booking_notification to admin room (more efficient)
+        try { io.to('admins').emit('booking_notification', payload); } catch (e) { try { io.emit('booking_notification', payload); } catch (ex) { console.warn('emit booking_notification failed', ex); } }
     }
 
     res.json({ success: true, id: savedId, pdf: pdfLink });
@@ -528,8 +573,9 @@ io.on('connection', async (socket) => {
     try {
       if (String(code) === String(GSM_CODE)) {
         socket.data.isAdmin = true;
+        try { socket.join('admins'); } catch (e) {}
         try { socket.emit('admin_registered', { ok: true, token: false }); } catch (e) {}
-        console.log('Socket registered as admin via code:', socket.id);
+        console.log('Socket registered as admin via code and joined room admins:', socket.id);
       } else {
         try { socket.emit('admin_registered', { ok: false }); } catch (e) {}
       }
@@ -538,24 +584,30 @@ io.on('connection', async (socket) => {
 
   // send pending notifications (JSON fallback) and handle client_booking if notifications enabled
   if (!DISABLE_NOTIFICATIONS) {
-    try { const list = await readJson(NOTIF_FILE, []); if (list && list.length) socket.emit('pending_notifications', list); } catch (e) {}
+    try {
+      if (mongoClient) {
+        try {
+          const db = process.env.MONGODB_DB ? mongoClient.db(process.env.MONGODB_DB) : mongoClient.db();
+          const col = db.collection('notifications');
+          const list = await col.find({}).sort({ createdAt: -1 }).limit(200).toArray();
+          if (list && list.length) socket.emit('pending_notifications', list);
+        } catch (e) {
+          const list = await readJson(NOTIF_FILE, []);
+          if (list && list.length) socket.emit('pending_notifications', list);
+        }
+      } else {
+        const list = await readJson(NOTIF_FILE, []);
+        if (list && list.length) socket.emit('pending_notifications', list);
+      }
+    } catch (e) {}
 
     // clients may emit lightweight client_booking (server will not generate PDF from socket)
     socket.on('client_booking', async (data) => {
       try {
         const payload = { ...(data||{}), createdAt: new Date().toISOString(), read: false };
         try { await persistNotification({ ...payload, type: 'booking' }); } catch (e) {}
-        // emit only to registered admin sockets
-        try {
-          for (const [id, s] of Object.entries(io.sockets.sockets)) {
-            try {
-              const sock = io.sockets.sockets.get ? io.sockets.sockets.get(id) : s; // support different socket.io versions
-              if (sock && sock.data && sock.data.isAdmin) {
-                sock.emit('booking_notification', payload);
-              }
-            } catch (e) {}
-          }
-        } catch (e) { try { io.emit('booking_notification', payload); } catch (ex) {} }
+          // emit to admins room (more efficient)
+          try { io.to('admins').emit('booking_notification', payload); } catch (e) { try { io.emit('booking_notification', payload); } catch (ex) {} }
       } catch (e) { console.warn('client_booking error', e); }
     });
   }
