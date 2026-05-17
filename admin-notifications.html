@@ -464,6 +464,26 @@
   #mobileAdminPanel.show{ transform:translateY(0); }
   #mobileAdminPanel input, #mobileAdminPanel textarea{ width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); }
   .mobile-admin-actions .btn{ flex:1; }
+
+  /* Fix date and note bubbles to bottom on mobile, above admin button */
+  #public-selected-date{
+    position:fixed;
+    left:12px;
+    right:12px;
+    bottom:160px; /* above the note bubble */
+    z-index:1100;
+    max-width:calc(100% - 24px);
+    text-align:center;
+  }
+
+  #display-note{
+    position:fixed;
+    left:12px;
+    right:12px;
+    bottom:96px; /* above the floating admin button */
+    z-index:1100;
+    max-width:calc(100% - 24px);
+  }
 }
 
 @keyframes adminPulse{
@@ -746,15 +766,6 @@
 
   // --- Mobile admin panel logic ---
   function openMobileAdmin(){
-    // require admin code to open
-    try{
-      if(sessionStorage.getItem('gsm_code') !== '1'){
-        const code = prompt('Entrez le code admin');
-        if(!code) return;
-        const res = fetch('/api/auth/verify-code', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code}) }).then(r=>{ if(!r.ok) throw new Error('invalid'); sessionStorage.setItem('gsm_code','1'); openMobileAdmin(); }).catch(()=>{ alert('Code invalide'); });
-        return;
-      }
-    }catch(e){}
     const panel = document.getElementById('mobileAdminPanel');
     if(!panel) return;
     panel.classList.add('show');
@@ -810,16 +821,7 @@
     const closeBtn = document.getElementById('mobileAdminClose');
     const saveBtn = document.getElementById('mobileAdminSave');
     if(btn) btn.addEventListener('click', async function(){
-      // require admin for opening
-      if(sessionStorage.getItem('gsm_code') !== '1'){
-        const code = prompt('Entrez le code admin');
-        if(!code) return;
-        try{
-          const res = await fetch('/api/auth/verify-code', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code}) });
-          if(!res.ok){ alert('Code invalide'); return; }
-          sessionStorage.setItem('gsm_code','1');
-        }catch(e){ alert('Erreur de vérification'); return; }
-      }
+      // open panel directly and prefill from server settings (no auth)
       // prefill panel from server settings if available, fallback to localStorage
       try{
         const sres = await fetch('/api/settings');
