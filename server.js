@@ -1,620 +1,277 @@
 const express = require('express');
 const http = require('http');
-const socketIo = require('socket.io');
+const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
 const fsp = fs.promises;
-const PDFDocument = require('pdfkit');
-const helmet = require('helmet');
-const compression = require('compression');
-const morgan = require('morgan');
-const Queue = require('bull');
-// Optional MongoDB integration (use MONGODB_URI env var)
-const { MongoClient, ServerApiVersion } = require('mongodb');
-// JWT removed: admin auth uses simple code / socket register_admin
+
+// Optional dependencies guarded to avoid startup failures
+let compression = null;
+let morgan = null;
+let Bull = null;
+let PDFDocument = null;
+try { compression = require('compression'); } catch (e) {}
+try { morgan = require('morgan'); } catch (e) {}
+try { Bull = require('bull'); } catch (e) {}
+try { PDFDocument = require('pdfkit'); } catch (e) {}
+
+// Optional MongoDB
+let MongoClient = null;
 let mongoClient = null;
-let usersCollection = null;
-let countersCollection = null;
-// initialize Mongo asynchronously if MONGODB_URI provided (users collection only)
-(async function initMongo() {
-  try {
-    const uri = process.env.MONGODB_URI || null;
-    if (!uri) { console.log('MONGODB_URI not set, skipping MongoDB init'); return; }
-    // Use explicit `client` variable as requested, but keep `mongoClient` reference for compatibility
-    const client = new MongoClient(process.env.MONGODB_URI, {
-      serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-      }
-    });
-    mongoClient = client;
-    await client.connect();
-    const db = process.env.MONGODB_DB ? client.db(process.env.MONGODB_DB) : client.db();
-    usersCollection = db.collection('users');
-    countersCollection = db.collection('counters');
-    try { await usersCollection.createIndex({ matricule: 1 }, { unique: true }); } catch (e) {}
-    try { await countersCollection.createIndex({ _id: 1 }, { unique: true }); } catch (e) {}
-    try { await usersCollection.createIndex({ whatsapp: 1 }); } catch (e) {}
-    try { await db.collection('notifications').createIndex({ createdAt: -1 }); } catch (e) {}
-    console.log('Connected to MongoDB (users only)');
-  } catch (e) { console.warn('MongoDB init failed', e); }
-})();
-// Optional Google Drive integration
-let driveClient = null;
-try {
-  const { google } = require('googleapis');
-  const DRIVE_CRED_FILE = path.join(__dirname, 'drive_credentials.json'); // OAuth2 client credentials
-  const DRIVE_TOKEN_FILE = path.join(__dirname, 'drive_token.json'); // OAuth2 token for gsmauto15@gmail.com
+let notificationsCollection = null;
+try { MongoClient = require('mongodb').MongoClient; } catch (e) {}
 
-  async function initDriveClient() {
-    try {
-      const credRaw = await fsp.readFile(DRIVE_CRED_FILE, 'utf8').catch(() => null);
-      const tokenRaw = await fsp.readFile(DRIVE_TOKEN_FILE, 'utf8').catch(() => null);
-      if (!credRaw || !tokenRaw) return null;
-      const creds = JSON.parse(credRaw);
-      const token = JSON.parse(tokenRaw);
-      const clientData = creds.installed || creds.web || creds;
-      const oAuth2Client = new google.auth.OAuth2(clientData.client_id, clientData.client_secret, (clientData.redirect_uris && clientData.redirect_uris[0]) || 'urn:ietf:wg:oauth:2.0:oob');
-      oAuth2Client.setCredentials(token);
-      const drive = google.drive({ version: 'v3', auth: oAuth2Client });
-      return drive;
-    } catch (e) { console.warn('initDriveClient failed', e); return null; }
-  }
-
-  // initialize asynchronously but non-blocking
-  initDriveClient().then(d => { driveClient = d; if (driveClient) console.log('Google Drive client initialized'); }).catch(() => {});
-} catch (e) { console.warn('googleapis not available', e); }
-
-// Upload or update users.json to the authenticated Google Drive account
-async function uploadUsersToDrive(users) {
-  try {
-    if (!driveClient) return false;
-    const filename = 'gsm_users.json';
-    // find existing file
-    const listRes = await driveClient.files.list({ q: `name='${filename.replace(/'/g,"\\'")}' and trashed=false`, fields: 'files(id,name)' });
-    const content = JSON.stringify(users, null, 2);
-    if (listRes && listRes.data && Array.isArray(listRes.data.files) && listRes.data.files.length > 0) {
-      const fileId = listRes.data.files[0].id;
-      await driveClient.files.update({ fileId, requestBody: { name: filename }, media: { mimeType: 'application/json', body: Buffer.from(content) } });
-      return true;
-    } else {
-      await driveClient.files.create({ requestBody: { name: filename, mimeType: 'application/json' }, media: { mimeType: 'application/json', body: Buffer.from(content) } });
-      return true;
-    }
-  } catch (e) { console.warn('uploadUsersToDrive failed', e); return false; }
-}
-
-// Firebase Admin / Firestore disabled for this project (we use Firebase Auth on client)
-const admin = null;
-const adminDb = null;
-
-// Basic helpers
 const app = express();
 const server = http.createServer(app);
-// tighten CORS: allow origins from env or default to production domain
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['https://gsmtransport.onrender.com'];
-const io = socketIo(server, { cors: { origin: ALLOWED_ORIGINS, methods: ['GET','POST'] } });
+const io = new Server(server, { cors: { origin: '*' } });
 
-// middleware: security, compression, logging
-app.use(helmet());
-app.use(compression());
-app.use(morgan('combined'));
+// Config and paths
+const PORT = process.env.PORT || 3002;
+const REDIS_URL = process.env.REDIS_URL || null;
+const MONGODB_URI = process.env.MONGODB_URI || null;
+const MONGODB_DB = process.env.MONGODB_DB || null;
+const GSM_ADMIN_CODE = process.env.GSM_ADMIN_CODE || 'Salim_Anis_2026';
+const PDF_CACHE_TTL_MS = parseInt(process.env.PDF_CACHE_TTL_MS || '3600000', 10);
 
-// Redis / Bull queue for background PDF generation
-const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
-const pdfQueue = new Queue('pdf-generation', REDIS_URL);
-
-// GSM admin code: use env if provided, otherwise use the provided fallback password
-// NOTE: using a hardcoded password is insecure; it's applied per user request.
-const GSM_CODE = process.env.GSM_ADMIN_CODE || 'Salim_Anis_2026';
-// Token signing secret (use a dedicated secret in production)
-const TOKEN_SECRET = process.env.GSM_TOKEN_SECRET || GSM_CODE;
-if (!process.env.GSM_ADMIN_CODE) {
-  console.warn('GSM_ADMIN_CODE not set in env — falling back to configured default password');
-}
-
-// Feature flag: disable notifications system when true (set DISABLE_NOTIFICATIONS=1 or true)
-const DISABLE_NOTIFICATIONS = (process.env.DISABLE_NOTIFICATIONS === '1' || process.env.DISABLE_NOTIFICATIONS === 'true');
-console.log('DISABLE_NOTIFICATIONS=', DISABLE_NOTIFICATIONS);
-
-const PDFS_DIR = path.join(__dirname, 'pdfs');
-const BOOKINGS_FILE = path.join(__dirname, 'bookings.json');
-const NOTIF_FILE = path.join(__dirname, 'notifications.json');
-const USERS_FILE = path.join(__dirname, 'users.json');
-const SETTINGS_FILE = path.join(__dirname, 'settings.json');
-const MAT_COUNTER_FILE = path.join(__dirname, 'matricule_counter.json');
+const ROOT = __dirname;
+const PDFS_DIR = path.join(ROOT, 'pdfs');
+const NOTIF_FILE = path.join(ROOT, 'notifications.json');
+const SETTINGS_FILE = path.join(ROOT, 'settings.json');
+const BOOKINGS_FILE = path.join(ROOT, 'bookings.json');
+const USERS_FILE = path.join(ROOT, 'users.json');
 
 // Ensure directories exist
-(async () => { try { await fsp.mkdir(PDFS_DIR, { recursive: true }); } catch (e) {} })();
-// ensure user photos directory exists
-// photos removed: no user_photos directory needed
+(async ()=>{ try{ await fsp.mkdir(PDFS_DIR,{ recursive:true }); }catch(e){} })();
 
-// In-memory dedupe for PDF generation with TTL to avoid unbounded memory growth
-const generatedPdfs = new Map();
-const PDF_CACHE_TTL = parseInt(process.env.PDF_CACHE_TTL_MS, 10) || (1000 * 60 * 60); // default 1 hour
-function rememberPdf(id){
-  try{
-    generatedPdfs.set(id, Date.now());
-    setTimeout(()=>{ try{ generatedPdfs.delete(id); }catch(e){} }, PDF_CACHE_TTL);
-  }catch(e){/* noop */}
-}
-
-// limit JSON body to 5MB to mitigate large base64 uploads
+// Apply optional middleware
+if (compression) app.use(compression());
+if (morgan) app.use(morgan('tiny'));
 app.use(express.json({ limit: '5mb' }));
+app.use(express.static(ROOT));
 app.use('/pdfs', express.static(PDFS_DIR));
-app.use(express.static(path.join(__dirname)));
 
-// Small JSON helpers
-async function readJson(filePath, fallback) {
-  try { await fsp.access(filePath); const raw = await fsp.readFile(filePath, 'utf8'); return JSON.parse(raw || '[]'); } catch (e) { return fallback; }
-}
-async function writeJson(filePath, data) { try { await fsp.writeFile(filePath, JSON.stringify(data, null, 2)); } catch (e) { console.warn('writeJson failed', filePath, e); } }
-
-async function persistNotification(payload) {
-  if (DISABLE_NOTIFICATIONS) return;
-  try {
-    // Prefer storing notifications in MongoDB when available. Use file fallback only when Mongo not configured.
-    const doc = { ...(payload || {}), createdAt: new Date().toISOString(), read: false };
-    if (mongoClient) {
-      try {
-        const db = process.env.MONGODB_DB ? mongoClient.db(process.env.MONGODB_DB) : mongoClient.db();
-        const col = db.collection('notifications');
-        await col.insertOne(doc).catch(() => {});
-      } catch (e) {
-        console.warn('persistNotification mongo error', e);
-        // fallback to file if mongo write fails
-        try {
-          const list = await readJson(NOTIF_FILE, []);
-          list.unshift({ ...(payload || {}), receivedAt: new Date().toISOString(), read: false });
-          if (list.length > 200) list.length = 200;
-          await writeJson(NOTIF_FILE, list);
-        } catch (ef) { console.warn('persistNotification file fallback error', ef); }
-      }
-    } else {
-      try {
-        const list = await readJson(NOTIF_FILE, []);
-        list.unshift({ ...(payload || {}), receivedAt: new Date().toISOString(), read: false });
-        if (list.length > 200) list.length = 200;
-        await writeJson(NOTIF_FILE, list);
-      } catch (e) { console.warn('persistNotification file fallback error', e); }
-    }
-  } catch (e) { console.warn('persistNotification error', e); }
+// Initialize optional services
+let pdfQueue = null;
+if (Bull && REDIS_URL) {
+  try { pdfQueue = new Bull('pdf-queue', REDIS_URL); } catch (e) { pdfQueue = null; }
 }
 
-// Get next sequence number for named counter (MongoDB atomic counter if available,
-// else fallback to a small local file counter). Returns a Number.
-async function getNextSequence(name) {
+async function initMongo(){
+  if (!MongoClient || !MONGODB_URI) return;
   try {
-    if (mongoClient && countersCollection) {
-      const db = process.env.MONGODB_DB ? mongoClient.db(process.env.MONGODB_DB) : mongoClient.db();
-      const col = db.collection('counters');
-      const res = await col.findOneAndUpdate(
-        { _id: name },
-        { $inc: { seq: 1 } },
-        { upsert: true, returnDocument: 'after' }
-      );
-      const seq = res?.value?.seq || 1;
-      return seq;
-    }
-  } catch (e) {
-    console.warn('getNextSequence mongo error', e);
+    mongoClient = new MongoClient(MONGODB_URI, { useUnifiedTopology: true });
+    await mongoClient.connect();
+    const db = MONGODB_DB ? mongoClient.db(MONGODB_DB) : mongoClient.db();
+    notificationsCollection = db.collection('notifications');
+    await notificationsCollection.createIndex({ createdAt: -1 });
+    console.log('Mongo: notifications collection ready');
+  } catch (e) { console.warn('Mongo init failed', e); mongoClient = null; }
+}
+initMongo().catch(()=>{});
+
+// In-memory dedupe map with TTL
+const generatedPdfs = new Map();
+function rememberPdf(key){
+  generatedPdfs.set(key, Date.now());
+  setTimeout(()=> generatedPdfs.delete(key), PDF_CACHE_TTL_MS).unref?.();
+}
+
+// JSON helpers
+async function readJson(filePath, fallback){
+  try { const raw = await fsp.readFile(filePath, 'utf8'); return JSON.parse(raw || 'null') || fallback; } catch (e) { return fallback; }
+}
+async function writeJson(filePath, data){
+  try { await fsp.writeFile(filePath, JSON.stringify(data, null, 2)); } catch (e) { console.warn('writeJson failed', filePath, e); }
+}
+
+// Persist notification: prefer Mongo, file fallback
+async function persistNotification(note){
+  const doc = { ...note, createdAt: new Date().toISOString() };
+  if (notificationsCollection) {
+    try { await notificationsCollection.insertOne(doc); return; } catch (e) { console.warn('mongo insert failed', e); }
   }
-  // Fallback: simple file-based counter (single-process safe)
+  // file fallback
   try {
-    let cur = { seq: 0 };
-    try { const raw = await fsp.readFile(MAT_COUNTER_FILE, 'utf8'); cur = JSON.parse(raw || '{}'); } catch (e) {}
-    cur.seq = (cur.seq || 0) + 1;
-    await fsp.writeFile(MAT_COUNTER_FILE, JSON.stringify(cur, null, 2));
-    return cur.seq;
-  } catch (e) {
-    console.warn('getNextSequence file fallback failed', e);
-    return Date.now() % 1000000; // last-resort
-  }
-}
-
-// Centralized PDF generator — returns URL path
-async function generatePdfForBooking(booking) {
-  const sanitize = s => (s || '').toString().replace(/[^a-zA-Z0-9-_.]/g, '_');
-  const id = booking.bagage_numero || booking.id || Date.now();
-  const safeId = sanitize(id);
-  const matricule = booking.matricule || '';
-  const safeMat = matricule ? sanitize(matricule) + '_' : '';
-  const safeKey = `${safeMat}${safeId}`;
-  const filename = `reservation_${safeKey}.pdf`;
-  const urlPath = `/pdfs/${filename}`;
-
-  if (generatedPdfs.has(safeKey)) return urlPath;
-  rememberPdf(safeKey);
-
-  const filePath = path.join(PDFS_DIR, filename);
-  await new Promise((resolve, reject) => {
-    try {
-      const stream = fs.createWriteStream(filePath);
-      const doc = new PDFDocument({ size: 'A4', margin: 40 });
-      doc.pipe(stream);
-
-      doc.fontSize(20).text('GSM Transport', { align: 'center' });
-      doc.moveDown();
-      doc.fontSize(16).text('Réservation Bagage', { align: 'center' });
-      doc.moveDown();
-
-      let matricule = booking.matricule || '';
-      if (!matricule && booking.bagage_numero && booking.bagage_numero.includes('/')) matricule = booking.bagage_numero.split('/')[0];
-      if (matricule) doc.fontSize(12).text(`Matricule: ${matricule}`);
-
-      doc.fontSize(12).text(`Numéro: ${id}`);
-      if (booking.exp_nom || booking.exp_prenom) doc.text(`Expéditeur: ${booking.exp_nom || ''} ${booking.exp_prenom || ''}`);
-      if (booking.dest_nom || booking.dest_prenom) doc.text(`Destinataire: ${booking.dest_nom || ''} ${booking.dest_prenom || ''}`);
-      if (booking.exp_tel) doc.text(`Téléphone exp: ${booking.exp_tel}`);
-      if (booking.dest_tel) doc.text(`Téléphone dest: ${booking.dest_tel}`);
-      if (booking.pays_dest || booking.destination) doc.text(`Destination: ${booking.pays_dest || ''} ${booking.destination || ''}`);
-      if (booking.nb_bagages) doc.text(`Bagages: ${booking.nb_bagages}`);
-      if (booking.poids) doc.text(`Poids: ${booking.poids} kg`);
-      if (booking.prix) doc.text(`Prix: ${booking.prix} €`);
-      if (booking.notes) { doc.moveDown(); doc.text(`Note: ${booking.notes}`); }
-
-      doc.end();
-
-      stream.on('finish', resolve);
-      stream.on('error', reject);
-    } catch (err) { reject(err); }
-  });
-
-  // PDF file created and saved to disk. Emission to admins is handled by the queue worker or caller.
-  return urlPath;
-}
-
-// Background worker: process PDF generation jobs and notify admin room
-try {
-  pdfQueue.process(async (job) => {
-    try {
-      const booking = job.data && job.data.booking ? job.data.booking : null;
-      if (!booking) throw new Error('missing booking data');
-      const url = await generatePdfForBooking(booking);
-      const filename = path.basename(url);
-      try { io.to('admins').emit('pdf_generated', { filename, url }); } catch (e) { console.warn('emit pdf_generated failed', e); }
-      return { success: true, url };
-    } catch (err) {
-      console.warn('pdfQueue job failed', err);
-      throw err;
-    }
-  });
-} catch (e) { console.warn('pdfQueue process init failed', e); }
-
-// ROUTES
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-
-// photo endpoints removed — photos are no longer collected or served
-
-// Return all users (from local JSON fallback or Firestore)
-app.get('/api/users', async (req, res) => {
-  try {
-    // Prefer MongoDB if configured
-    if (usersCollection) {
-      try {
-        const docs = await usersCollection.find({}).sort({ createdAt: -1 }).limit(1000).toArray();
-        return res.json(docs || []);
-      } catch (e) { console.warn('mongo /api/users failed', e); }
-    }
-    let list = await readJson(USERS_FILE, []);
-    // Firestore disabled — using local JSON or MongoDB fallback
-    res.json(list || []);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// Find single user by matricule or phone (param may be matricule or phone)
-app.get('/api/users/:key', async (req, res) => {
-  try {
-    const key = (req.params.key || '').toString();
-    if (!key) return res.status(400).json({ error: 'Missing key' });
-    const norm = key.replace(/[^+0-9]/g,'');
-    // try MongoDB first
-    if (usersCollection) {
-      try {
-        const byMat = await usersCollection.findOne({ matricule: key });
-        if (byMat) return res.json({ source: 'mongo', user: byMat });
-        const byPhone = await usersCollection.findOne({ whatsapp: norm });
-        if (byPhone) return res.json({ source: 'mongo', user: byPhone });
-      } catch (e) { console.warn('mongo /api/users/:key failed', e); }
-    }
-
-    let list = await readJson(USERS_FILE, []);
-    // Firestore disabled — fallback to local JSON or MongoDB lookup above
-
-    // fallback to local JSON
-    let found = list.find(u => u && ((u.matricule && u.matricule.toString().toLowerCase() === key.toLowerCase()) || ((u.whatsapp||'').toString().replace(/[^+0-9]/g,'') === norm) || (u.id && String(u.id) === key)));
-    if (!found) return res.status(404).json({ error: 'User not found' });
-    res.json({ source: 'json', user: found });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/notifications', async (req, res) => {
-  try {
-    // Prefer MongoDB if configured, else fallback to local JSON
-    if (mongoClient) {
-      try {
-        const db = process.env.MONGODB_DB ? mongoClient.db(process.env.MONGODB_DB) : mongoClient.db();
-        const col = db.collection('notifications');
-        const docs = await col.find({}).sort({ createdAt: -1 }).limit(200).toArray();
-        return res.json(docs || []);
-      } catch (e) {
-        console.warn('/api/notifications mongo read failed', e);
-      }
-    }
     const list = await readJson(NOTIF_FILE, []);
-    return res.json(list);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
+    list.unshift(doc);
+    if (list.length > 500) list.length = 500;
+    await writeJson(NOTIF_FILE, list);
+  } catch (e) { console.warn('persistNotification fallback failed', e); }
+}
 
-app.post('/api/settings', async (req, res) => {
-  try {
-    const { note, visible } = req.body || {};
-    const provided = req.body && req.body.selectedDate;
-    const selectedDate = provided || new Date().toISOString().slice(0,10);
-    let cur = await readJson(SETTINGS_FILE, {});
-    cur = { ...cur, ...(note !== undefined ? { note } : {}), selectedDate };
-    if (visible !== undefined) cur.visible = !!visible;
-    await writeJson(SETTINGS_FILE, cur);
-    try { io.emit('settings_updated', cur); } catch (e) {}
-    // also notify admin room explicitly with admin_notifications for backward compatibility
-    try { io.to('admins').emit('admin_notifications', cur); } catch (e) { try { io.emit('admin_notifications', cur); } catch (ex) {} }
-    res.json(cur);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/settings', async (req, res) => {
-  try { const s = await readJson(SETTINGS_FILE, {}); res.json(s); } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// Verify GSM admin code (server-side) to avoid exposing the code in client sources
-app.post('/api/auth/verify-code', async (req, res) => {
-  try {
-    const code = req.body && req.body.code ? String(req.body.code).trim() : '';
-    if (!code) return res.status(400).json({ error: 'missing_code' });
-    if (code === GSM_CODE) return res.json({ success: true });
-    return res.status(403).json({ success: false });
-  } catch (e) { return res.status(500).json({ error: e.message }); }
-});
-
-// JWT token endpoint removed — admin uses server-side code verification and socket register_admin
-
-// Upload a PDF (used by clients who generate locally)
-app.post('/upload-pdf', async (req, res) => {
-  const filename = req.query.filename || `file_${Date.now()}.pdf`;
-  const filePath = path.join(PDFS_DIR, path.basename(filename));
-  const chunks = [];
-  req.on('data', c => chunks.push(c));
-  req.on('end', async () => {
-    try {
-      await fsp.writeFile(filePath, Buffer.concat(chunks));
-      const basename = path.basename(filename);
-      // emit once per safe id
-      const safeId = basename.replace(/^reservation_/, '').replace(/\.pdf$/i, '');
-      if (!generatedPdfs.has(safeId)) {
-        rememberPdf(safeId);
-        try { io.to('admins').emit('pdf_generated', { filename: basename, url: `/pdfs/${basename}` }); } catch (e) { try { io.emit('pdf_generated', { filename: basename, url: `/pdfs/${basename}` }); } catch (ex) {} }
-      }
-      res.json({ success: true, url: `/pdfs/${basename}` });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-  });
-});
-
-// Save booking — server generates PDF ONCE, emits notification and returns pdf link
-app.post('/api/bookings', async (req, res) => {
-  try {
-    const data = req.body || {};
-    // normalize phone helper
-    const normalizePhone = p => (p || '').toString().replace(/[^+0-9]/g, '');
-    // simple validation for exp_tel (WhatsApp-like: + and 7-15 digits)
-    const exp_tel = normalizePhone(data.exp_tel || data.whatsapp || '');
-    if (!/^[+]?[0-9]{7,15}$/.test(exp_tel)) return res.status(400).json({ error: 'Numéro WhatsApp/téléphone invalide. Utiliser le format international, ex: +33123456789' });
-
-    // attach normalized phone back
-    data.exp_tel = exp_tel;
-
-    // attach matricule from users.json if not provided but exp_tel matches a registered user
-    try {
-      // prefer Mongo lookup
-      if (usersCollection) {
-        try {
-          const found = await usersCollection.findOne({ whatsapp: exp_tel });
-          if (found && !data.matricule) data.matricule = found.matricule;
-        } catch (e) { /* ignore mongo lookup */ }
-      } else {
-        const users = await readJson(USERS_FILE, []);
-        const found = users.find(u => u && (u.whatsapp || '').replace(/[^+0-9]/g,'') === exp_tel);
-        if (found && !data.matricule) data.matricule = found.matricule;
-      }
-    } catch (e) { /* ignore */ }
-
-    // prevent duplicate bookings from same contact within 24 hours
-    try {
-      const listExisting = await readJson(BOOKINGS_FILE, []);
-      const cutoff = Date.now() - (24 * 60 * 60 * 1000);
-      const dup = listExisting.find(b => b && ((b.exp_tel||'').toString().replace(/[^+0-9]/g,'') === exp_tel) && (new Date(b.createdAt || 0).getTime() > cutoff));
-      if (dup) return res.status(409).json({ error: 'Une réservation existe déjà pour ce numéro dans les dernières 24 heures.' });
-    } catch (e) { /* ignore */ }
-
-    const booking = { ...data, createdAt: new Date().toISOString() };
-
-    // persist bookings to local JSON (bookings/PDFs are not stored in MongoDB)
-    let savedId = null;
-    try {
-      const list = await readJson(BOOKINGS_FILE, []);
-      list.unshift(booking);
-      await writeJson(BOOKINGS_FILE, list);
-    } catch (e) { console.warn('persist booking failed', e); }
-
-    // Firestore disabled — bookings persisted to local JSON (or MongoDB if configured)
-
-    // Enqueue PDF generation so booking request returns quickly
-    let pdfLink = null;
-    try {
-      if (pdfQueue) {
-        await pdfQueue.add({ booking }, { attempts: 3, backoff: 5000 });
-      } else {
-        // fallback to synchronous generation
-        pdfLink = await generatePdfForBooking(booking);
-      }
-    } catch (e) {
-      console.warn('enqueue/generatePdfForBooking failed', e);
-      try { pdfLink = await generatePdfForBooking(booking); } catch (ee) { console.warn('generatePdfForBooking fallback failed', ee); }
-    }
-
-    const payload = { ...booking, pdfLink };
-    if (!DISABLE_NOTIFICATIONS) {
-      try { await persistNotification({ ...payload, type: 'booking' }); } catch (e) {}
-        // emit single booking_notification to admin room (more efficient)
-        try { io.to('admins').emit('booking_notification', payload); } catch (e) { try { io.emit('booking_notification', payload); } catch (ex) { console.warn('emit booking_notification failed', ex); } }
-    }
-
-    res.json({ success: true, id: savedId, pdf: pdfLink });
-  } catch (e) { console.error('POST /api/bookings', e); res.status(500).json({ error: e.message }); }
-});
-
-// Simple registration endpoint: server generates a matricule and stores basic user info
-app.post('/api/register', async (req, res) => {
-  try {
-    // accept additional fields: pays_residence, adresse_france, adresse_algerie, id_number, accepted_privacy
-    const { nom, prenom, whatsapp, pays_residence, adresse_france, adresse_algerie, id_number, accepted_privacy } = req.body || {};
-    if (!nom || !prenom || !whatsapp || !pays_residence || !id_number) return res.status(400).json({ error: 'Missing required fields: nom, prenom, pays_residence, id_number, whatsapp' });
-    // require explicit acceptance of privacy/terms
-    if (!accepted_privacy) return res.status(400).json({ error: 'accept_privacy_required' });
-    // country-specific address validation
-    if (pays_residence === 'France' && !(req.body.adresse_france && req.body.adresse_france.toString().trim())) return res.status(400).json({ error: 'Adresse en France requise pour les résidents France' });
-    if (pays_residence === 'Algérie' && !(req.body.adresse_algerie && req.body.adresse_algerie.toString().trim())) return res.status(400).json({ error: 'Adresse en Algérie requise pour les résidents Algérie' });
-    // photos are no longer required or accepted
-
-    // normalize whatsapp format
-    const normalizePhone = p => (p || '').toString().replace(/[^+0-9]/g, '');
-    const norm = normalizePhone(whatsapp);
-    if (!/^[+]?[0-9]{7,15}$/.test(norm)) return res.status(400).json({ error: 'Format WhatsApp invalide. Utilisez le format international, ex: +33123456789' });
-
-    // check existing by whatsapp in Mongo or JSON
-    try {
-      if (usersCollection) {
-        const existing = await usersCollection.findOne({ whatsapp: norm });
-        if (existing) return res.json({ success: true, matricule: existing.matricule, existing: true });
-      } else {
-        const list = await readJson(USERS_FILE, []);
-        const existing = list.find(u => u && ((u.whatsapp||'').toString().replace(/[^+0-9]/g,'') === norm));
-        if (existing) return res.json({ success: true, matricule: existing.matricule, existing: true });
-      }
-    } catch (e) { /* ignore */ }
-
-    // allocate sequential matricule (atomic in MongoDB, file fallback otherwise)
-    const seqNum = await getNextSequence('matricule');
-    const matricule = 'GSM' + String(seqNum).padStart(6, '0');
-    // mask ID number for privacy before persisting
-    const maskedId = id_number ? (String(id_number).slice(0,2) + '****') : '';
-    const user = {
-      id: Date.now(), matricule, nom, prenom, whatsapp: norm,
-      pays_residence: pays_residence || '', adresse_france: adresse_france || '', adresse_algerie: adresse_algerie || '',
-      id_number_masked: maskedId, accepted_privacy: true, createdAt: new Date().toISOString()
-    };
-
-    // no photo handling
-
-    // persist: prefer MongoDB, fallback to JSON; also try Firestore
-    try {
-      if (usersCollection) {
-        try {
-          await usersCollection.insertOne(user);
-          // sync local JSON snapshot (best-effort)
-          try { const all = await usersCollection.find({}).sort({ createdAt: -1 }).limit(2000).toArray(); await writeJson(USERS_FILE, all); } catch (e) {}
-        } catch (e) { console.warn('mongo insert user failed', e); }
-      } else {
-        const list = await readJson(USERS_FILE, []);
-        list.unshift(user);
-        await writeJson(USERS_FILE, list);
-        try { await uploadUsersToDrive(list); } catch (e) { console.warn('uploadUsersToDrive error', e); }
-      }
-    } catch (e) { console.warn('failed to persist user', e); }
-
-    // Firestore disabled — not persisting to Firestore in this project
-
-    res.json({ success: true, matricule });
-  } catch (e) {
-    console.error('/api/register error', e);
-    res.status(500).json({ error: e.message });
+// Simple PDF generator using pdfkit if available; returns relative URL
+async function generatePdfForBooking(booking){
+  const id = booking.id || booking.bagage_numero || Date.now();
+  const key = String(id).replace(/[^a-zA-Z0-9-_]/g,'_');
+  if (generatedPdfs.has(key)) return `/pdfs/reservation_${key}.pdf`;
+  rememberPdf(key);
+  const filename = `reservation_${key}.pdf`;
+  const filePath = path.join(PDFS_DIR, filename);
+  if (!PDFDocument) {
+    // no pdfkit: create a tiny placeholder file
+    await fsp.writeFile(filePath, `Reservation ${id}\n${JSON.stringify(booking, null, 2)}`);
+    return `/pdfs/${filename}`;
   }
-});
-
-// Admin endpoint to regenerate and download PDF
-app.get('/generate-pdf/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    // look in JSON fallback (bookings are stored in local JSON / Firestore)
-    let booking = null;
-    const list = await readJson(BOOKINGS_FILE, []);
-    booking = list.find(b => (b && (b.bagage_numero === id || String(b.id) === String(id))));
-    // Firestore disabled — booking lookup only uses local JSON or MongoDB
-
-    if (!booking) return res.status(404).json({ error: 'Booking not found' });
-
-    const pdfLink = await generatePdfForBooking(booking);
-    const filename = path.basename(pdfLink);
-    const filePath = path.join(PDFS_DIR, filename);
-    return res.download(filePath, filename);
-  } catch (e) { console.error('generate-pdf error', e); res.status(500).json({ error: e.message }); }
-});
-
-// SOCKET.IO
-io.on('connection', async (socket) => {
-  console.log('Socket connected', socket.id);
-
-  // simple admin registry: sockets can identify themselves as admins
-  socket.data.isAdmin = false;
-  // Token-based admin authentication removed. Use `register_admin` socket event or
-  // `/api/auth/verify-code` endpoint to validate admin code.
-  // fallback: allow explicit register_admin event (backwards compat)
-  socket.on('register_admin', (code) => {
+  return await new Promise((resolve, reject) => {
     try {
-      if (String(code) === String(GSM_CODE)) {
-        socket.data.isAdmin = true;
-        try { socket.join('admins'); } catch (e) {}
-        try { socket.emit('admin_registered', { ok: true, token: false }); } catch (e) {}
-        console.log('Socket registered as admin via code and joined room admins:', socket.id);
-      } else {
-        try { socket.emit('admin_registered', { ok: false }); } catch (e) {}
-      }
-    } catch (e) { console.warn('register_admin error', e); }
+      const doc = new PDFDocument();
+      const stream = fs.createWriteStream(filePath);
+      doc.pipe(stream);
+      doc.fontSize(18).text('GSM Transport - Réservation', { align: 'center' });
+      doc.moveDown();
+      for (const k of Object.keys(booking)) doc.fontSize(10).text(`${k}: ${JSON.stringify(booking[k])}`);
+      doc.end();
+      stream.on('finish', ()=> resolve(`/pdfs/${filename}`));
+      stream.on('error', reject);
+    } catch (e) { reject(e); }
+  });
+}
+
+// Queue worker (if queue present)
+if (pdfQueue) {
+  try {
+    pdfQueue.process(async (job)=>{
+      const booking = job.data.booking;
+      const url = await generatePdfForBooking(booking);
+      io.to('admins').emit('pdf_generated', { url });
+      return { url };
+    });
+  } catch (e) { console.warn('pdfQueue worker failed to start', e); }
+}
+
+// API: settings
+app.get('/api/settings', async (req, res)=>{
+  const s = await readJson(SETTINGS_FILE, {});
+  res.json(s);
+});
+app.post('/api/settings', async (req, res)=>{
+  const payload = req.body || {};
+  const cur = await readJson(SETTINGS_FILE, {});
+  const next = { ...cur, ...payload };
+  await writeJson(SETTINGS_FILE, next);
+  io.emit('settings_updated', next);
+  io.to('admins').emit('admin_notifications', next);
+  res.json(next);
+});
+
+// API: notifications list
+app.get('/api/notifications', async (req, res)=>{
+  if (notificationsCollection) {
+    try { const docs = await notificationsCollection.find({}).sort({ createdAt:-1 }).limit(200).toArray(); return res.json(docs); } catch (e) { console.warn('mongo read notifications failed', e); }
+  }
+  const list = await readJson(NOTIF_FILE, []);
+  res.json(list);
+});
+
+// API: post booking
+app.post('/api/bookings', async (req, res)=>{
+  try {
+    const booking = { ...(req.body||{}), createdAt: new Date().toISOString() };
+    // basic phone normalization
+    if (booking.exp_tel) booking.exp_tel = String(booking.exp_tel).replace(/[^+0-9]/g,'');
+    const bookings = await readJson(BOOKINGS_FILE, []);
+    bookings.unshift(booking);
+    await writeJson(BOOKINGS_FILE, bookings);
+
+    // enqueue or generate pdf
+    let pdfUrl = null;
+    if (pdfQueue) {
+      try { await pdfQueue.add({ booking }, { attempts: 3 }); } catch (e) { console.warn('enqueue failed', e); }
+    } else {
+      try { pdfUrl = await generatePdfForBooking(booking); } catch (e) { console.warn('sync pdf failed', e); }
+    }
+
+    // persist and emit
+    await persistNotification({ type:'booking', booking, pdf: pdfUrl });
+    io.to('admins').emit('booking_notification', { booking, pdf: pdfUrl });
+    res.json({ success:true, pdf: pdfUrl });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// upload-pdf: accepts raw body and saves
+app.post('/upload-pdf', async (req, res)=>{
+  try {
+    const name = req.query.filename ? path.basename(req.query.filename) : `upload_${Date.now()}.pdf`;
+    const filePath = path.join(PDFS_DIR, name);
+    const chunks = [];
+    req.on('data', c=>chunks.push(c));
+    req.on('end', async ()=>{
+      await fsp.writeFile(filePath, Buffer.concat(chunks));
+      const key = name.replace(/[^a-z0-9_\-\.]/gi,'_');
+      rememberPdf(key);
+      io.to('admins').emit('pdf_generated', { url: `/pdfs/${name}` });
+      res.json({ success:true, url:`/pdfs/${name}` });
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// auth verify code
+app.post('/api/auth/verify-code', (req,res)=>{
+  const code = (req.body && req.body.code) ? String(req.body.code) : '';
+  if (!code) return res.status(400).json({ error:'missing' });
+  if (code === GSM_ADMIN_CODE) return res.json({ success: true });
+  return res.status(403).json({ success:false });
+});
+
+// simple register endpoint (local JSON)
+app.post('/api/register', async (req, res)=>{
+  const body = req.body || {};
+  if (!body.nom || !body.prenom || !body.whatsapp) return res.status(400).json({ error:'missing' });
+  const users = await readJson(USERS_FILE, []);
+  const norm = String(body.whatsapp).replace(/[^+0-9]/g,'');
+  const exist = users.find(u => (u.whatsapp||'') === norm);
+  if (exist) return res.json({ success:true, matricule: exist.matricule });
+  const matricule = 'GSM' + String(Date.now()).slice(-6);
+  const user = { id: Date.now(), matricule, nom: body.nom, prenom: body.prenom, whatsapp: norm, createdAt: new Date().toISOString() };
+  users.unshift(user);
+  await writeJson(USERS_FILE, users);
+  res.json({ success:true, matricule });
+});
+
+// generate-pdf (regenerate and download)
+app.get('/generate-pdf/:id', async (req,res)=>{
+  const id = req.params.id;
+  const bookings = await readJson(BOOKINGS_FILE, []);
+  const booking = bookings.find(b => String(b.id) === String(id) || String(b.bagage_numero) === String(id));
+  if (!booking) return res.status(404).json({ error:'not found' });
+  try {
+    const url = await generatePdfForBooking(booking);
+    const filePath = path.join(ROOT, url);
+    return res.download(filePath);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// SocketIO: admin room
+io.on('connection', socket => {
+  socket.data.isAdmin = false;
+  socket.on('register_admin', code => {
+    if (String(code) === String(GSM_ADMIN_CODE)) {
+      socket.data.isAdmin = true;
+      socket.join('admins');
+      socket.emit('admin_registered', { ok:true });
+    } else socket.emit('admin_registered', { ok:false });
   });
 
-  // send pending notifications (JSON fallback) and handle client_booking if notifications enabled
-  if (!DISABLE_NOTIFICATIONS) {
-    try {
-      if (mongoClient) {
-        try {
-          const db = process.env.MONGODB_DB ? mongoClient.db(process.env.MONGODB_DB) : mongoClient.db();
-          const col = db.collection('notifications');
-          const list = await col.find({}).sort({ createdAt: -1 }).limit(200).toArray();
-          if (list && list.length) socket.emit('pending_notifications', list);
-        } catch (e) {
-          const list = await readJson(NOTIF_FILE, []);
-          if (list && list.length) socket.emit('pending_notifications', list);
-        }
+  // send pending notifications
+  (async ()=>{
+    try{
+      if (notificationsCollection) {
+        const docs = await notificationsCollection.find({}).sort({ createdAt:-1 }).limit(200).toArray();
+        if (docs && docs.length) socket.emit('pending_notifications', docs);
       } else {
         const list = await readJson(NOTIF_FILE, []);
         if (list && list.length) socket.emit('pending_notifications', list);
       }
-    } catch (e) {}
+    }catch(e){}
+  })();
 
-    // clients may emit lightweight client_booking (server will not generate PDF from socket)
-    socket.on('client_booking', async (data) => {
-      try {
-        const payload = { ...(data||{}), createdAt: new Date().toISOString(), read: false };
-        try { await persistNotification({ ...payload, type: 'booking' }); } catch (e) {}
-          // emit to admins room (more efficient)
-          try { io.to('admins').emit('booking_notification', payload); } catch (e) { try { io.emit('booking_notification', payload); } catch (ex) {} }
-      } catch (e) { console.warn('client_booking error', e); }
-    });
-  }
+  socket.on('client_booking', async data => {
+    await persistNotification({ type:'booking', booking: data });
+    io.to('admins').emit('booking_notification', { booking: data });
+  });
 
-  socket.on('disconnect', () => console.log('Socket disconnected', socket.id));
+  socket.on('disconnect', ()=>{});
 });
 
-// Start
-const PORT = process.env.PORT || 3002;
-server.listen(PORT, () => console.log('Server started on', PORT));
+// Start server
+server.listen(PORT, ()=> console.log('Server listening on', PORT));
