@@ -517,6 +517,11 @@
   <input type="date" id="mobileAdminDate" />
   <label style="font-weight:600;margin-top:8px;display:block">Laisser une note</label>
   <textarea id="mobileAdminNote" rows="3" placeholder="Message aux utilisateurs..." style="resize:vertical"></textarea>
+  <label style="font-weight:600;margin-top:8px;display:block">Visible pour les utilisateurs</label>
+  <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+    <input type="checkbox" id="mobileAdminVisible" />
+    <label for="mobileAdminVisible" style="font-weight:600">Publier la note</label>
+  </div>
   <div class="mobile-admin-actions" style="margin-top:8px;display:flex;gap:8px">
     <button class="btn btn-light" id="mobileAdminClose">Fermer</button>
     <button class="btn btn-primary" id="mobileAdminSave">Enregistrer</button>
@@ -544,13 +549,44 @@
       (async ()=>{
         try{
           const res = await fetch('/api/settings');
-          if(res.ok){ const s = await res.json().catch(()=>null); if(s){ const date = s.selectedDate || s.adminSelectedDate || null; const note = s.note || s.adminNote || ''; const dn = document.getElementById('display-note'); const pd = document.getElementById('public-selected-date'); if(dn){ if(note && note.trim()){ dn.style.display=''; dn.innerHTML = note.replace(/\n/g,'<br>'); } else { dn.style.display='none'; dn.innerHTML=''; } } if(pd){ if(date) pd.textContent = date; else pd.textContent = 'Aucune date définie'; } } }
+          if(res.ok){
+            const s = await res.json().catch(()=>null);
+            if(s){
+              const date = s.selectedDate || s.adminSelectedDate || null;
+              const note = s.note || s.adminNote || '';
+              const visible = (s.visible === undefined) ? true : !!s.visible;
+              const dn = document.getElementById('display-note');
+              const pd = document.getElementById('public-selected-date');
+              if(dn){
+                if(visible && note && note.trim()){ dn.style.display=''; dn.innerHTML = note.replace(/\n/g,'<br>'); }
+                else { dn.style.display='none'; dn.innerHTML=''; }
+              }
+              if(pd){ pd.textContent = (visible && date) ? date : 'Aucune date définie'; }
+            }
+          }
         }catch(e){ console.warn('fetch /api/settings failed', e); }
       })();
 
-      try{ socket.on('settings_updated', payload => { try{ const date = payload && (payload.selectedDate || payload.adminSelectedDate) ? (payload.selectedDate || payload.adminSelectedDate) : ''; const note = payload && (payload.note || payload.adminNote) ? (payload.note || payload.adminNote) : ''; const dn = document.getElementById('display-note'); const pd = document.getElementById('public-selected-date'); if(dn){ if(note && note.trim()){ dn.style.display=''; dn.innerHTML = note.replace(/\n/g,'<br>'); } else { dn.style.display='none'; dn.innerHTML=''; } } if(pd){ pd.textContent = date || 'Aucune date définie'; }
-        // transient highlight
-        try{ if(dn){ dn.classList.remove('settings-highlight'); void dn.offsetWidth; dn.classList.add('settings-highlight'); } if(pd){ pd.classList.remove('settings-highlight'); void pd.offsetWidth; pd.classList.add('settings-highlight'); } setTimeout(()=>{ try{ if(dn) dn.classList.remove('settings-highlight'); if(pd) pd.classList.remove('settings-highlight'); }catch(e){} },1600); }catch(e){ console.warn('settings_updated handler error', e); } }); }catch(e){}
+      socket.on('settings_updated', payload => {
+        try{
+          const date = payload && (payload.selectedDate || payload.adminSelectedDate) ? (payload.selectedDate || payload.adminSelectedDate) : '';
+          const note = payload && (payload.note || payload.adminNote) ? (payload.note || payload.adminNote) : '';
+          const visible = (payload && payload.visible === undefined) ? true : !!payload.visible;
+          const dn = document.getElementById('display-note');
+          const pd = document.getElementById('public-selected-date');
+          if(dn){
+            if(visible && note && note.trim()){ dn.style.display=''; dn.innerHTML = note.replace(/\n/g,'<br>'); }
+            else { dn.style.display='none'; dn.innerHTML=''; }
+          }
+          if(pd){ pd.textContent = (visible && date) ? date : 'Aucune date définie'; }
+          try{
+            if(dn){ dn.classList.remove('settings-highlight'); void dn.offsetWidth; dn.classList.add('settings-highlight'); }
+            if(pd){ pd.classList.remove('settings-highlight'); void pd.offsetWidth; pd.classList.add('settings-highlight'); }
+            setTimeout(()=>{ try{ if(dn) dn.classList.remove('settings-highlight'); if(pd) pd.classList.remove('settings-highlight'); }catch(e){} },1600);
+          }catch(e){ console.warn('settings_updated handler error', e); }
+        }catch(e){}
+      });
+
     }catch(e){ console.warn('loadSettingsRealtime error', e); }
   }
 
@@ -711,11 +747,12 @@
   function saveMobileAdmin(){
     const date = document.getElementById('mobileAdminDate').value || '';
     const note = document.getElementById('mobileAdminNote').value || '';
+    const visible = !!document.getElementById('mobileAdminVisible') && document.getElementById('mobileAdminVisible').checked;
     try{ localStorage.setItem('admin_mobile_date', date); localStorage.setItem('admin_mobile_note', note); }catch(e){}
     // send to server to broadcast to all clients
     try{
       // use relative path so same-origin pages work without CORS issues
-      fetch('/api/settings', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ selectedDate: date, note }) }).catch(()=>{});
+      fetch('/api/settings', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ selectedDate: date, note, visible }) }).catch(()=>{});
     }catch(e){}
     showToast('Note enregistrée');
     closeMobileAdmin();
@@ -724,10 +761,13 @@
   function loadMobileAdmin(){
     const d = localStorage.getItem('admin_mobile_date') || '';
     const n = localStorage.getItem('admin_mobile_note') || '';
+    const v = localStorage.getItem('admin_mobile_visible');
     const dateEl = document.getElementById('mobileAdminDate');
     const noteEl = document.getElementById('mobileAdminNote');
+    const visibleEl = document.getElementById('mobileAdminVisible');
     if(dateEl) dateEl.value = d;
     if(noteEl) noteEl.value = n;
+    try{ if(visibleEl) visibleEl.checked = (v === '1' || v === 'true'); }catch(e){}
   }
 
   // attach events for mobile admin controls
