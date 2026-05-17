@@ -350,6 +350,32 @@
       border:1px solid #e6eef9;
     }
 
+    /* Ensure public date bubble and display note show on mobile like desktop */
+    #public-selected-date{
+      display:block;
+      padding:8px 12px;
+      border-radius:12px;
+      background:linear-gradient(90deg,#ac9834,#f3e074);
+      color:#3d0202;
+      max-width:800px;
+      margin-left:auto;
+      margin-right:auto;
+      text-align:center;
+      font-weight:700;
+    }
+
+    #display-note{
+      display:block;
+      margin-top:8px;
+      background:linear-gradient(90deg,#31eede,#8daaeb);
+      color:#3d0202;
+      padding:10px;
+      border-radius:10px;
+      max-width:800px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+
     @media(max-width:768px){
       .title h1{
         font-size:24px;
@@ -495,8 +521,8 @@
   </div>
 
   <div id="admin-settings-display" style="max-width:800px;margin:12px auto 0 auto;">
-    <div id="public-selected-date" style="font-size:1rem;font-weight:700;color:#f1c70b;text-align:center;padding:8px 6px;border-radius:8px;background:rgba(0,0,0,0.06);">Aucune date définie</div>
-    <div id="display-note" class="note" style="display:none;margin-top:8px;background:linear-gradient(90deg,#fffbe6,#ffe6e6);color:#3d0202;padding:10px;border-radius:10px;max-width:800px;margin-left:auto;margin-right:auto"></div>
+    <div id="public-selected-date" style="font-size:1rem;">Aucune date définie</div>
+    <div id="display-note" class="note"></div>
   </div>
 
   <div class="notifications" id="list">
@@ -747,12 +773,20 @@
   function saveMobileAdmin(){
     const date = document.getElementById('mobileAdminDate').value || '';
     const note = document.getElementById('mobileAdminNote').value || '';
-    const visible = !!document.getElementById('mobileAdminVisible') && document.getElementById('mobileAdminVisible').checked;
-    try{ localStorage.setItem('admin_mobile_date', date); localStorage.setItem('admin_mobile_note', note); }catch(e){}
+    const visibleEl = document.getElementById('mobileAdminVisible');
+    const visible = !!visibleEl && visibleEl.checked;
+    try{ localStorage.setItem('admin_mobile_date', date); localStorage.setItem('admin_mobile_note', note); localStorage.setItem('admin_mobile_visible', visible ? '1' : '0'); }catch(e){}
     // send to server to broadcast to all clients
     try{
       // use relative path so same-origin pages work without CORS issues
       fetch('/api/settings', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ selectedDate: date, note, visible }) }).catch(()=>{});
+    }catch(e){}
+    // update UI immediately
+    try{
+      const dn = document.getElementById('display-note');
+      const pd = document.getElementById('public-selected-date');
+      if(dn){ if(visible && note && note.trim()){ dn.style.display=''; dn.innerHTML = note.replace(/\n/g,'<br>'); } else { dn.style.display='none'; dn.innerHTML=''; } }
+      if(pd){ pd.textContent = (visible && date) ? date : 'Aucune date définie'; }
     }catch(e){}
     showToast('Note enregistrée');
     closeMobileAdmin();
@@ -786,6 +820,25 @@
           sessionStorage.setItem('gsm_code','1');
         }catch(e){ alert('Erreur de vérification'); return; }
       }
+      // prefill panel from server settings if available, fallback to localStorage
+      try{
+        const sres = await fetch('/api/settings');
+        if(sres.ok){
+          const s = await sres.json().catch(()=>null);
+          if(s){
+            const dateEl = document.getElementById('mobileAdminDate');
+            const noteEl = document.getElementById('mobileAdminNote');
+            const visibleEl = document.getElementById('mobileAdminVisible');
+            if(dateEl) dateEl.value = s.selectedDate || s.adminSelectedDate || localStorage.getItem('admin_mobile_date') || '';
+            if(noteEl) noteEl.value = s.note || s.adminNote || localStorage.getItem('admin_mobile_note') || '';
+            try{ if(visibleEl) visibleEl.checked = (s.visible === undefined) ? (localStorage.getItem('admin_mobile_visible') === '1') : !!s.visible; }catch(e){}
+          } else {
+            loadMobileAdmin();
+          }
+        } else {
+          loadMobileAdmin();
+        }
+      }catch(e){ loadMobileAdmin(); }
       openMobileAdmin();
     });
     if(closeBtn) closeBtn.addEventListener('click', closeMobileAdmin);
@@ -863,7 +916,7 @@
   function openPdf(index){
     const list = load();
     const item = list[index];
-    const url = item && (item.pdf_url || item.pdf);
+    const url = item && (item.pdfLink || item.pdf_url || item.pdf);
     if(!url){ showToast('Aucun PDF associé'); return; }
     window.open(url, '_blank');
   }
@@ -871,7 +924,7 @@
   function downloadPdf(index){
     const list = load();
     const item = list[index];
-    const url = item && (item.pdf_url || item.pdf);
+    const url = item && (item.pdfLink || item.pdf_url || item.pdf);
     if(!url){ showToast('Aucun PDF à télécharger'); return; }
     const a = document.createElement('a');
     a.href = url;
@@ -975,12 +1028,13 @@
       const list = load();
       let updated = false;
       const url = payload.url && payload.url.startsWith('http') ? payload.url : (SERVER_ORIGIN + (payload.url || ''));
+      const fname = payload.filename || (url ? url.split('/').pop() : '');
       list.forEach(item => {
         try {
-          const fname = payload.filename || '';
           if (!fname) return;
           if ((item.bagage_numero && fname.includes(item.bagage_numero)) || (item.matricule && fname.includes(item.matricule))) {
             item.pdfLink = url;
+            item.pdf_name = fname;
             updated = true;
           }
         } catch (e) {}
