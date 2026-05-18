@@ -255,7 +255,7 @@ footer {
 /* Mobile-first responsive tweaks (smartphone transport style) */
 @media (max-width: 640px) {
     body {
-        background: linear-gradient(180deg,#3a9974 0%, #2d798b 100%);
+        background: linear-gradient(180deg,#11c73f 0%, #09b1d6 100%);
         padding: 12px 8px 80px 8px;
     }
     html { -webkit-tap-highlight-color: transparent; }
@@ -1615,11 +1615,17 @@ try {
     <div id="mobile-menu-drawer">
         <button id="mobile-menu-close" aria-label="Fermer le menu" style="background:none;border:none;font-size:1.2rem;float:right;">✕</button>
             <nav style="margin-top:18px;">
+                <!-- Admin notifications (shown to admin only) -->
                 <a href="#" id="mobile-menu-notifs" style="display:none;">🔔 Notifications Admin</a>
-                <a href="contact.html">Contact</a>
-                <a href="terms.html">Conditions générales</a>
-                <a href="about.html">À propos</a>
-                <a href="index.html#faq">FAQ</a>
+                <!-- Admin bagages (requires admin code when not admin) -->
+                <a href="bagages.html" id="mobile-menu-bagages" style="font-weight:700;">📋 Gestion Bagages</a>
+                <!-- Auth actions (connect / disconnect) -->
+                <a href="#" id="mobile-menu-connect" style="display:block;padding:12px 0;font-weight:700;">🔑 Se connecter</a>
+                <a href="#" id="mobile-menu-logout" style="display:none;padding:12px 0;font-weight:700;">🚪 Se déconnecter</a>
+                <a href="contact.html">✉️ Contact</a>
+                <a href="terms.html">🔎 Conditions</a>
+                <a href="about.html">ℹ️ À propos</a>
+                <a href="index.html#faq">❓ FAQ</a>
             </nav>
         <div id="mobile-auth-area">
             <div id="mobile-user-info" style="display:none">
@@ -1673,6 +1679,67 @@ try {
         } else {
             updateMobileAuth(null);
         }
+    })();
+    </script>
+
+    <script>
+    // Wire mobile-specific menu actions and ensure main menu button opens drawer on small screens
+    (function(){
+        try{
+            const mainMenuBtn = document.getElementById('main-menu-btn');
+            const mainMenuPanel = document.getElementById('main-menu-panel');
+            const drawer = document.getElementById('mobile-menu-drawer');
+            const backdrop = document.getElementById('mobile-menu-backdrop');
+
+            function openDrawer(){ if(drawer) { drawer.classList.add('open'); if(backdrop) backdrop.classList.add('visible'); document.body.style.overflow='hidden'; } }
+            function closeDrawer(){ if(drawer) { drawer.classList.remove('open'); if(backdrop) backdrop.classList.remove('visible'); document.body.style.overflow=''; } }
+
+            // Replace desktop panel behavior on small screens: open drawer instead
+            if(mainMenuBtn){
+                mainMenuBtn.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    if(window.innerWidth <= 900){
+                        // show drawer (mobile) and hide desktop panel
+                        openDrawer();
+                        if(mainMenuPanel) mainMenuPanel.style.display = 'none';
+                        return;
+                    }
+                    if (!mainMenuPanel) return;
+                    mainMenuPanel.style.display = mainMenuPanel.style.display === 'none' ? 'block' : 'none';
+                });
+            }
+
+            // Close drawer controls
+            const mobileClose = document.getElementById('mobile-menu-close');
+            if(mobileClose) mobileClose.addEventListener('click', closeDrawer);
+            if(backdrop) backdrop.addEventListener('click', closeDrawer);
+
+            // Mobile connect / logout actions
+            const mobileConnect = document.getElementById('mobile-menu-connect');
+            const mobileLogout = document.getElementById('mobile-menu-logout');
+            if(mobileConnect) mobileConnect.addEventListener('click', function(e){ e.preventDefault(); closeDrawer(); try{ showClientAuthModal(); }catch(err){ window.location.href='index.html'; } });
+            if(mobileLogout) mobileLogout.addEventListener('click', function(e){ e.preventDefault(); closeDrawer(); try{ clientLogoutBtn.click(); }catch(err){ console.warn('mobile logout failed', err); } });
+
+            // Mobile bagages link: require admin code if not admin (same behavior as desktop)
+            const mobileBagages = document.getElementById('mobile-menu-bagages');
+            if(mobileBagages) mobileBagages.addEventListener('click', function(e){
+                e.stopPropagation();
+                const href = mobileBagages.getAttribute('href') || 'bagages.html';
+                if(isAdmin){ closeDrawer(); window.location.href = href; return; }
+                e.preventDefault(); pendingNavigationTarget = href; closeDrawer(); showAdminCodeModal();
+            });
+
+            // Keep mobile auth area in sync with auth state (show correct connect/logout links)
+            function updateMobileMenuAuth(user){
+                try{
+                    const mc = document.getElementById('mobile-menu-connect');
+                    const mo = document.getElementById('mobile-menu-logout');
+                    if(user){ if(mc) mc.style.display='none'; if(mo) mo.style.display='block'; } else { if(mc) mc.style.display='block'; if(mo) mo.style.display='none'; }
+                }catch(e){}
+            }
+            if(window.auth && typeof auth.onAuthStateChanged === 'function'){ auth.onAuthStateChanged(u => updateMobileMenuAuth(!!u && u.emailVerified)); }
+            else updateMobileMenuAuth(null);
+        }catch(e){ console.warn('mobile menu wiring failed', e); }
     })();
     </script>
 
