@@ -815,13 +815,41 @@
     try{ if(visibleEl) visibleEl.checked = (v === '1' || v === 'true'); }catch(e){}
   }
 
+  // Update public date/note bubbles from localStorage immediately (mobile quick-preview)
+  function updatePublicBubblesFromLocalStorage(){
+    try{
+      const d = localStorage.getItem('admin_mobile_date') || '';
+      const n = localStorage.getItem('admin_mobile_note') || '';
+      const v = localStorage.getItem('admin_mobile_visible');
+      const dn = document.getElementById('display-note');
+      const pd = document.getElementById('public-selected-date');
+      const visible = (v === '1' || v === 'true');
+      if(dn){
+        if(visible && n && n.trim()){ dn.style.display=''; dn.innerHTML = n.replace(/\n/g,'<br>'); }
+        else { dn.style.display='none'; dn.innerHTML=''; }
+      }
+      if(pd){ pd.textContent = (visible && d) ? d : 'Aucune date définie'; }
+    }catch(e){}
+  }
+
   // attach events for mobile admin controls
   (function(){
     const btn = document.getElementById('mobileAdminBtn');
     const closeBtn = document.getElementById('mobileAdminClose');
     const saveBtn = document.getElementById('mobileAdminSave');
     if(btn) btn.addEventListener('click', async function(){
-      // open panel directly and prefill from server settings (no auth)
+      // Show local values immediately so mobile users see the date/note without waiting
+      updatePublicBubblesFromLocalStorage();
+
+      const panel = document.getElementById('mobileAdminPanel');
+      // If panel already visible, focus the inputs for quick edit
+      if(panel && panel.classList.contains('show')){
+        const noteEl = document.getElementById('mobileAdminNote');
+        const dateEl = document.getElementById('mobileAdminDate');
+        try{ if(noteEl){ noteEl.focus(); noteEl.selectionStart = noteEl.value.length; } else if(dateEl){ dateEl.focus(); } }catch(e){}
+        return;
+      }
+
       // prefill panel from server settings if available, fallback to localStorage
       try{
         const sres = await fetch('/api/settings');
@@ -842,6 +870,7 @@
         }
       }catch(e){ loadMobileAdmin(); }
       openMobileAdmin();
+      try{ const noteEl = document.getElementById('mobileAdminNote'); if(noteEl){ noteEl.focus(); noteEl.selectionStart = noteEl.value.length; } }catch(e){}
     });
     if(closeBtn) closeBtn.addEventListener('click', closeMobileAdmin);
     if(saveBtn) saveBtn.addEventListener('click', saveMobileAdmin);
