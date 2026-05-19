@@ -1,1054 +1,1419 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <!-- Google AdSense: publisher ID inserted -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-8308471028441999"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="google-adsense-account" content="ca-pub-8308471028441999">
-<title>Gestionnaire de Bagages Pro</title>
+
+<title>Gestionnaire Bagages GSM</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
 <style>
+
 :root{
   --primary:#1e40af;
   --primary-light:#3b82f6;
-  --secondary:#0f766e;
-  --bg-secondary:#f1f5f9;
-  --text-primary:#0f172a;
-  --text-secondary:#6b7280;
-  --border:#e5e7eb;
+  --danger:#dc2626;
+  --success:#16a34a;
+  --bg:#f8fafc;
   --card:#ffffff;
-  --success:#10b981;
-  --danger:#ef4444;
-  --rounded-sm:8px;
-  --rounded-md:12px;
-}
-.btn-small{padding:0.6rem 1rem;font-size:0.85rem}
-
-.controls{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem}
-
-.filters{display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
-
-.filter-group{display:flex;gap:0.5rem;align-items:center}
-
-.filter-group label{margin:0;font-size:0.9rem;color:var(--text-secondary);min-width:fit-content}
-
-.filter-group select, .filter-group input{padding:0.65rem 0.85rem;font-size:0.9rem}
-
-.stat-pill{
-  background:var(--bg-secondary);
-  padding:0.75rem 1.5rem;
-  border-radius:50px;
-  font-size:0.9rem;
-  font-weight:600;
-  color:var(--primary);
-  display:inline-flex;
-  gap:0.5rem;
+  --text:#0f172a;
+  --border:#e2e8f0;
 }
 
-.search-box{padding:0.85rem 1.5rem;border-radius:var(--rounded-sm);border:1.5px solid var(--border);font-size:0.95rem;width:280px}
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
 
-.table-container{
-  overflow-x:auto;
-  border-radius:var(--rounded-md);
+body{
+  font-family:'Inter',sans-serif;
+  background:
+  linear-gradient(rgba(255,255,255,.82),rgba(255,255,255,.82)),
+  url('image/arriereplant.jpg') center/cover fixed;
+  min-height:100vh;
+  color:var(--text);
+}
+
+nav{
+  background:linear-gradient(135deg,var(--primary),#1d4ed8);
+  color:#fff;
+  padding:15px 25px;
+  position:sticky;
+  top:0;
+  z-index:999;
+}
+
+nav h1{
+  font-family:'Poppins',sans-serif;
+  font-size:22px;
+}
+
+.wrap{
+  max-width:1400px;
+  margin:auto;
+  padding:20px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 340px;
+  gap:20px;
+}
+
+.card{
+  background:var(--card);
+  border-radius:18px;
+  padding:24px;
   border:1px solid var(--border);
-  margin-top:1.5rem;
+  box-shadow:0 8px 20px rgba(0,0,0,.05);
 }
 
-/* Highlight search results for matricule */
-.highlight-matricule{background:linear-gradient(90deg,#fffbe6,#e6ffea);border-left:4px solid var(--success)}
+.card-title{
+  font-size:22px;
+  font-weight:700;
+  margin-bottom:20px;
+  font-family:'Poppins',sans-serif;
+}
+
+form{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:16px;
+}
+
+.form-group{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+label{
+  font-weight:600;
+  font-size:14px;
+}
+
+input,
+select{
+  padding:13px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  font-size:14px;
+}
+
+input:focus,
+select:focus{
+  outline:none;
+  border-color:var(--primary);
+}
+
+.btn{
+  border:none;
+  border-radius:12px;
+  padding:12px 16px;
+  cursor:pointer;
+  font-weight:700;
+  transition:.2s;
+}
+
+.btn:hover{
+  transform:translateY(-2px);
+}
+
+.btn-primary{
+  background:linear-gradient(135deg,var(--primary),var(--primary-light));
+  color:#fff;
+}
+
+.btn-danger{
+  background:var(--danger);
+  color:#fff;
+}
+
+.btn-secondary{
+  background:#f1f5f9;
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:20px;
+}
+
+.table-wrap{
+  overflow:auto;
+  margin-top:20px;
+  border-radius:14px;
+  border:1px solid var(--border);
+}
 
 table{
   width:100%;
   border-collapse:collapse;
-  background:var(--card);
-}
-
-th,td{
-  padding:1rem;
-  text-align:left;
-  font-size:0.95rem;
-  border-bottom:1px solid var(--border);
 }
 
 th{
-  background:linear-gradient(135deg,var(--bg-secondary) 0%,#f1f5f9 100%);
-  font-weight:700;
-  color:var(--text-primary);
-  position:sticky;
-  top:0;
+  background:#eff6ff;
+  padding:14px;
+  text-align:left;
 }
 
-tr:hover{background:#fafbfc}
+td{
+  padding:14px;
+  border-top:1px solid var(--border);
+  font-size:14px;
+}
 
-tr:last-child td{border-bottom:none}
+tr:hover{
+  background:#fafafa;
+}
 
-.badge{display:inline-block;padding:0.35rem 0.85rem;border-radius:50px;background:#f3f4f6;color:#111;font-weight:600}
+.badge{
+  padding:5px 10px;
+  border-radius:40px;
+  font-size:12px;
+  font-weight:700;
+}
+
+.badge-success{
+  background:#dcfce7;
+  color:#15803d;
+}
+
+.badge-danger{
+  background:#fee2e2;
+  color:#b91c1c;
+}
+
+.icon-btn{
+  border:none;
+  background:#f1f5f9;
+  padding:8px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.stat{
+  padding:18px;
+  border-radius:16px;
+  margin-bottom:16px;
+}
+
+.stat h3{
+  font-size:14px;
+  margin-bottom:8px;
+}
+
+.stat strong{
+  font-size:30px;
+}
+
+.green{
+  background:#ecfdf5;
+  border-left:5px solid var(--success);
+}
+
+.red{
+  background:#fef2f2;
+  border-left:5px solid var(--danger);
+}
+
+.blue{
+  background:#eff6ff;
+  border-left:5px solid var(--primary);
+}
+
+.notification{
+  position:fixed;
+  top:20px;
+  right:20px;
+  background:#111827;
+  color:#fff;
+  padding:14px 18px;
+  border-radius:12px;
+  display:none;
+  z-index:9999;
+}
+
+.notification.show{
+  display:block;
+}
+
+@media(max-width:1000px){
+
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+}
+
+@media(max-width:700px){
+
+  form{
+    grid-template-columns:1fr;
+  }
+
+}
+
+/* Mobile: card-like table and tighter layout */
+@media (max-width:600px) {
+
+  .wrap { padding: 12px; }
+
+  .grid { grid-template-columns: 1fr; gap: 12px; }
+
+  .card { padding: 14px; border-radius:12px; }
+
+  .card-title { font-size:18px; }
+
+  form { grid-template-columns: 1fr; gap:10px; }
+
+  .actions { flex-direction:column; align-items:stretch; }
+
+  .actions .btn { width:100%; padding:12px; }
+
+  .stat { padding:12px; }
+
+  /* Make table responsive as stacked cards */
+  .table-wrap { overflow:visible; }
+
+  table thead { display:none; }
+
+  table, tbody, tr, td { display:block; width:100%; }
+
+  tbody tr { margin-bottom:12px; border-radius:10px; background:var(--card); box-shadow:0 6px 18px rgba(2,6,23,0.06); overflow:hidden; }
+
+  td { padding:10px 12px; border-top:none; border-bottom:1px solid var(--border); color:var(--text); }
+
+  td:before { content: attr(data-label); display:block; font-size:12px; color:#64748b; margin-bottom:6px; font-weight:700; }
+
+  td:last-child { border-bottom:none; }
+
+  .icon-btn { padding:10px; }
+
+}
+
 </style>
 </head>
+
 <body>
-    <div style="display:flex;align-items:center;gap:12px">
-      <a href="terms.html" style="color:#fff;text-decoration:none;font-weight:600;margin-right:8px">Conditions</a>
-      <a href="contact.html" style="color:#fff;text-decoration:none;font-weight:600">Contact</a>
-    </div>
-  </div>
+
+<nav>
+  <h1>📦 GSM Transport Bagages</h1>
 </nav>
 
+<div class="notification" id="notification"></div>
+
 <div class="wrap">
-  <!-- Page Header -->
-  <header class="page-header">
-    <h1>📦 Gestion des Bagages</h1>
-    <div class="breadcrumb">GSM Transport de bagages </div>
-    <!-- AdSense small leaderboard -->
-    <div style="margin-top:12px;">
-      <ins class="adsbygoogle" style="display:block;" data-ad-client="ca-pub-8308471028441999" data-ad-slot="1234567891" data-ad-format="auto"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </div>
-  </header>
 
   <div class="grid">
+
+    <!-- MAIN -->
+
     <div>
-      <!-- Form Card -->
-      <section class="card">
-        <div class="card-title">✏️ Ajouter / Modifier un bagage</div>
-        <form id="bagageForm" novalidate>
+
+      <div class="card">
+
+        <div class="card-title">
+          Ajouter / Modifier
+        </div>
+
+        <form id="bagForm">
+
           <div class="form-group">
-            <label>Numéro de bagage *</label>
-            <input id="bag_number" type="text" required autocomplete="off" placeholder="Ex: BAG-2024-001"/>
-          </div>
-          <div id="userInfoDisplay" style="margin-top:0.8rem;display:none;max-width:700px;padding:0.9rem;border-radius:10px;background:linear-gradient(90deg,#f8fafc,#f1f5f9);color:var(--text-primary);border:1px solid var(--border);">
-            <!-- User info populated when searching matricule -->
-          </div>
-          <div class="form-group">
-            <label>Numéro France</label>
-            <input id="num_fr" type="text" autocomplete="off" placeholder="Ex: FR123456"/>
-          </div>
-          <div class="form-group">
-            <label>Numéro Algérie</label>
-            <input id="num_dz" type="text" autocomplete="off" placeholder="Ex: DZ987654"/>
-          </div>
-          <div class="form-group">
-            <label>Région</label>
-            <select id="region"></select>
+
+            <label>Matricule</label>
+
+            <div style="display:flex;gap:8px">
+
+              <input type="text" id="matricule" placeholder="GSM-2026-...">
+
+              <button type="button" class="btn btn-secondary" id="searchMatriculeBtn">
+
+                🔎 Chercher
+
+              </button>
+
+            </div>
+
+            <div id="matriculeInfo" style="margin-top:8px;font-size:13px;color:#334155"></div>
+
           </div>
 
-          <div class="form-group" id="subRegionWrap" style="display:none">
-            <label>Sous-région (Hors Wilaya)</label>
+          <div class="form-group">
+            <label>Numéro Bagage *</label>
+            <input type="text" id="bag_number" required>
+          </div>
+
+          <div class="form-group">
+            <label>Numéro France</label>
+            <input type="text" id="num_fr">
+          </div>
+
+          <div class="form-group">
+            <label>Numéro Algérie</label>
+            <input type="text" id="num_dz">
+          </div>
+
+          <div class="form-group">
+            <label>Région</label>
+
+            <select id="region">
+              <option value="">Sélectionner une région</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="horsWilayaBox" style="display:none">
+
+            <label>Sous Région</label>
+
             <select id="subRegion">
               <option value="EAST">EAST</option>
               <option value="OUEST">OUEST</option>
             </select>
-          </div>
 
-          <div class="form-group" id="customRegionWrap" style="display:none">
-            <label>Autre région</label>
-            <input id="customRegion" type="text" placeholder="Entrez le nom de la région"/>
           </div>
 
           <div class="form-group">
             <label>Adresse</label>
-            <input id="adresse" type="text" placeholder="Adresse complète"/>
-          </div>
-          <div class="form-group">
-            <label>Type de bagage</label>
-            <input id="type_bagage" type="text" placeholder="Ex: Valise, Carton, Sac"/>
-          </div>
-          <div class="form-group">
-            <label>Statut de paiement</label>
-            <select id="paid"><option value="">-- Sélectionner --</option><option value="Oui">Payé</option><option value="Non">Non payé</option></select>
-          </div>
-          <div class="form-group" id="montantDueContainer" style="display:none">
-            <label>Montant dû (EUR)</label>
-            <input id="montant_due" type="number" min="0" step="0.01" placeholder="0.00" style="border:2px solid var(--danger);color:var(--danger);font-weight:600"/>
+            <input type="text" id="adresse">
           </div>
 
-          <div class="form-row">
-            <input type="hidden" id="editingId"/>
-            <button type="button" id="clearBtn" class="btn btn-secondary btn-small">Réinitialiser</button>
-            <button type="submit" id="saveBtn" class="btn btn-primary btn-small">💾 Enregistrer</button>
+          <div class="form-group">
+            <label>Type Bagage</label>
+            <input type="text" id="type_bagage">
           </div>
+
+          <div class="form-group">
+            <label>Paiement</label>
+
+            <select id="paid">
+              <option value="">Choisir</option>
+              <option value="Oui">Payé</option>
+              <option value="Non">Non payé</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="amountBox" style="display:none">
+            <label>Montant dû (€)</label>
+            <input type="number" id="montant_due">
+          </div>
+
+          <div class="actions">
+
+            <button class="btn btn-primary" type="submit">
+              💾 Enregistrer
+            </button>
+
+            <button class="btn btn-secondary" type="reset">
+              Réinitialiser
+            </button>
+
+          </div>
+
         </form>
-      </section>
 
-      <!-- Data Management Card -->
-      <section class="card" style="margin-top:2rem">
-        <div class="card-title">📋 Liste des Bagages</div>
-        
-        <!-- Filters Section -->
-        <div class="controls" style="margin-bottom:2rem">
-          <div class="filters">
-            <div class="filter-group">
-              <label>Région</label>
-              <select id="filterRegion"><option value="">Toutes</option></select>
-            </div>
-            <div class="filter-group">
-              <label>Sous-région</label>
-              <select id="filterSubRegion"><option value="">Toutes</option></select>
-            </div>
-            <div class="filter-group">
-              <label>Paiement</label>
-              <select id="filterPaid">
-                <option value="">Tous</option>
-                <option value="Non">Non payés</option>
-                <option value="Oui">Payés</option>
-              </select>
-            </div>
-            <div class="filter-group">
-              <label>Recherche</label>
-              <input id="search" class="search-box" placeholder="Rechercher par numéro..."/>
-            </div>
-                <div class="filter-group" style="align-items:flex-start;min-width:240px;">
-                  <label>Recherche Matricule</label>
-                  <input id="searchMatricule" class="search-box" placeholder="Ex: GSM-2026-123456" />
-                </div>
-          </div>
+      </div>
+
+      <!-- TABLE -->
+
+      <div class="card" style="margin-top:20px">
+
+        <div class="card-title">
+          Liste des Bagages
         </div>
 
-        <!-- Stats and Actions -->
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem">
-          <div class="stat-pill">
-            <span>📊</span>
-            <span>Total: <strong id="count">0</strong> bagages</span>
-          </div>
+        <div class="actions">
+
+          <button class="btn btn-primary" id="downloadRegionPDF">
+            📄 PDF Région
+          </button>
+
+          <button class="btn btn-primary" id="downloadAllRegionsPDF">
+            📚 PDF Toutes Régions
+          </button>
+
+          <button class="btn btn-danger" id="downloadUnpaidPDF">
+            🔴 PDF Non Payés
+          </button>
+
+          <button class="btn btn-secondary" id="downloadUnknownPDF">
+            ❓ PDF Non Reconnu
+          </button>
+
+          <button class="btn btn-secondary" id="exportJSON">
+            📤 Export JSON
+          </button>
+
+          <button class="btn btn-secondary" id="importJSON">
+            📥 Import JSON
+          </button>
+
+          <input type="file" id="importJSONInput" accept="application/json" style="display:none">
+
+          <button class="btn btn-danger" id="deleteAll">
+            🗑️ Tout supprimer
+          </button>
+
         </div>
 
-        <!-- Actions Buttons -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem">
-          <button id="exportEachRegion" class="btn btn-primary">📄 PDF par région</button>
-          <button id="exportUnpaid" class="btn btn-danger">🔴 PDF non payés</button>
-          <button id="exportUnknown" class="btn btn-primary">❓ Régions inconnues</button>
-          <button id="exportJSON" class="btn btn-secondary">📤 Export JSON</button>
-          <button id="importJSON" class="btn btn-secondary">📥 Import JSON</button>
-          <button id="deleteAll" class="btn btn-danger">🗑️ Supprimer tout</button>
-        </div>
+        <div class="table-wrap">
 
-        <!-- Table -->
-        <div class="table-container">
-          <table id="table" aria-live="polite">
+          <table>
+
             <thead>
+
               <tr>
-                <th style="width:40px">#</th>
+                <th>#</th>
                 <th>Num Bag</th>
-                <th>Num FR</th>
-                <th>Num DZ</th>
+                <th>FR</th>
+                <th>DZ</th>
                 <th>Région</th>
                 <th>Adresse</th>
                 <th>Type</th>
-                <th>Statut</th>
-                <th>Montant €</th>
-                <th style="width:100px">Actions</th>
+                <th>Paiement</th>
+                <th>Montant</th>
+                <th>Actions</th>
               </tr>
+
             </thead>
-            <tbody></tbody>
+
+            <tbody id="tbody"></tbody>
+
           </table>
+
         </div>
-      </section>
+
+      </div>
+
     </div>
 
-    <!-- Sidebar Stats -->
-    <aside>
-      <section class="card">
-        <div class="card-title">📈 Statistiques</div>
-        <div style="display:grid;gap:1rem">
-          <div style="background:linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%);padding:1.5rem;border-radius:var(--rounded-md);border-left:4px solid var(--success)">
-            <div style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.25rem">Bagages payés</div>
-            <div id="statPaid" style="font-size:1.8rem;font-weight:700;color:var(--success)">0</div>
-          </div>
-          <div style="background:linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%);padding:1.5rem;border-radius:var(--rounded-md);border-left:4px solid var(--danger)">
-            <div style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.25rem">Non payés</div>
-            <div id="statUnpaid" style="font-size:1.8rem;font-weight:700;color:var(--danger)">0</div>
-          </div>
-          <div style="background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);padding:1.5rem;border-radius:var(--rounded-md);border-left:4px solid var(--primary)">
-            <div style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.25rem">Montant total dû</div>
-            <div id="statTotal" style="font-size:1.5rem;font-weight:700;color:var(--primary)">0,00 €</div>
-          </div>
+    <!-- STATS -->
+
+    <div>
+
+      <div class="card">
+
+        <div class="card-title">
+          📈 Statistiques
         </div>
 
-        <div style="margin-top:2rem;padding:1rem;background:var(--bg-secondary);border-radius:var(--rounded-md)">
-          <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.5rem">ℹ️ Astuce</div>
-          <div style="font-size:0.9rem;color:var(--text-primary)">Utilisez les filtres pour affiner votre recherche et les boutons d'export pour générer des rapports PDF.</div>
+        <div class="stat green">
+          <h3>Payés</h3>
+          <strong id="statPaid">0</strong>
         </div>
-      </section>
-    </aside>
+
+        <div class="stat red">
+          <h3>Non Payés</h3>
+          <strong id="statUnpaid">0</strong>
+        </div>
+
+        <div class="stat blue">
+          <h3>Total dû</h3>
+          <strong id="statTotal">0 €</strong>
+        </div>
+
+      </div>
+
+    </div>
+
   </div>
+
 </div>
 
-<!-- jsPDF + AutoTable -->
+<!-- PDF -->
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
 <script>
-// Ouvre cloche.html lors du clic sur la cloche
-document.getElementById('bell-btn').addEventListener('click', function(e) {
-  window.open('cloche.html', '_blank', 'width=420,height=420');
+
+(() => {
+
+const STORAGE_KEY = 'gsm_bagages_v20';
+
+const REGIONS = [
+  "Tiziouzou",
+  "Michelet",
+  "Illoula",
+  "Azazga",
+  "Bejaia",
+  "Alger",
+  "Region non reconnu",
+  "Hors Wilaya"
+];
+
+const region = document.getElementById('region');
+const subRegion = document.getElementById('subRegion');
+const horsWilayaBox = document.getElementById('horsWilayaBox');
+
+const bagForm = document.getElementById('bagForm');
+
+const paid = document.getElementById('paid');
+
+const amountBox = document.getElementById('amountBox');
+
+const tbody = document.getElementById('tbody');
+
+let editingId = null;
+
+let data = JSON.parse(
+  localStorage.getItem(STORAGE_KEY) || '[]'
+);
+
+/* ========================
+   NOTIFICATION
+======================== */
+
+function showNotification(text){
+
+  const box = document.getElementById('notification');
+
+  box.textContent = text;
+
+  box.classList.add('show');
+
+  setTimeout(() => {
+
+    box.classList.remove('show');
+
+  },3000);
+
+}
+
+/* ========================
+   REGIONS
+======================== */
+
+REGIONS.forEach(r => {
+
+  const option = document.createElement('option');
+
+  option.value = r;
+
+  option.textContent = r;
+
+  region.appendChild(option);
+
 });
-(async function gateAdmin(){
-  try{
-    // If admin already active in this browser session, allow access
-    if (sessionStorage && sessionStorage.getItem && sessionStorage.getItem('gsm_code')) return;
-  }catch(e){}
-  // Prompt for admin code to access this page
-  try{
-    const code = prompt('Entrez le code admin pour accéder à la gestion des bagages :');
-    if (!code) { alert('Accès admin requis'); window.location.href = 'index.html'; return; }
-    if (code === 'Salim_Anis_2026') { try{ sessionStorage.setItem('gsm_code','1'); }catch(e){}; return; }
-    const res = await fetch('/api/auth/verify-code', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ code }) });
-    if (res.ok) { try{ sessionStorage.setItem('gsm_code','1'); }catch(e){}; return; }
-    alert('Code invalide'); window.location.href = 'index.html';
-  }catch(e){ console.warn('admin gate error', e); alert('Erreur vérification admin'); window.location.href='index.html'; }
-})();
-(function(){
-  const STORAGE_KEY = 'liste_bagages_v9';
-  const regionOptions = ["Hors Wilaya","Tizi Ouzou","Azazga","Alger","Michelet","Bejaia","Iloula","Autre","Region non reconnu"];
 
-  const el = id => document.getElementById(id);
-  const bag_number = el('bag_number'), num_fr = el('num_fr'), num_dz = el('num_dz'),
-  region = el('region'), subRegionWrap = el('subRegionWrap'), subRegion = el('subRegion'),
-  customRegionWrap = el('customRegionWrap'), customRegion = el('customRegion'),
-  adresse = el('adresse'), type_bagage = el('type_bagage'),
-  paid = el('paid'), montant_due = el('montant_due'), montantDueContainer = el('montantDueContainer'),
-  editingId = el('editingId'), saveBtn = el('saveBtn'), clearBtn = el('clearBtn'),
-  filterRegion = el('filterRegion'), filterSubRegion = el('filterSubRegion'),
-  filterPaid = el('filterPaid'), search = el('search'),
-  tblBody = document.querySelector('#table tbody'), countEl = el('count'),
-  exportEachRegion = el('exportEachRegion'), exportUnpaid = el('exportUnpaid'), exportUnknown = el('exportUnknown'),
-  exportJSON = el('exportJSON'), importJSON = el('importJSON'), deleteAllBtn = el('deleteAll');
+region.addEventListener('change', () => {
 
-  let data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  horsWilayaBox.style.display =
+    region.value === 'Hors Wilaya'
+    ? 'block'
+    : 'none';
 
-  const formatCurrency = (v) => {
-    if(v===undefined||v===null||v==='') return '';
-    return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:2}).format(Number(v));
-      filtered.forEach((it,idx)=>{
-  // Notifications removed: provide no-op helpers so existing calls remain safe
-  const socket = io();
-  // Disable booking/pending notification handlers on this page
-  try {
-    if (socket && socket.on) {
-      const __orig_on = socket.on.bind(socket);
-      socket.on = function(event, cb) { if (event === 'booking_notification' || event === 'pending_notifications') return; return __orig_on(event, cb); };
-    }
-  } catch(e){}
-  function getNotifications() { return []; }
-  function saveNotifications(list) { /* noop */ }
-  function addNotification(data) { /* noop */ }
-  function markAllRead() { /* noop */ }
-  function deleteReadNotifications() { /* noop */ }
-  function deleteNotification(idx) { /* noop */ }
-  function clearNotifications() { /* noop */ }
-  function renderNotifications() { /* noop */ }
+});
 
-  // Notification listeners removed; calls to addNotification/renderNotifications are now no-ops
+/* ========================
+   PAYMENT
+======================== */
 
-        tr.appendChild(dzTd);
-    // notification stubs: no-op
-    addNotification(data);
-  });
+paid.addEventListener('change', () => {
 
-  window.addEventListener('DOMContentLoaded', function() {
-    checkAdmin();
-    // notification stubs: no-op
-    renderNotifications();
-  });
-        
-        tr.appendChild(makeTd(it.region||''));
-        tr.appendChild(makeTd(it.adresse||''));
-        tr.appendChild(makeTd(it.type_bagage||''));
-        
-        const paidTd=document.createElement('td');
-        if(it.paid==='Oui'){
-          paidTd.innerHTML='<span class="badge badge-success">✓ Payé</span>';
-        } else if(it.paid==='Non'){
-          paidTd.innerHTML='<span class="badge badge-danger">✗ Non payé</span>';
-        }
-        tr.appendChild(paidTd);
-        
-        tr.appendChild(makeTd(it.montant_due ? formatCurrency(it.montant_due) : ''));
-        
-        const tdActions=document.createElement('td');
-        tdActions.className='action-buttons';
-        const btnEdit=document.createElement('button');
-        btnEdit.className='btn-icon';
-        btnEdit.innerHTML='✏️';
-        btnEdit.title='Modifier ce bagage';
-        btnEdit.onclick=()=>editEntry(it.id);
-        
-        const btnDel=document.createElement('button');
-        btnDel.className='btn-icon';
-        btnDel.innerHTML='🗑️';
-        btnDel.title='Supprimer ce bagage';
-        btnDel.style.color='var(--danger)';
-        btnDel.onclick=()=>del(it.id);
-        
-        tdActions.append(btnEdit,btnDel);
-        tr.appendChild(tdActions);
-        tblBody.appendChild(tr);
-      });
-    }
-    countEl.textContent = filtered.length;
-    updateStats();
-  }
+  amountBox.style.display =
+    paid.value === 'Non'
+    ? 'block'
+    : 'none';
 
-  function updateStats(){
-    const paidCount = data.filter(it=>it.paid==='Oui').length;
-    const unpaidCount = data.filter(it=>it.paid==='Non').length;
-    const totalAmount = data.filter(it=>it.paid==='Non').reduce((sum,it)=>sum+(Number(it.montant_due)||0),0);
-    
-    document.getElementById('statPaid').textContent = paidCount;
-    document.getElementById('statUnpaid').textContent = unpaidCount;
-    document.getElementById('statTotal').textContent = formatCurrency(totalAmount);
-  }
+});
 
-  // initial render
-  render();
+/* ========================
+   SAVE
+======================== */
 
-  // --- Gestion du formulaire ---
-  paid.addEventListener('change',()=>{montantDueContainer.style.display=paid.value==='Non'?'block':'none';});
-  region.addEventListener('change',()=>{
-    const isHors = region.value==='Hors Wilaya';
-    subRegionWrap.style.display = isHors ? 'block' : 'none';
-    customRegionWrap.style.display = region.value==='Autre' ? 'block' : 'none';
-  });
+function save(){
 
-  document.getElementById('bagageForm').addEventListener('submit',e=>{
-    e.preventDefault();
-    if(!bag_number.value.trim()){alert('Numéro de bagage requis'); return;}
-    if(paid.value==='Non' && (!montant_due.value || Number(montant_due.value)<=0)){alert('Montant dû requis et > 0'); return;}
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(data)
+  );
 
-    const id = editingId.value || String(Date.now());
-    let regVal = region.value;
-    if(regVal==='Hors Wilaya') regVal=`Hors Wilaya - ${subRegion.value||'EAST'}`;
-    else if(regVal==='Autre') regVal=customRegion.value.trim()||'Autre';
-
-    const it={
-      id,
-      bag_number:bag_number.value.trim(),
-      num_fr:num_fr.value.trim(),
-      num_dz:num_dz.value.trim(),
-      region:regVal,
-      adresse:adresse.value.trim(),
-      type_bagage:type_bagage.value.trim(),
-      paid:paid.value,
-      montant_due:paid.value==='Non'?Number(montant_due.value):''
-    };
-
-    if(editingId.value){
-      const idx=data.findIndex(x=>x.id===id);
-      if(idx>-1) data[idx]=it;
-    } else data.push(it);
-
-    save();
-    document.getElementById('bagageForm').reset();
-    montantDueContainer.style.display='none';
-    customRegionWrap.style.display='none';
-    subRegionWrap.style.display='none';
-    editingId.value='';
-    render();
-  });
-
-  clearBtn.addEventListener('click',()=>{
-    document.getElementById('bagageForm').reset();
-    editingId.value='';
-    montantDueContainer.style.display='none';
-    subRegionWrap.style.display='none';
-    customRegionWrap.style.display='none';
-  });
-
-  function editEntry(id){
-    const it=data.find(x=>x.id===id);
-    if(!it) return;
-    editingId.value=id;
-    bag_number.value=it.bag_number;
-    num_fr.value=it.num_fr;
-    num_dz.value=it.num_dz;
-    if(it.region.startsWith('Hors Wilaya')){
-      region.value='Hors Wilaya';
-      subRegionWrap.style.display='block';
-      subRegion.value=it.region.split('-')[1]?.trim()||'EAST';
-      customRegionWrap.style.display='none';
-    } else if(!regionOptions.includes(it.region)){
-      region.value='Autre';
-      customRegionWrap.style.display='block';
-      customRegion.value=it.region;
-      subRegionWrap.style.display='none';
-    } else {
-      region.value=it.region;
-      subRegionWrap.style.display='none';
-      customRegionWrap.style.display='none';
-    }
-    adresse.value=it.adresse;
-    type_bagage.value=it.type_bagage;
-    paid.value=it.paid;
-    montant_due.value=it.montant_due||'';
-    montantDueContainer.style.display=it.paid==='Non'?'block':'none';
-    window.scrollTo({top:0,behavior:'smooth'});
-  }
-
-  function del(id){
-    if(confirm('Supprimer ce bagage ?')){
-      data=data.filter(x=>x.id!==id);
-      save();
-      render();
-    }
-  }
-
-  deleteAllBtn.addEventListener('click',()=>{
-    if(confirm('Voulez-vous vraiment supprimer tous les bagages ?')){
-      data=[];
-      save();
-      render();
-    }
-  });
-
-  // === EXPORT JSON / IMPORT JSON ===
-  exportJSON.addEventListener('click',()=>{
-    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;
-    a.download=`bagages_${new Date().toISOString().slice(0,10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  importJSON.addEventListener('click',()=>{
-    const input=document.createElement('input');
-    input.type='file'; input.accept='application/json';
-    input.onchange=e=>{
-      const file=e.target.files[0];
-      if(!file) return;
-      const reader=new FileReader();
-      reader.onload=ev=>{
-        try{
-          const json=JSON.parse(ev.target.result);
-          if(Array.isArray(json)){
-            // ensure each record has id
-            json.forEach(it=>{ if(!it.id) it.id = String(Date.now()) + Math.random().toString(16).slice(2,8); });
-            data=json; save(); render(); alert('Import JSON effectué !');
-          } else alert('JSON invalide : Attendu un tableau');
-        } catch(err){ alert('Erreur JSON: '+err.message); }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
-  });
-
-  // Helper: safe image to dataURL (may fail cross-origin)
-  async function getLogoDataUrl(){
-    // Désactivé en raison des restrictions CORS
-    return null;
-  }
-
-  // Utility: make safe filename
-  function safeName(s){
-    return s.replace(/[^a-z0-9-_\.]/gi, '_').slice(0,100);
-  }
-
-  // Utility: determine unknown regions
-  function isRegionKnown(regionValue){
-    if(!regionValue) return false;
-    if(regionValue.startsWith('Hors Wilaya')) return true;
-    return regionOptions.includes(regionValue);
-  }
-
-  // === EXPORT: PDF - one file per region ===
-  exportEachRegion.addEventListener('click', async ()=>{
-    const filtered = getFilteredData();
-    if(!filtered.length){ alert('Aucun bagage filtré à exporter'); return; }
-
-    const grouped = {};
-    filtered.forEach(it=>{
-      const r = (it.region && it.region.trim()) || 'Sans région';
-      if(!grouped[r]) grouped[r] = [];
-      grouped[r].push(it);
-    });
-
-    const { jsPDF } = window.jspdf;
-
-    // color constants
-    const GOLD = [212,175,55];          // doré pour l'en-tête
-    const BOTTLE_GREEN = [2,71,49];     // vert bouteille pour Num DZ
-    const UNPAID_RED = [185,28,28];
-
-    for(const [regionName, list] of Object.entries(grouped)){
-      const doc = new jsPDF({unit:'pt',format:'a4'});
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const marginLeft = 36;
-      const marginRight = 36;
-      const now = new Date();
-      const dateTimeStr = now.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'});
-
-      // header
-      doc.setFontSize(14);
-      doc.setTextColor(40,40,40);
-      doc.text(`Bagages — ${regionName}`, marginLeft, 48);
-      doc.setFontSize(9);
-      doc.setTextColor(100,100,100);
-      doc.text(`Généré le : ${dateTimeStr}`, marginLeft, 62);
-
-      // table
-      const body = list.map((it, idx) => {
-        const isUnpaid = it.paid === 'Non';
-        const textColor = isUnpaid ? UNPAID_RED : [40,40,40];
-        return [
-          {content: String(idx + 1), styles: {textColor}},
-          {content: it.bag_number || '', styles: {textColor}},
-          {content: it.num_dz || '', styles: {textColor}},
-          {content: it.adresse || '', styles: {textColor}},
-          {content: it.type_bagage || '', styles: {textColor}},
-          {content: it.paid || '', styles: {textColor}},
-          {content: it.montant_due ? formatCurrency(it.montant_due) : '', styles: {textColor}}
-        ];
-      });
-
-      doc.autoTable({
-        startY: 82,
-        head: [[{content:'#'},{content:'Num Bag'},{content:'Num DZ'},{content:'Adresse'},{content:'Type'},{content:'Payé'},{content:'Montant'}]],
-        body,
-        styles:{fontSize:8,cellPadding:5,overflow:'linebreak',halign:'left'},
-        headStyles:{fillColor:GOLD,textColor:[0,0,0],fontStyle:'bold',halign:'center'},
-        margin:{left:marginLeft,right:marginRight},
-        columnStyles:{
-          0:{cellWidth:32,halign:'center'},
-          1:{cellWidth:70},
-          2:{cellWidth:70},
-          3:{cellWidth:150},
-          4:{cellWidth:70},
-          5:{cellWidth:50,halign:'center'},
-          6:{cellWidth:60,halign:'right'}
-        },
-        didParseCell: function(data){
-          if (data.section === 'body' && data.column.index === 2) {
-            data.cell.styles.textColor = BOTTLE_GREEN;
-          }
-        }
-      });
-
-      const fname = `bagages_${safeName(regionName)}_${new Date().toISOString().slice(0,10)}.pdf`;
-      doc.save(fname);
-    }
-    alert('PDF(s) créés: un fichier par région (téléchargement lancé).');
-  });
-
-  // === EXPORT: PDF - NON PAYÉS (unique) ===
-  exportUnpaid.addEventListener('click', async ()=>{
-    const filtered = getFilteredData();
-    const unpaid = filtered.filter(it=>it.paid==='Non');
-    if(!unpaid.length){ alert('Aucun bagage non payé à exporter'); return; }
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({unit:'pt',format:'a4'});
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const marginLeft = 36;
-    const marginRight = 36;
-    const now = new Date();
-    const dateTimeStr = now.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'});
-
-    const BOTTLE_GREEN = [2,71,49];
-    const UNPAID_RED = [185,28,28];
-
-    // header
-    doc.setFontSize(14);
-    doc.setTextColor(40,40,40);
-    doc.text('Bagages NON PAYÉS (Tous régions)', marginLeft, 48);
-    doc.setFontSize(9);
-    doc.setTextColor(100,100,100);
-    doc.text(`Généré le : ${dateTimeStr}`, marginLeft, 62);
-
-    // group unpaid by region for display separation
-    const unpaidGrouped = {};
-    unpaid.forEach(it=>{
-      const r = (it.region && it.region.trim()) || 'Sans région';
-      if(!unpaidGrouped[r]) unpaidGrouped[r]=[];
-      unpaidGrouped[r].push(it);
-    });
-
-    let cursorY = 86;
-    for(const [regionName, list] of Object.entries(unpaidGrouped)){
-      doc.setFontSize(11);
-      doc.setTextColor(30,30,30);
-      doc.text(`Région : ${regionName} ( ${list.length} )`, marginLeft, cursorY);
-      const body = list.map((it, idx) => {
-        const textColor = UNPAID_RED;
-        return [
-          {content: String(idx + 1), styles: {textColor}},
-          {content: it.bag_number || '', styles: {textColor}},
-          {content: it.num_dz || '', styles: {textColor}},
-          {content: it.adresse || '', styles: {textColor}},
-          {content: it.type_bagage || '', styles: {textColor}},
-          {content: it.montant_due ? formatCurrency(it.montant_due) : '', styles: {textColor}}
-        ];
-      });
-
-      const tableStartY = cursorY + 8;
-      doc.autoTable({
-        startY: tableStartY,
-        head: [[{content:'#'},{content:'Num Bag'},{content:'Num DZ'},{content:'Adresse'},{content:'Type'},{content:'Montant'}]],
-        body,
-        styles:{fontSize:8,cellPadding:5,overflow:'linebreak'},
-        headStyles:{fillColor:UNPAID_RED,textColor:[255,255,255],fontStyle:'bold'},
-        margin:{left:marginLeft,right:marginRight},
-        columnStyles:{
-          0:{cellWidth:32,halign:'center'},
-          1:{cellWidth:70},
-          2:{cellWidth:70},
-          3:{cellWidth:180},
-          4:{cellWidth:70},
-          5:{cellWidth:60,halign:'right'}
-        },
-        didParseCell: function(data){
-          if (data.section === 'body' && data.column.index === 2) {
-            data.cell.styles.textColor = BOTTLE_GREEN;
-          }
-        }
-      });
-
-      cursorY = doc.lastAutoTable.finalY + 18;
-      if(cursorY > doc.internal.pageSize.getHeight() - 80){
-        doc.addPage();
-        cursorY = 48;
-      }
-    }
-
-    const fname = `bagages_non_payes_${new Date().toISOString().slice(0,10)}.pdf`;
-    doc.save(fname);
-    alert('PDF NON PAYÉS généré.');
-  });
-
-  // === EXPORT: PDF - régions non reconnues seul ===
-  exportUnknown.addEventListener('click', async ()=>{
-    const filtered = getFilteredData();
-    const unknown = filtered.filter(it => {
-      const rv = it.region || '';
-      return rv === 'Region non reconnu' || !isRegionKnown(rv);
-    });
-    if(!unknown.length){ alert('Aucune région non reconnue à exporter'); return; }
-
-    const grouped = {};
-    unknown.forEach(it=>{
-      const r = (it.region && it.region.trim()) || 'Sans région';
-      if(!grouped[r]) grouped[r] = [];
-      grouped[r].push(it);
-    });
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({unit:'pt',format:'a4'});
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const marginLeft = 36;
-    const marginRight = 36;
-    const now = new Date();
-    const dateTimeStr = now.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'});
-
-    const GOLD = [212,175,55];
-    const BOTTLE_GREEN = [2,71,49];
-    const UNPAID_RED = [185,28,28];
-
-    // header
-    doc.setFontSize(14);
-    doc.setTextColor(40,40,40);
-    doc.text('Bagages — Régions non reconnues', marginLeft, 48);
-    doc.setFontSize(9);
-    doc.setTextColor(100,100,100);
-    doc.text(`Généré le : ${dateTimeStr}`, marginLeft, 62);
-
-    let cursorY = 86;
-    for(const [regionName, list] of Object.entries(grouped)){
-      doc.setFontSize(11);
-      doc.setTextColor(30,30,30);
-      doc.text(`Région : ${regionName} ( ${list.length} )`, marginLeft, cursorY);
-
-      const body = list.map((it, idx) => {
-        const isUnpaid = it.paid === 'Non';
-        const textColor = isUnpaid ? UNPAID_RED : [40,40,40];
-        return [
-          {content: String(idx + 1), styles: {textColor}},
-          {content: it.bag_number || '', styles: {textColor}},
-          {content: it.num_dz || '', styles: {textColor}},
-          {content: it.adresse || '', styles: {textColor}},
-          {content: it.type_bagage || '', styles: {textColor}},
-          {content: it.paid || '', styles: {textColor}},
-          {content: it.montant_due ? formatCurrency(it.montant_due) : '', styles: {textColor}}
-        ];
-      });
-
-      const tableStartY = cursorY + 8;
-      doc.autoTable({
-        startY: tableStartY,
-        head: [[{content:'#'},{content:'Num Bag'},{content:'Num DZ'},{content:'Adresse'},{content:'Type'},{content:'Payé'},{content:'Montant'}]],
-        body,
-        styles:{fontSize:8,cellPadding:5,overflow:'linebreak'},
-        headStyles:{fillColor:GOLD,textColor:[0,0,0],fontStyle:'bold'},
-        margin:{left:marginLeft,right:marginRight},
-        columnStyles:{
-          0:{cellWidth:32,halign:'center'},
-          1:{cellWidth:70},
-          2:{cellWidth:70},
-          3:{cellWidth:140},
-          4:{cellWidth:70},
-          5:{cellWidth:50,halign:'center'},
-          6:{cellWidth:60,halign:'right'}
-        },
-        didParseCell: function(data){
-          if (data.section === 'body' && data.column.index === 2) {
-            data.cell.styles.textColor = BOTTLE_GREEN;
-          }
-        }
-      });
-
-      cursorY = doc.lastAutoTable.finalY + 18;
-      if(cursorY > doc.internal.pageSize.getHeight() - 80){
-        doc.addPage();
-        cursorY = 48;
-      }
-    }
-
-    const fname = `bagages_regions_non_reconnues_${new Date().toISOString().slice(0,10)}.pdf`;
-    doc.save(fname);
-    alert('PDF régions non reconnues généré.');
-  });
-
-  // re-render when filters change
-  [filterRegion, filterSubRegion, filterPaid, search].forEach(inp=>{
-    inp.addEventListener('input', render);
-    inp.addEventListener('change', render);
-  });
-
-})();
-</script>
-<script>
-// Matricule search: fetch users.json and display user info, highlight matching rows
-(function(){
-  let usersCache = null;
-  async function fetchUsersOnce(){
-    if(usersCache!==null) return usersCache;
-    try{
-      const res = await fetch('/api/users');
-      if(!res.ok) { usersCache = []; return usersCache; }
-      usersCache = await res.json().catch(()=>[]);
-      return usersCache;
-    }catch(e){ usersCache = []; return usersCache; }
-  }
-
-  const searchMat = document.getElementById('searchMatricule');
-  const userInfo = document.getElementById('userInfoDisplay');
-  const tbody = document.querySelector('#table tbody');
-
-  function clearHighlights(){ if(!tbody) return; Array.from(tbody.querySelectorAll('tr')).forEach(tr=>tr.classList.remove('highlight-matricule')); }
-  function showUser(u){
-    if(!userInfo) return;
-    if(!u){ userInfo.innerHTML = '<div style="color:#b91c1c;font-weight:700;">Aucun utilisateur trouvé</div>'; userInfo.style.display='block'; return; }
-    const html = `
-      <div style="display:flex;gap:12px;align-items:center;">
-        <div style="flex:1">
-          <div style="font-weight:800;color:#0f172a">${u.nom || ''} ${u.prenom || ''}</div>
-          <div style="color:#334155;margin-top:6px">Matricule: <strong>${u.matricule || ''}</strong></div>
-          <div style="color:#334155;margin-top:6px">WhatsApp: <strong>${u.whatsapp || ''}</strong></div>
-          <div style="color:#334155;margin-top:6px">Pays résidence: <strong>${u.pays_residence || ''}</strong></div>
-          <div style="color:#334155;margin-top:6px">Adresse France: <span style="font-weight:600">${u.adresse_france || ''}</span></div>
-          <div style="color:#334155;margin-top:6px">Adresse Algérie: <span style="font-weight:600">${u.adresse_algerie || ''}</span></div>
-          <div style="color:#334155;margin-top:6px">N° CI: <strong>${u.id_number_masked || ''}</strong></div>
-        </div>
-        <div style="text-align:right;min-width:120px;">
-          <div style="margin-top:8px"><a href="/pdfs/" style="color:var(--primary);font-weight:700;text-decoration:underline;">Voir PDF</a></div>
-        </div>
-      </div>`;
-    userInfo.innerHTML = html; userInfo.style.display='block';
-  }
-
-  async function onSearchMat(){
-    const q = (searchMat && searchMat.value||'').trim();
-    clearHighlights();
-    if(!q){ if(userInfo) userInfo.style.display='none'; return; }
-    // First try server-side lookup by matricule (fast when MongoDB available)
-    let found = null;
-    try {
-      const res = await fetch('/api/users?matricule=' + encodeURIComponent(q));
-      if (res.ok) {
-        const arr = await res.json().catch(()=>[]);
-        if (Array.isArray(arr) && arr.length) found = arr[0];
-      }
-    } catch (e) { /* ignore and fallback to local cache */ }
-
-    // Fallback: local cache search by matricule or whatsapp
-    if (!found) {
-      const users = await fetchUsersOnce();
-      const norm = q.replace(/[^+0-9]/g,'');
-      found = users.find(u => (u && u.matricule && u.matricule.toLowerCase() === q.toLowerCase()));
-      if(!found) found = users.find(u => ((u.whatsapp||'').replace(/[^+0-9]/g,'') === norm));
-    }
-    showUser(found);
-    // highlight rows whose bag number contains the matricule string
-    try{
-      if(!tbody) return;
-      const rows = Array.from(tbody.querySelectorAll('tr'));
-      rows.forEach(r=>{
-        const tds = r.querySelectorAll('td');
-        if(tds && tds[1] && (tds[1].textContent || '').includes(q)) r.classList.add('highlight-matricule');
-        else r.classList.remove('highlight-matricule');
-      });
-      const first = tbody.querySelector('tr.highlight-matricule');
-      if(first) first.scrollIntoView({behavior:'smooth',block:'center'});
-    }catch(e){ /* ignore */ }
-  }
-
-  if(searchMat){
-    searchMat.addEventListener('input', debounce(onSearchMat, 300));
-  }
-
-  function debounce(fn, wait){ let t; return function(){ clearTimeout(t); t = setTimeout(()=>fn.apply(this, arguments), wait); } }
-})();
-
-</script>
-
-<!-- Mobile navigation drawer -->
-  <div id="mobile-menu-drawer">
-    <button id="mobile-menu-close" aria-label="Fermer le menu" style="background:none;border:none;font-size:1.2rem;float:right;">✕</button>
-    <nav style="margin-top:18px;">
-      <a href="index.html">Accueil</a>
-      <a href="gsmexpress.html">GSM Express</a>
-      <a href="terms.html">Conditions générales</a>
-      <a href="contact.html">Contact</a>
-    </nav>
-    <div id="mobile-auth-area">
-      <div id="mobile-user-info" style="display:none">
-        <div class="user-email"></div>
-        <button id="mobile-logout" class="btn-logout">Se déconnecter</button>
-      </div>
-      <div id="mobile-guest-actions" style="display:none">
-        <button id="mobile-open-login" class="btn-login">Se connecter</button>
-        <button id="mobile-open-register" class="btn-login">S'inscrire</button>
-      </div>
-    </div>
-  </div>
-  <div id="mobile-menu-backdrop"></div>
-
-  <script>
-  (function(){
-    const btn = document.getElementById('mobile-menu-btn');
-    const drawer = document.getElementById('mobile-menu-drawer');
-    const closeBtn = document.getElementById('mobile-menu-close');
-    const backdrop = document.getElementById('mobile-menu-backdrop');
-    const userInfoWrap = document.getElementById('mobile-user-info');
-    const guestWrap = document.getElementById('mobile-guest-actions');
-    function show(){ if(drawer){ drawer.classList.add('open'); if(backdrop) backdrop.classList.add('visible'); document.body.style.overflow='hidden'; } }
-    function hide(){ if(drawer){ drawer.classList.remove('open'); if(backdrop) backdrop.classList.remove('visible'); document.body.style.overflow=''; } }
-    if(btn) btn.addEventListener('click', show);
-    if(closeBtn) closeBtn.addEventListener('click', hide);
-    if(backdrop) backdrop.addEventListener('click', hide);
-    function updateBtn(){ try{ const b = document.getElementById('mobile-menu-btn'); if(window.innerWidth <= 900){ if(b) b.style.display='block'; } else { if(b) b.style.display='none'; hide(); } } catch(e){} }
-    updateBtn(); window.addEventListener('resize', updateBtn);
-
-    function updateMobileAuth(user){ try{ if(user){ guestWrap.style.display='none'; userInfoWrap.style.display='block'; const emailEl = userInfoWrap.querySelector('.user-email'); if(emailEl) emailEl.textContent = user.email || user.displayName || ''; } else { userInfoWrap.style.display='none'; guestWrap.style.display='block'; } } catch(e){} }
-
-    document.getElementById('mobile-open-login').addEventListener('click', ()=>{ hide(); try{ window.location.href='index.html'; }catch(e){} });
-    document.getElementById('mobile-open-register').addEventListener('click', ()=>{ hide(); try{ window.location.href='index.html'; }catch(e){} });
-    document.getElementById('mobile-logout').addEventListener('click', async ()=>{ try{ if(window.auth) await auth.signOut(); hide(); }catch(e){ console.warn('mobile logout failed', e); } });
-
-    if(window.auth && typeof window.auth.onAuthStateChanged === 'function'){ auth.onAuthStateChanged(u=> updateMobileAuth(u)); } else { updateMobileAuth(null); }
-  })();
-  </script>
-
-<footer style="padding:18px 12px;text-align:center;background:rgba(0,0,0,0.04);color:#ef4444;margin-top:28px;">
-  <div style="color:#ef4444;font-weight:700">GSM Transport — Gestion des bagages</div>
-  <div style="margin-top:6px;font-size:0.95em;color:#ef4444">
-    <a href="terms.html" style="color:#ff6b6b;margin-right:10px;font-weight:700;">Conditions générales</a>
-    <a href="contact.html" style="color:#ff6b6b;margin-right:10px;font-weight:700;">Contact</a>
-    <a href="index.html" style="color:#ff6b6b;font-weight:700;">Accueil</a>
-  </div>
-</footer>
-</body>
-<script>
-socket.on('booking_notification', data => {
-// --- NOTIFICATIONS : version propre, unique, sans admin ---
-const socket = io();
-const notifDiv = document.getElementById('notif-reservations');
-const listeDiv = document.getElementById('liste-reservations');
-
-function getNotifications() {
-  return JSON.parse(localStorage.getItem('notifications') || '[]');
 }
-function saveNotifications(list) {
-  localStorage.setItem('notifications', JSON.stringify(list));
+
+/* ========================
+   MONEY
+======================== */
+
+function money(v){
+
+  return new Intl.NumberFormat(
+    'fr-FR',
+    {
+      style:'currency',
+      currency:'EUR'
+    }
+  ).format(v || 0);
+
 }
-function addNotification(data) {
-  const list = getNotifications();
-  list.unshift({ ...data, read: false });
-  saveNotifications(list);
-  renderNotifications();
-}
-function markAllRead() {
-  const list = getNotifications().map(n => ({...n, read: true}));
-  saveNotifications(list);
-  renderNotifications();
-}
-function deleteReadNotifications() {
-  const list = getNotifications().filter(n => !n.read);
-  saveNotifications(list);
-  renderNotifications();
-}
-function deleteNotification(idx) {
-  const list = getNotifications();
-  list.splice(idx, 1);
-  saveNotifications(list);
-  renderNotifications();
-}
-function clearNotifications() {
-  localStorage.removeItem('notifications');
-  renderNotifications();
-}
-function renderNotifications() {
-  const notifications = getNotifications();
-  if (notifications.length === 0) {
-    listeDiv.innerHTML = '<p style="text-align:center;color:#888;">Aucune notification de réservation.</p>';
-    notifDiv.style.display = 'none';
+
+/* ========================
+   FORM
+======================== */
+
+bagForm.addEventListener('submit', e => {
+
+  e.preventDefault();
+
+  const bag_number =
+  document.getElementById('bag_number').value.trim();
+
+  if(!bag_number){
+
+    showNotification('Numéro obligatoire');
+    return;
+
+  }
+
+  const paidValue =
+  document.getElementById('paid').value;
+
+  const montant =
+  document.getElementById('montant_due').value;
+
+  if(
+    paidValue === 'Non'
+    &&
+    (!montant || montant <= 0)
+  ){
+    showNotification('Montant invalide');
     return;
   }
-  // Affichage notification en haut, gestion pro
-  const unread = notifications.find(n => !n.read);
-  if (unread) {
-    notifDiv.innerHTML = `
-      <span style=\"color:#d97706;font-size:1.3em;vertical-align:middle;\">⚡</span>
-      <span style=\"color:#1a4d2e;\">Nouvelle réservation reçue !</span>
-      <span style=\"background:#e6ffe6;color:#1a4d2e;border-radius:8px;padding:0.2em 0.7em;margin-left:1em;font-weight:700;\">Total : ${notifications.length}</span>
-      <button onclick=\"markAllRead()\" style=\"margin-left:1em;background:#1e40af;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout marquer comme lu</button>
-      <button onclick=\"deleteReadNotifications()\" style=\"margin-left:0.7em;background:#b91c1c;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Supprimer notifications lues</button>
-      <button onclick=\"clearNotifications()\" style=\"margin-left:0.7em;background:#64748b;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout supprimer</button>
-    `;
-    notifDiv.style.display = 'block';
-  } else {
-    notifDiv.innerHTML = `
-      <span style=\"color:#16a34a;font-size:1.2em;vertical-align:middle;\">✔️</span>
-      <span style=\"color:#1a4d2e;\">Toutes les notifications ont été lues.</span>
-      <span style=\"background:#e6ffe6;color:#1a4d2e;border-radius:8px;padding:0.2em 0.7em;margin-left:1em;font-weight:700;\">Total : ${notifications.length}</span>
-      <button onclick=\"deleteReadNotifications()\" style=\"margin-left:1em;background:#b91c1c;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Supprimer notifications lues</button>
-      <button onclick=\"clearNotifications()\" style=\"margin-left:0.7em;background:#64748b;color:#fff;border:none;padding:0.3em 1em;border-radius:7px;cursor:pointer;font-weight:600;\">Tout supprimer</button>
-    `;
-    notifDiv.style.display = 'block';
+
+  let regionValue = region.value;
+
+  if(regionValue === 'Hors Wilaya'){
+
+    regionValue =
+      'Hors Wilaya - ' + subRegion.value;
+
   }
-  // Affichage historique avec lien PDF bleu et suppression individuelle
-  listeDiv.innerHTML = notifications.map((n, idx) => `
-    <div style=\"background:#fff;border-radius:10px;box-shadow:0 1px 6px #0001;padding:1rem 1.2rem;margin-bottom:1.1rem;${n.read ? 'opacity:0.7;' : ''}\">
-      <b>Bagage #${n.bagage_numero}</b> – <b>${n.exp_nom} ${n.exp_prenom}</b> → <b>${n.dest_nom} ${n.dest_prenom}</b><br>
-      <span style=\\\"color:#1e40af;\\\">${n.pays_dest} / ${n.destination}${n.region ? ' / ' + n.region : ''}</span> | <b>${n.nb_bagages} bagage(s)</b> | <b>${n.poids} kg</b> | <b>${n.prix} €</b><br>
-      <span style=\\\"color:#64748b;\\\">Tél. expéditeur: ${n.exp_tel} – Tél. destinataire: ${n.dest_tel}</span>
-      ${n.notes ? `<div style='margin-top:0.5em;color:#555;'>Note: ${n.notes}</div>` : ''}
-      <div style='margin-top:0.7em;'>
-        <a href=\"/pdfs/reservation_${n.bagage_numero}.pdf\" target=\"_blank\" style=\"color:#2563eb;font-weight:700;text-decoration:underline;font-size:1.08em;\">Télécharger PDF</a>
-        ${n.read ? '<span style=\\\"color:#16a34a;margin-left:1em;\\\">(Lue)</span>' : '<span style=\\\"color:#d97706;margin-left:1em;\\\">(Non lue)</span>'}
-        <button onclick=\"deleteNotification(${idx})\" style=\"margin-left:1em;background:#e11d48;color:#fff;border:none;padding:0.2em 0.7em;border-radius:7px;cursor:pointer;font-weight:600;font-size:0.95em;\">Supprimer</button>
-      </div>
-    </div>
-  `).join('');
+
+  const item = {
+
+    id: editingId || Date.now().toString(),
+
+    bag_number,
+
+    num_fr:
+      document.getElementById('num_fr').value,
+
+    num_dz:
+      document.getElementById('num_dz').value,
+
+    region: regionValue,
+
+    adresse:
+      document.getElementById('adresse').value,
+
+    type_bagage:
+      document.getElementById('type_bagage').value,
+
+    paid: paidValue,
+
+    montant_due:
+      paidValue === 'Non'
+      ? Number(montant)
+      : ''
+
+  };
+
+  if(editingId){
+
+    const index = data.findIndex(
+      i => i.id === editingId
+    );
+
+    data[index] = item;
+
+    showNotification('Bagage modifié');
+
+  }else{
+
+    data.push(item);
+
+    showNotification('Bagage ajouté');
+
+  }
+
+  save();
+
+  render();
+
+  bagForm.reset();
+
+  amountBox.style.display = 'none';
+
+  horsWilayaBox.style.display = 'none';
+
+  editingId = null;
+
+});
+
+/* ========================
+   RENDER
+======================== */
+
+function render(){
+
+  tbody.innerHTML = '';
+
+  if(data.length === 0){
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" style="text-align:center">
+          Aucun bagage
+        </td>
+      </tr>
+    `;
+
+    updateStats();
+
+    return;
+
+  }
+
+  data.forEach((item,index) => {
+
+    const tr = document.createElement('tr');
+
+    tr.innerHTML = `
+
+      <td>${index+1}</td>
+
+      <td>${item.bag_number}</td>
+
+      <td>${item.num_fr}</td>
+
+      <td style="
+        color:${item.paid === 'Non' ? '#dc2626' : '#111'};
+        font-weight:700;
+      ">
+        ${item.num_dz}
+      </td>
+
+      <td>${item.region}</td>
+
+      <td>${item.adresse}</td>
+
+      <td>${item.type_bagage}</td>
+
+      <td>
+
+        ${
+          item.paid === 'Oui'
+          ?
+          '<span class="badge badge-success">Payé</span>'
+          :
+          '<span class="badge badge-danger">Non payé</span>'
+        }
+
+      </td>
+
+      <td style="
+        color:${item.paid === 'Non' ? '#dc2626' : '#111'};
+        font-weight:700;
+      ">
+        ${
+          item.montant_due
+          ? money(item.montant_due)
+          : ''
+        }
+      </td>
+
+      <td>
+
+        <button
+          class="icon-btn"
+          onclick="editBag('${item.id}')"
+        >
+          ✏️
+        </button>
+
+        <button
+          class="icon-btn"
+          onclick="deleteBag('${item.id}')"
+        >
+          🗑️
+        </button>
+
+      </td>
+
+    `;
+
+    tbody.appendChild(tr);
+
+  });
+
+  updateStats();
+
+  // apply data-label attributes to td for mobile card view
+  try {
+    const headers = Array.from(document.querySelectorAll('table thead th')).map(h => h.textContent.trim());
+    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+      Array.from(tr.children).forEach((td, i) => {
+        td.setAttribute('data-label', headers[i] || '');
+      });
+    });
+  } catch (e) { /* ignore */ }
+
 }
 
-// Écoute directe des notifications socket
-socket.on('booking_notification', data => {
-  addNotification(data);
+/* ========================
+   STATS
+======================== */
+
+function updateStats(){
+
+  const paidCount =
+  data.filter(i => i.paid === 'Oui').length;
+
+  const unpaidCount =
+  data.filter(i => i.paid === 'Non').length;
+
+  const total =
+  data
+  .filter(i => i.paid === 'Non')
+  .reduce((a,b) =>
+    a + Number(b.montant_due || 0)
+  ,0);
+
+  document.getElementById('statPaid')
+  .textContent = paidCount;
+
+  document.getElementById('statUnpaid')
+  .textContent = unpaidCount;
+
+  document.getElementById('statTotal')
+  .textContent = money(total);
+
+}
+
+/* ========================
+   EDIT
+======================== */
+
+window.editBag = function(id){
+
+  const item = data.find(i => i.id === id);
+
+  if(!item) return;
+
+  editingId = id;
+
+  document.getElementById('bag_number').value =
+  item.bag_number;
+
+  document.getElementById('num_fr').value =
+  item.num_fr;
+
+  document.getElementById('num_dz').value =
+  item.num_dz;
+
+  document.getElementById('adresse').value =
+  item.adresse;
+
+  document.getElementById('type_bagage').value =
+  item.type_bagage;
+
+  document.getElementById('paid').value =
+  item.paid;
+
+  document.getElementById('montant_due').value =
+  item.montant_due;
+
+  if(item.region.startsWith('Hors Wilaya')){
+
+    region.value = 'Hors Wilaya';
+
+    horsWilayaBox.style.display = 'block';
+
+    if(item.region.includes('EAST')){
+
+      subRegion.value = 'EAST';
+
+    }else{
+
+      subRegion.value = 'OUEST';
+
+    }
+
+  }else{
+
+    region.value = item.region;
+
+  }
+
+  amountBox.style.display =
+    item.paid === 'Non'
+    ? 'block'
+    : 'none';
+
+  window.scrollTo({
+    top:0,
+    behavior:'smooth'
+  });
+
+}
+
+/* ========================
+   DELETE
+======================== */
+
+window.deleteBag = function(id){
+
+  if(!confirm('Supprimer ce bagage ?'))
+    return;
+
+  data = data.filter(i => i.id !== id);
+
+  save();
+
+  render();
+
+  showNotification('Bagage supprimé');
+
+}
+
+/* ========================
+   DELETE ALL
+======================== */
+
+document
+.getElementById('deleteAll')
+.addEventListener('click', () => {
+
+  if(!confirm('Supprimer tous les bagages ?'))
+    return;
+
+  data = [];
+
+  save();
+
+  render();
+
+  showNotification('Tous supprimés');
+
 });
 
-window.addEventListener('DOMContentLoaded', function() {
-  renderNotifications();
+/* ========================
+   PDF
+======================== */
+
+function makePDF(title, rows, redMode=false){
+
+  const { jsPDF } = window.jspdf;
+
+  const doc = new jsPDF();
+
+  doc.setFontSize(18);
+
+  doc.text(title,14,20);
+
+  const body = rows.map((item,index) => [
+
+    index+1,
+
+    item.bag_number,
+
+    item.num_fr,
+
+    item.num_dz,
+
+    item.region,
+
+    item.type_bagage,
+
+    item.paid,
+
+    item.montant_due
+    ? item.montant_due + ' €'
+    : ''
+
+  ]);
+
+  doc.autoTable({
+
+    startY:30,
+
+    head:[[
+      '#',
+      'Bagage',
+      'FR',
+      'DZ',
+      'Region',
+      'Type',
+      'Paiement',
+      'Montant'
+    ]],
+
+    body,
+
+    styles:{
+      fontSize:10
+    },
+
+    headStyles:{
+      fillColor:
+        redMode
+        ? [220,38,38]
+        : [30,64,175]
+    },
+
+    didParseCell:function(dataTable){
+
+      if(dataTable.section === 'body'){
+
+        const item =
+        rows[dataTable.row.index];
+
+        if(item.paid === 'Non'){
+
+          dataTable.cell.styles.textColor =
+          [220,38,38];
+
+        }
+
+      }
+
+    }
+
+  });
+
+  doc.save(title + '.pdf');
+
+}
+
+/* ========================
+   PDF REGION
+======================== */
+
+document
+.getElementById('downloadRegionPDF')
+.addEventListener('click', () => {
+
+  let selected = region.value;
+
+  if(!selected){
+
+    showNotification('Choisir une région');
+    return;
+
+  }
+
+  if(selected === 'Hors Wilaya'){
+
+    selected =
+    'Hors Wilaya - ' + subRegion.value;
+
+  }
+
+  const rows =
+  data.filter(i => i.region === selected);
+
+  if(rows.length === 0){
+
+    showNotification('Aucune donnée');
+
+    return;
+
+  }
+
+  makePDF(
+    'Region_' + selected,
+    rows
+  );
+
 });
+
+/* ========================
+   PDF TOUTES REGIONS
+======================== */
+
+document
+.getElementById('downloadAllRegionsPDF')
+.addEventListener('click', () => {
+
+  const uniqueRegions =
+  [...new Set(data.map(i => i.region))];
+
+  uniqueRegions.forEach(regionName => {
+
+    const rows =
+    data.filter(i => i.region === regionName);
+
+    if(rows.length){
+
+      makePDF(
+        'Region_' + regionName,
+        rows
+      );
+
+    }
+
+  });
+
+});
+
+/* ========================
+   PDF NON PAYES
+======================== */
+
+document
+.getElementById('downloadUnpaidPDF')
+.addEventListener('click', () => {
+
+  const rows =
+  data.filter(i => i.paid === 'Non');
+
+  if(rows.length === 0){
+
+    showNotification('Aucun non payé');
+
+    return;
+
+  }
+
+  makePDF(
+    'Bagages_Non_Payes',
+    rows,
+    true
+  );
+
+});
+
+/* ========================
+   PDF NON RECONNU
+======================== */
+
+document
+.getElementById('downloadUnknownPDF')
+.addEventListener('click', () => {
+
+  const rows =
+  data.filter(
+    i => i.region === 'Region non reconnu'
+  );
+
+  if(rows.length === 0){
+
+    showNotification('Aucune région non reconnue');
+
+    return;
+
+  }
+
+  makePDF(
+    'Regions_Non_Reconnues',
+    rows
+  );
+
+});
+
+/* ========================
+   EXPORT JSON
+======================== */
+
+document
+.getElementById('exportJSON')
+.addEventListener('click', () => {
+
+  const blob = new Blob(
+    [JSON.stringify(data,null,2)],
+    {type:'application/json'}
+  );
+
+  const url =
+  URL.createObjectURL(blob);
+
+  const a =
+  document.createElement('a');
+
+  a.href = url;
+
+  a.download = 'bagages.json';
+
+  a.click();
+
+  URL.revokeObjectURL(url);
+
+});
+
+/* ========================
+   IMPORT JSON
+======================== */
+
+document
+  .getElementById('importJSON')
+  .addEventListener('click', () => {
+
+    document.getElementById('importJSONInput').click();
+
+  });
+
+document
+  .getElementById('importJSONInput')
+  .addEventListener('change', (e) => {
+
+    const file = e.target.files && e.target.files[0];
+
+    if(!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(evt){
+
+      try{
+
+        let parsed = JSON.parse(evt.target.result);
+
+        if(!Array.isArray(parsed)){
+
+          if(parsed.data && Array.isArray(parsed.data)) parsed = parsed.data;
+          else if(parsed.bagages && Array.isArray(parsed.bagages)) parsed = parsed.bagages;
+          else if(parsed.items && Array.isArray(parsed.items)) parsed = parsed.items;
+          else throw new Error('Invalid format');
+
+        }
+
+        const replace = confirm('Remplacer les données existantes ? OK = Remplacer, Annuler = Ajouter');
+
+        if(replace){
+
+          data = parsed.map(item => {
+            if(!item.id) item.id = Date.now().toString() + Math.random().toString(36).slice(2);
+            return item;
+          });
+
+        }else{
+
+          const map = new Map(data.map(i => [i.id, i]));
+
+          parsed.forEach(item => {
+
+            if(!item.id) item.id = Date.now().toString() + Math.random().toString(36).slice(2);
+
+            // merge/replace by id
+            map.set(item.id, item);
+
+          });
+
+          data = Array.from(map.values());
+
+        }
+
+        save();
+
+        render();
+
+        showNotification('Import JSON réussi');
+
+      }catch(err){
+
+        console.error(err);
+
+        showNotification('Fichier JSON invalide');
+
+      }finally{
+
+        e.target.value = '';
+
+      }
+
+    };
+
+    reader.readAsText(file);
+
+  });
+
+/* ========================
+   INIT
+======================== */
+
+render();
+
+})();
+
+/* ========================
+   MATRICULE SEARCH
+======================== */
+
+// search by matricule and prefill fields
+document
+  .getElementById('searchMatriculeBtn')
+  .addEventListener('click', async () => {
+
+    const q = document.getElementById('matricule').value.trim();
+
+    if(!q){
+
+      showNotification('Entrer un matricule');
+
+      return;
+
+    }
+
+    try{
+
+      const res = await fetch('/api/users?matricule=' + encodeURIComponent(q));
+
+      if(!res.ok) throw new Error('Erreur serveur');
+
+      const users = await res.json();
+
+      if(!Array.isArray(users) || users.length === 0){
+
+        showNotification('Aucun utilisateur trouvé');
+
+        document.getElementById('matriculeInfo').textContent = '';
+
+        return;
+
+      }
+
+      const u = users[0];
+
+      document.getElementById('matriculeInfo').textContent =
+        (u.nom || '') + ' ' + (u.prenom || '') + (u.whatsapp ? ' • ' + u.whatsapp : '');
+
+      // Prefill phone fields when possible
+      if(u.pays_residence && /fr/i.test(u.pays_residence)){
+        if(u.whatsapp) document.getElementById('num_fr').value = u.whatsapp;
+      }else{
+        if(u.whatsapp) document.getElementById('num_dz').value = u.whatsapp;
+      }
+
+      // Prefill address
+      if(u.adresse_france) document.getElementById('adresse').value = u.adresse_france;
+      else if(u.adresse_algerie) document.getElementById('adresse').value = u.adresse_algerie;
+
+      showNotification('Utilisateur chargé');
+
+    }catch(err){
+
+      console.error(err);
+
+      showNotification('Erreur lors de la recherche');
+
+    }
+
+  });
+
+// allow Enter to trigger search
+document.getElementById('matricule')
+  .addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      document.getElementById('searchMatriculeBtn').click();
+    }
+  });
+
 </script>
+
+</body>
 </html>
