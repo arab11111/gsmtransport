@@ -858,6 +858,52 @@ quitAdminBtn.addEventListener('click', function() {
     setAdminUI(false);
 });
 
+// Menu button: open admin-notifications after code verification
+try {
+    const menuAdminBtn = document.getElementById('menu-admin');
+    const menuNotifsBtn = document.getElementById('menu-notifs');
+    async function verifyAndOpenAdmin(code) {
+        try {
+            if (!code) return;
+            if (code === 'Salim_Anis_2026') {
+                try { sessionStorage.setItem('gsm_code', '1'); } catch (e) {}
+                window.location.href = 'admin-notifications.html';
+                return;
+            }
+            const res = await fetch(`${SERVER_ORIGIN}/api/auth/verify-code`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code })
+            });
+            if (res.ok) {
+                try { sessionStorage.setItem('gsm_code', '1'); } catch (e) {}
+                window.location.href = 'admin-notifications.html';
+            } else {
+                alert('Code invalide');
+            }
+        } catch (e) {
+            console.warn('verifyAndOpenAdmin error', e);
+            alert('Erreur serveur lors de la vérification');
+        }
+    }
+
+    if (menuAdminBtn) {
+        menuAdminBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const code = prompt('Entrez le code admin');
+            if (!code) return;
+            verifyAndOpenAdmin(code.trim());
+        });
+    }
+
+    if (menuNotifsBtn) {
+        menuNotifsBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const code = prompt('Entrez le code admin');
+            if (!code) return;
+            verifyAndOpenAdmin(code.trim());
+        });
+    }
+} catch (e) { console.warn('menu-admin attach failed', e); }
+
 function setAdminUI(admin) {
     isAdmin = admin;
     const controls = document.getElementById('admin-calendar-controls');
