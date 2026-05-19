@@ -767,15 +767,39 @@ adminBtn.addEventListener('click', showAdminCodeModal);
 closeAdminCodeModal.addEventListener('click', hideAdminCodeModal);
 
 // Require admin code before allowing navigation to certain pages
-const bagagesLink = document.getElementById('bagages-link');
-if (bagagesLink) {
-    bagagesLink.addEventListener('click', function(e) {
-        if (isAdmin) return; // already admin, allow normal navigation
-        e.preventDefault();
-        pendingNavigationTarget = bagagesLink.getAttribute('href') || 'bagages.html';
-        showAdminCodeModal();
+// Intercept any link or button that would open bagages.html and require admin code
+try {
+    const bagagesAnchors = Array.from(document.querySelectorAll('a[href$="bagages.html"], a[href$="/bagages.html"]'));
+    // include the special id if present
+    const bagagesLink = document.getElementById('bagages-link');
+    if (bagagesLink) bagagesAnchors.push(bagagesLink);
+
+    bagagesAnchors.forEach(a => {
+        try {
+            a.addEventListener('click', function(e) {
+                // allow native navigation when already in admin mode
+                if (isAdmin) return;
+                e.preventDefault();
+                pendingNavigationTarget = (a.getAttribute && a.getAttribute('href')) ? a.getAttribute('href') : 'bagages.html';
+                try { showAdminCodeModal(); } catch (ex) { // fallback to prompt verify
+                    const code = prompt('Entrez le code admin');
+                    if (!code) return;
+                    (async ()=>{
+                        try {
+                            const res = await fetch(`${SERVER_ORIGIN}/api/auth/verify-code`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: code.trim() }) });
+                            if (res.ok) {
+                                try { sessionStorage.setItem('gsm_code','1'); } catch(e){}
+                                window.location.href = pendingNavigationTarget;
+                            } else {
+                                alert('Code invalide');
+                            }
+                        } catch(e) { alert('Erreur serveur'); }
+                    })();
+                }
+            });
+        } catch (e) {}
     });
-}
+} catch (e) { console.warn('bagages interception failed', e); }
 
 adminCodeForm.addEventListener('submit', async function(e) {
     e.preventDefault();
