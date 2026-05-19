@@ -20,7 +20,7 @@
       --text:#0f172a;
       --muted:#64748b;
       --border:#e2e8f0;
-      --shadow:0 10px 30px rgba(15,23,42,.08);
+      --shadow:0 10px 30px rgba(6, 52, 160, 0.08);
       --radius:18px;
     }
 
@@ -422,74 +422,286 @@
       }
     }
 
-/* Mobile admin panel styles */
+/* ===== MOBILE ADMIN BUTTON ===== */
+
+/* ===== BOUTON ADMIN PREMIUM ===== */
+
 #mobileAdminBtn{
-  display:flex;
   position:fixed;
-  right:16px;
-  bottom:16px;
-  width:64px;
-  height:64px;
-  border-radius:50%;
+  right:20px;
+  bottom:20px;
+
+  width:72px;
+  height:72px;
+
+  border:none;
+  border-radius:22px;
+
+  background:
+    linear-gradient(135deg,#2563eb 0%,#0ea5e9 100%);
+
+  color:#fff;
+  font-size:28px;
+
+  display:flex;
   align-items:center;
   justify-content:center;
-  z-index:1102;
-  box-shadow:0 10px 30px rgba(16,24,40,0.35);
-  font-size:22px;
-  border: 2px solid rgba(255,255,255,0.12);
-  transition:transform .15s ease, box-shadow .15s ease;
+
+  cursor:pointer;
+  z-index:1200;
+
+  box-shadow:
+    0 15px 35px rgba(37,99,235,.35),
+    inset 0 2px 8px rgba(255,255,255,.25);
+
+  transition:
+    transform .25s ease,
+    box-shadow .25s ease;
 }
 
+#mobileAdminBtn:hover{
+  transform:translateY(-4px) scale(1.05);
+
+  box-shadow:
+    0 20px 45px rgba(37,99,235,.45),
+    inset 0 2px 8px rgba(255,255,255,.25);
+}
+
+#mobileAdminBtn:active{
+  transform:scale(.96);
+}
+
+/* petit effet lumineux */
+
+#mobileAdminBtn::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:22px;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.25),
+      rgba(255,255,255,0)
+    );
+
+  pointer-events:none;
+}
+
+/* ===== BACKDROP ===== */
+
+#mobileAdminBackdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  backdrop-filter:blur(4px);
+  z-index:1190;
+  opacity:0;
+  visibility:hidden;
+  transition:.25s;
+}
+
+#mobileAdminBackdrop.show{
+  opacity:1;
+  visibility:visible;
+}
+
+/* ===== PANEL ===== */
+
 #mobileAdminPanel{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index:1201;
+
+  background:rgba(255,255,255,.88);
+  backdrop-filter:blur(16px);
+
+  border-top-left-radius:26px;
+  border-top-right-radius:26px;
+
+  padding:22px;
+
+  box-shadow:
+    0 -10px 40px rgba(0,0,0,.15);
+
+  transform:translateY(110%);
+  transition:transform .35s cubic-bezier(.22,1,.36,1);
+
+  max-height:85vh;
+  overflow:auto;
+}
+
+#mobileAdminPanel.show{
+  transform:translateY(0);
+}
+
+/* ===== HANDLE ===== */
+
+.panel-handle{
+  width:60px;
+  height:6px;
+  background:#cbd5e1;
+  border-radius:999px;
+  margin:0 auto 18px;
+}
+
+/* ===== TITLES ===== */
+
+.mobile-title{
+  font-size:22px;
+  font-weight:700;
+  color:#0f172a;
+  margin-bottom:20px;
+  text-align:center;
+}
+
+/* ===== LABELS ===== */
+
+.mobile-label{
+  display:block;
+  margin-bottom:8px;
+  margin-top:16px;
+  font-size:14px;
+  font-weight:600;
+  color:#334155;
+}
+
+/* ===== INPUTS ===== */
+
+.mobile-input,
+.mobile-textarea{
+  width:100%;
+  border:none;
+  outline:none;
+
+  background:#f8fafc;
+
+  border:2px solid transparent;
+
+  border-radius:16px;
+
+  padding:16px;
+
+  font-size:15px;
+  font-family:'Poppins',sans-serif;
+
+  transition:.25s;
+}
+
+.mobile-input:focus,
+.mobile-textarea:focus{
+  border-color:#3b82f6;
+  background:#fff;
+  box-shadow:0 0 0 5px rgba(59,130,246,.12);
+}
+
+.mobile-textarea{
+  min-height:120px;
+  resize:none;
+}
+
+/* ===== SWITCH ===== */
+
+.switch-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  margin-top:20px;
+
+  background:#f8fafc;
+  padding:16px;
+  border-radius:18px;
+}
+
+.switch-text{
+  display:flex;
+  flex-direction:column;
+}
+
+.switch-text strong{
+  font-size:15px;
+}
+
+.switch-text span{
+  font-size:13px;
+  color:#64748b;
+}
+
+.switch{
+  position:relative;
+  width:58px;
+  height:32px;
+}
+
+.switch input{
   display:none;
 }
 
-@media(max-width:768px){
-  #mobileAdminBtn{ display:flex; background:linear-gradient(90deg,#0ea5e9,#2563eb); color:#fff; border:none; box-shadow:0 12px 36px rgba(14,165,233,0.16); animation:adminPulse 2.6s infinite; }
-  #mobileAdminPanel{
-    display:block;
-    position:fixed;
-    left:0;
-    right:0;
-    bottom:0;
-    background:var(--bg);
-    padding:12px;
-    border-top-left-radius:12px;
-    border-top-right-radius:12px;
-    box-shadow:0 -6px 30px rgba(0,0,0,0.12);
-    transform:translateY(110%);
-    transition:transform .25s ease;
-    z-index:1001;
-  }
-  #mobileAdminPanel.show{ transform:translateY(0); }
-  #mobileAdminPanel input, #mobileAdminPanel textarea{ width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); }
-  .mobile-admin-actions .btn{ flex:1; }
-
-  /* Fix date and note bubbles to bottom on mobile, above admin button */
-  #public-selected-date{
-    position:fixed;
-    left:12px;
-    right:12px;
-    bottom:160px; /* above the note bubble */
-    z-index:1100;
-    max-width:calc(100% - 24px);
-    text-align:center;
-  }
-
-  #display-note{
-    position:fixed;
-    left:12px;
-    right:12px;
-    bottom:96px; /* above the floating admin button */
-    z-index:1100;
-    max-width:calc(100% - 24px);
-  }
+.slider{
+  position:absolute;
+  inset:0;
+  background:#cbd5e1;
+  border-radius:999px;
+  transition:.25s;
 }
 
-@keyframes adminPulse{
-  0%{ transform:scale(1); box-shadow:0 8px 28px rgba(14,165,233,0.12); }
-  50%{ transform:scale(1.05); box-shadow:0 18px 48px rgba(14,165,233,0.18); }
-  100%{ transform:scale(1); box-shadow:0 8px 28px rgba(14,165,233,0.12); }
+.slider:before{
+  content:'';
+  position:absolute;
+  width:24px;
+  height:24px;
+  left:4px;
+  top:4px;
+  background:#fff;
+  border-radius:50%;
+  transition:.25s;
+  box-shadow:0 2px 6px rgba(0,0,0,.2);
+}
+
+.switch input:checked + .slider{
+  background:#2563eb;
+}
+
+.switch input:checked + .slider:before{
+  transform:translateX(26px);
+}
+
+/* ===== ACTIONS ===== */
+
+.mobile-actions{
+  display:flex;
+  gap:12px;
+  margin-top:24px;
+}
+
+.mobile-actions button{
+  flex:1;
+  border:none;
+  border-radius:16px;
+  padding:16px;
+  font-weight:700;
+  font-size:15px;
+  cursor:pointer;
+  transition:.25s;
+}
+
+.mobile-close{
+  background:#f1f5f9;
+  color:#334155;
+}
+
+.mobile-save{
+  background:linear-gradient(135deg,#2563eb,#0ea5e9);
+  color:white;
+  box-shadow:0 10px 25px rgba(37,99,235,.25);
+}
+
+.mobile-save:hover{
+  transform:translateY(-2px);
 }
   </style>
 </head>
@@ -540,10 +752,8 @@
     </div>
   </div>
 
-  <div id="admin-settings-display" style="max-width:800px;margin:12px auto 0 auto;">
-    <div id="public-selected-date" style="font-size:1rem;">Aucune date définie</div>
-    <div id="display-note" class="note"></div>
-  </div>
+  <!-- Affichage public supprimé -->
+  <div id="admin-settings-display" style="display:none;"></div>
 
   <div class="notifications" id="list">
     <div class="empty">
@@ -556,22 +766,70 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- Mobile admin panel and toggle button -->
-<button id="mobileAdminBtn" title="Admin" aria-label="Ouvrir panneau admin">✏️</button>
-<div id="mobileAdminPanel" aria-hidden="true" style="display:none">
-  <label style="font-weight:600">Sélectionner la date</label>
-  <input type="date" id="mobileAdminDate" />
-  <label style="font-weight:600;margin-top:8px;display:block">Laisser une note</label>
-  <textarea id="mobileAdminNote" rows="3" placeholder="Message aux utilisateurs..." style="resize:vertical"></textarea>
-  <label style="font-weight:600;margin-top:8px;display:block">Visible pour les utilisateurs</label>
-  <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-    <input type="checkbox" id="mobileAdminVisible" />
-    <label for="mobileAdminVisible" style="font-weight:600">Publier la note</label>
+<div id="mobileAdminBackdrop"></div>
+
+<button id="mobileAdminBtn">
+  ✏️
+</button>
+
+<div id="mobileAdminPanel">
+
+  <div class="panel-handle"></div>
+
+  <div class="mobile-title">
+    ⚙️ Panneau Admin
   </div>
-  <div class="mobile-admin-actions" style="margin-top:8px;display:flex;gap:8px">
-    <button class="btn btn-light" id="mobileAdminClose">Fermer</button>
-    <button class="btn btn-primary" id="mobileAdminSave">Enregistrer</button>
+
+  <label class="mobile-label">
+    📅 Date de départ
+  </label>
+
+  <input
+    type="date"
+    id="mobileAdminDate"
+    class="mobile-input"
+  >
+
+  <label class="mobile-label">
+    📝 Note publique
+  </label>
+
+  <textarea
+    id="mobileAdminNote"
+    class="mobile-textarea"
+    placeholder="Écrire un message pour les utilisateurs..."
+  ></textarea>
+
+  <div class="switch-row">
+
+    <div class="switch-text">
+      <strong>Afficher la note</strong>
+      <span>Visible pour tous les utilisateurs</span>
+    </div>
+
+    <label class="switch">
+      <input type="checkbox" id="mobileAdminVisible">
+      <span class="slider"></span>
+    </label>
+
   </div>
+
+  <div class="mobile-actions">
+
+    <button
+      class="mobile-close"
+      id="mobileAdminClose">
+      Fermer
+    </button>
+
+    <button
+      class="mobile-save"
+      id="mobileAdminSave">
+      💾 Enregistrer
+    </button>
+
+  </div>
+
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -767,40 +1025,56 @@
   // --- Mobile admin panel logic ---
   function openMobileAdmin(){
     const panel = document.getElementById('mobileAdminPanel');
-    if(!panel) return;
+    const backdrop = document.getElementById('mobileAdminBackdrop');
+
     panel.classList.add('show');
-    panel.style.display = 'block';
-    panel.setAttribute('aria-hidden','false');
+    backdrop.classList.add('show');
+
   }
 
   function closeMobileAdmin(){
     const panel = document.getElementById('mobileAdminPanel');
-    if(!panel) return;
+    const backdrop = document.getElementById('mobileAdminBackdrop');
+
     panel.classList.remove('show');
-    panel.setAttribute('aria-hidden','true');
-    setTimeout(()=>{ panel.style.display = 'none'; },260);
+    backdrop.classList.remove('show');
+
   }
 
+  document
+  .getElementById('mobileAdminBackdrop')
+  .addEventListener('click', closeMobileAdmin);
+
   function saveMobileAdmin(){
-    const date = document.getElementById('mobileAdminDate').value || '';
-    const note = document.getElementById('mobileAdminNote').value || '';
-    const visibleEl = document.getElementById('mobileAdminVisible');
-    const visible = !!visibleEl && visibleEl.checked;
-    try{ localStorage.setItem('admin_mobile_date', date); localStorage.setItem('admin_mobile_note', note); localStorage.setItem('admin_mobile_visible', visible ? '1' : '0'); }catch(e){}
-    // send to server to broadcast to all clients
-    try{
-      // use relative path so same-origin pages work without CORS issues
-      fetch('/api/settings', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ selectedDate: date, note, visible }) }).catch(()=>{});
-    }catch(e){}
-    // update UI immediately
-    try{
-      const dn = document.getElementById('display-note');
-      const pd = document.getElementById('public-selected-date');
-      if(dn){ if(visible && note && note.trim()){ dn.style.display=''; dn.innerHTML = note.replace(/\n/g,'<br>'); } else { dn.style.display='none'; dn.innerHTML=''; } }
-      if(pd){ pd.textContent = (visible && date) ? date : 'Aucune date définie'; }
-    }catch(e){}
-    showToast('Note enregistrée');
-    closeMobileAdmin();
+
+    const date =
+      document.getElementById('mobileAdminDate').value || '';
+
+    const note =
+      document.getElementById('mobileAdminNote').value || '';
+
+    const visible =
+      document.getElementById('mobileAdminVisible').checked;
+
+    fetch('/api/settings', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({
+        selectedDate:date,
+        note:note,
+        visible:visible
+      })
+    })
+    .then(()=>{
+      showToast('Informations enregistrées');
+      closeMobileAdmin();
+    })
+    .catch(()=>{
+      showToast('Erreur serveur');
+    });
+
   }
 
   function loadMobileAdmin(){
@@ -876,18 +1150,7 @@
     if(saveBtn) saveBtn.addEventListener('click', saveMobileAdmin);
     // load stored values
     loadMobileAdmin();
-    // make floating button draggable
-    try{
-      if(btn){
-        const posRaw = localStorage.getItem('adminMobileBtnPos');
-        if(posRaw){ const p = JSON.parse(posRaw); if(p.left!=null && p.top!=null){ btn.style.left = p.left + 'px'; btn.style.top = p.top + 'px'; btn.style.right = 'auto'; btn.style.bottom = 'auto'; } }
-        let dragging=false, sx=0, sy=0, sl=0, st=0;
-        function onDown(e){ e.preventDefault(); dragging=true; const p=(e.touches && e.touches[0])||e; sx=p.clientX; sy=p.clientY; const r=btn.getBoundingClientRect(); sl=r.left; st=r.top; document.addEventListener('mousemove', onMove); document.addEventListener('touchmove', onMove, {passive:false}); document.addEventListener('mouseup', onUp); document.addEventListener('touchend', onUp); }
-        function onMove(e){ if(!dragging) return; e.preventDefault(); const p=(e.touches && e.touches[0])||e; const nx=sl + (p.clientX - sx); const ny=st + (p.clientY - sy); btn.style.left = Math.max(8, Math.min(window.innerWidth - btn.offsetWidth - 8, nx)) + 'px'; btn.style.top = Math.max(8, Math.min(window.innerHeight - btn.offsetHeight - 8, ny)) + 'px'; }
-        function onUp(){ if(!dragging) return; dragging=false; document.removeEventListener('mousemove', onMove); document.removeEventListener('touchmove', onMove); document.removeEventListener('mouseup', onUp); document.removeEventListener('touchend', onUp); try{ localStorage.setItem('adminMobileBtnPos', JSON.stringify({ left: parseInt(btn.style.left||0,10), top: parseInt(btn.style.top||0,10) })); }catch(e){} }
-        btn.addEventListener('mousedown', onDown); btn.addEventListener('touchstart', onDown, {passive:false});
-      }
-    }catch(e){}
+    // static premium admin button (no drag behavior)
   })();
 
   function add(note){
