@@ -33,57 +33,208 @@ body {
     align-items: center;
     overflow-x: clip;
 }
-/* NAVBAR SaaS */
-.menu-bar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 70px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 18px;
-    padding: 0 40px;
-    background: rgba(199, 209, 235, 0.65);
-    box-shadow: 0 4px 24px rgba(253, 215, 0, 0.1);
-    backdrop-filter: blur(12px);
-    z-index: 100;
-    animation: navfade 1s cubic-bezier(.4,0,.2,1);
+/* =========================
+   MENU PREMIUM GSM
+========================= */
+
+.menu-bar{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:72px;
+    padding:0 22px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:rgba(10,15,25,0.78);
+    backdrop-filter:blur(18px);
+    border-bottom:1px solid rgba(255,255,255,0.08);
+    box-shadow:0 10px 35px rgba(0,0,0,0.35);
+    z-index:999;
 }
-@keyframes navfade {
-    from { opacity: 0; transform: translateY(-30px); }
-    to { opacity: 1; transform: none; }
+
+/* LOGO */
+.logo-btn{
+    background:linear-gradient(135deg,#facc15,#f59e0b);
+    color:#111827;
+    border:none;
+    padding:12px 22px;
+    border-radius:16px;
+    font-weight:800;
+    font-size:1rem;
+    letter-spacing:1px;
+    cursor:pointer;
+    transition:0.25s;
+    box-shadow:0 6px 18px rgba(250,204,21,0.35);
 }
-.logo-btn {
-    background: linear-gradient(90deg,#111,#444 80%);
-    color: #fff;
-    font-weight: 800;
-    font-size: 1.2em;
-    letter-spacing: 2px;
-    border-radius: 18px;
-    padding: 10px 32px;
-    margin-right: auto;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
-    border: none;
-    transition: background 0.3s;
+
+.logo-btn:hover{
+    transform:translateY(-2px) scale(1.03);
+    box-shadow:0 12px 28px rgba(250,204,21,0.45);
 }
-.logo-btn:hover {
-    background: linear-gradient(90deg,#222,#666 80%);
+
+/* BOUTONS MENU */
+.menu-bar button,
+.menu-bar a{
+    position:relative;
+    overflow:hidden;
+    border:none;
+    border-radius:14px;
+    padding:11px 18px;
+    font-size:0.96rem;
+    font-weight:700;
+    text-decoration:none;
+    cursor:pointer;
+    transition:all .25s ease;
+    color:white;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    box-shadow:0 4px 18px rgba(0,0,0,0.20);
 }
-.menu-bar button, .menu-bar a {
-    border: none;
-    border-radius: 30px;
-    padding: 10px 22px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.2s;
-    text-decoration: none;
-    font-size: 1em;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    display: flex;
-    align-items: center;
-    gap: 8px;
+
+/* effet glass */
+.menu-bar button::before,
+.menu-bar a::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(
+        120deg,
+        rgba(255,255,255,0.20),
+        rgba(255,255,255,0.05)
+    );
+    opacity:0;
+    transition:.25s;
+}
+
+.menu-bar button:hover::before,
+.menu-bar a:hover::before{
+    opacity:1;
+}
+
+/* hover */
+.menu-bar button:hover,
+.menu-bar a:hover{
+    transform:translateY(-3px);
+}
+
+/* CONNECTER */
+.login{
+    background:linear-gradient(135deg,#2563eb,#06b6d4);
+}
+
+/* DECONNECTER */
+.logout{
+    background:linear-gradient(135deg,#ef4444,#dc2626);
+}
+
+/* ADMIN */
+#adminBtn{
+    background:linear-gradient(135deg,#7c3aed,#4f46e5);
+}
+
+/* PANEL ADMIN */
+#open-admin-panel-btn{
+    background:linear-gradient(135deg,#0ea5e9,#0284c7);
+}
+
+/* NOTIFICATIONS */
+#open-admin-notifs-btn{
+    background:linear-gradient(135deg,#f59e0b,#ea580c);
+}
+
+/* MENU PRINCIPAL */
+#main-menu-btn{
+    background:linear-gradient(135deg,#1d4ed8,#2563eb);
+    color:white;
+    border:none;
+    border-radius:14px;
+    padding:11px 18px;
+    font-weight:700;
+    cursor:pointer;
+    transition:.25s;
+    box-shadow:0 6px 18px rgba(37,99,235,0.30);
+}
+
+#main-menu-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 12px 30px rgba(37,99,235,0.45);
+}
+
+/* PANEL MENU */
+#main-menu-panel{
+    background:rgba(255,255,255,0.96) !important;
+    backdrop-filter:blur(16px);
+    border-radius:18px !important;
+    padding:14px !important;
+    border:1px solid rgba(0,0,0,0.06);
+    box-shadow:0 20px 45px rgba(0,0,0,0.22) !important;
+}
+
+#main-menu-panel button,
+#main-menu-panel a{
+    color:#0f172a !important;
+    background:transparent !important;
+    border-radius:12px !important;
+    transition:0.22s;
+    box-shadow:none !important;
+}
+
+#main-menu-panel button:hover,
+#main-menu-panel a:hover{
+    background:#eff6ff !important;
+    transform:translateX(4px);
+}
+
+/* MOBILE */
+@media(max-width:768px){
+
+    .menu-bar{
+        height:65px;
+        padding:0 10px;
+        gap:8px;
+    }
+
+    .logo-btn{
+        padding:10px 14px;
+        font-size:0.92rem;
+        border-radius:12px;
+    }
+
+    .menu-bar button,
+    .menu-bar a{
+        padding:10px 12px;
+        font-size:0.90rem;
+        border-radius:12px;
+    }
+
+    #main-menu-btn{
+        padding:10px 14px;
+        border-radius:12px;
+    }
+
+    #main-menu-panel{
+        right:0;
+        width:260px;
+    }
+}
+
+/* animation */
+@keyframes menuFade{
+    from{
+        opacity:0;
+        transform:translateY(-10px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+
+#main-menu-panel{
+    animation:menuFade .25s ease;
 }
 /* admin/public settings banner animation */
 .settings-highlight{animation:settingsFlash 1.6s ease both}
@@ -480,7 +631,7 @@ footer {
     <button id="adminBtn" class="login" style="background:linear-gradient(90deg,#d80824,#444);color:#fff;">GSM</button>
     <button id="quit-admin-btn" class="logout" style="display:none;background:linear-gradient(90deg,#888,#444);color:#fff;">Quitter mode admin</button>
     <button id="open-admin-panel-btn" class="login" style="display:none;margin-left:8px;background:linear-gradient(90deg,#1e40af,#0ea5e9);color:#fff;">Panneau Admin</button>
-    <button id="open-admin-notifs-btn" class="login" style="display:none;margin-left:8px;background:linear-gradient(90deg,#f59e0b,#d97706);color:#fff;">Notifications Admin</button>
+    <button id="open-admin-notifs-btn" class="login" style="margin-left:8px;background:linear-gradient(90deg,#f59e0b,#d97706);color:#fff;">Notifications Admin</button>
 </div>
 
 <div class="container">
