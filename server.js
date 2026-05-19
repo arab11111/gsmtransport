@@ -163,6 +163,36 @@ app.get('/api/notifications', async (req, res)=>{
   res.json(list);
 });
 
+// API: users list / lookup by matricule (prefers MongoDB when available)
+app.get('/api/users', async (req, res) => {
+  const matricule = req.query.matricule;
+  // Try MongoDB if initialized
+  if (mongoClient) {
+    try {
+      const db = MONGODB_DB ? mongoClient.db(MONGODB_DB) : mongoClient.db();
+      const usersCol = db.collection('users');
+      if (matricule) {
+        const doc = await usersCol.findOne({ matricule: String(matricule) });
+        return res.json(doc ? [doc] : []);
+      }
+      const docs = await usersCol.find({}).limit(1000).toArray();
+      return res.json(docs || []);
+    } catch (e) { console.warn('mongo users query failed', e); }
+  }
+  // Fallback to local users.json
+  try {
+    const users = await readJson(USERS_FILE, []);
+    if (matricule) {
+      const found = users.filter(u => u && u.matricule && String(u.matricule).toLowerCase() === String(matricule).toLowerCase());
+      return res.json(found);
+    }
+    return res.json(users || []);
+  } catch (e) {
+    console.warn('users lookup failed', e);
+    return res.json([]);
+  }
+});
+
 // API: post booking
 app.post('/api/bookings', async (req, res)=>{
   try {
