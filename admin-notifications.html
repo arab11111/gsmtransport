@@ -844,6 +844,7 @@
   const socket = io();
 
   const storageKey = 'admin_notifications';
+  const deletedKey = 'admin_notifications_deleted';
 
   const listEl = document.getElementById('list');
 
@@ -912,6 +913,48 @@
 
   function save(list){
     localStorage.setItem(storageKey, JSON.stringify(list));
+  }
+
+  function loadDeletedIds(){
+    try{ return JSON.parse(localStorage.getItem(deletedKey) || '[]'); }catch(e){ return []; }
+  }
+
+  function saveDeletedIds(arr){
+    try{ localStorage.setItem(deletedKey, JSON.stringify(Array.from(new Set(arr)))); }catch(e){}
+  }
+
+  function addDeletedId(id){
+    if(!id) return;
+    const arr = loadDeletedIds();
+    if(!arr.includes(id)){
+      arr.push(id);
+      saveDeletedIds(arr);
+    }
+  }
+
+  function isDeletedId(id){
+    if(!id) return false;
+    try{ const arr = loadDeletedIds(); return arr.includes(id); }catch(e){ return false; }
+  }
+
+  function saveClearedAt(ts){
+    try{ localStorage.setItem('admin_notifications_clearedAt', String(ts || 0)); }catch(e){}
+  }
+
+  function loadClearedAt(){
+    try{ const v = localStorage.getItem('admin_notifications_clearedAt'); return v ? parseInt(v,10) : 0; }catch(e){ return 0; }
+  }
+
+  function isSuppressed(item){
+    if(!item) return false;
+    const id = item && (item.bagage_numero || item.matricule || item.receivedAt || item.id);
+    if(id && isDeletedId(id)) return true;
+    const clearedAt = loadClearedAt();
+    if(!clearedAt) return false;
+    const timeStr = item.receivedAt || item.createdAt || item.received_at || '';
+    const ts = Date.parse(timeStr);
+    if(!isNaN(ts) && ts <= clearedAt) return true;
+    return false;
   }
 
   function updateStats(){
@@ -1155,11 +1198,19 @@
 
   function add(note){
 
+    // skip entirely if this item is suppressed (deleted or before a clear-all)
+    if(isSuppressed(note)) return;
+
     const list = load();
 
+    const id = note && (note.bagage_numero || note.matricule || note.receivedAt || note.id);
+
+    // don't re-add if this id was deleted by the admin
+    if(id && isDeletedId(id)) return;
+
     const exists = list.some(x =>
-      x.bagage_numero &&
-      x.bagage_numero === note.bagage_numero
+      (x.bagage_numero && note.bagage_numero && x.bagage_numero === note.bagage_numero) ||
+      (x.matricule && note.matricule && x.matricule === note.matricule)
     );
 
     if(exists) return;
@@ -1197,6 +1248,15 @@
   function removeNote(index){
 
     const list = load();
+
+    if(!confirm('Confirmer la suppression de cette notification ?')) return;
+
+    const item = list[index];
+
+    if(item){
+      const id = item.bagage_numero || item.matricule || item.receivedAt || item.id;
+      if(id) addDeletedId(id);
+    }
 
     list.splice(index,1);
 
@@ -1283,10 +1343,15 @@
 
     const merged = [...current];
 
+
     list.forEach(item => {
 
+      // skip if admin previously deleted this notification or cleared-all timestamp
+      if(isSuppressed(item)) return;
+
       const exists = merged.some(x =>
-        x.bagage_numero === item.bagage_numero
+        (x.bagage_numero && item.bagage_numero && x.bagage_numero === item.bagage_numero) ||
+        (x.matricule && item.matricule && x.matricule === item.matricule)
       );
 
       if(!exists){
@@ -1401,6 +1466,20 @@
     .addEventListener('click',()=>{
 
       if(!confirm('Supprimer toutes les notifications ?')) return;
+
+      const list = load();
+
+      // add all current ids to deleted list so they don't come back
+      try{
+        list.forEach(item => {
+          const id = item && (item.bagage_numero || item.matricule || item.receivedAt || item.id);
+          if(id) addDeletedId(id);
+        });
+      }catch(e){}
+
+      // record a cleared timestamp so any items with receivedAt <= this time
+      // will be permanently suppressed locally (defensive for items lacking stable ids)
+      try{ saveClearedAt(Date.now()); }catch(e){}
 
       localStorage.removeItem(storageKey);
 
