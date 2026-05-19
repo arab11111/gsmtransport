@@ -480,6 +480,7 @@ footer {
     <button id="adminBtn" class="login" style="background:linear-gradient(90deg,#d80824,#444);color:#fff;">GSM</button>
     <button id="quit-admin-btn" class="logout" style="display:none;background:linear-gradient(90deg,#888,#444);color:#fff;">Quitter mode admin</button>
     <button id="open-admin-panel-btn" class="login" style="display:none;margin-left:8px;background:linear-gradient(90deg,#1e40af,#0ea5e9);color:#fff;">Panneau Admin</button>
+    <button id="open-admin-notifs-btn" class="login" style="display:none;margin-left:8px;background:linear-gradient(90deg,#f59e0b,#d97706);color:#fff;">Notifications Admin</button>
 </div>
 
 <div class="container">
@@ -780,7 +781,9 @@ try {
                 // allow native navigation when already in admin mode
                 if (isAdmin) return;
                 e.preventDefault();
-                pendingNavigationTarget = (a.getAttribute && a.getAttribute('href')) ? a.getAttribute('href') : 'bagages.html';
+                // normalize to absolute path to avoid relative navigation issues
+                const href = (a.getAttribute && a.getAttribute('href')) ? a.getAttribute('href') : 'bagages.html';
+                pendingNavigationTarget = href.startsWith('/') ? href : ('/' + href.replace(/^\/+/, ''));
                 try { showAdminCodeModal(); } catch (ex) { // fallback to prompt verify
                     const code = prompt('Entrez le code admin');
                     if (!code) return;
@@ -891,7 +894,7 @@ try {
             if (!code) return;
             if (code === 'Salim_Anis_2026') {
                 try { sessionStorage.setItem('gsm_code', '1'); } catch (e) {}
-                window.location.href = 'admin-notifications.html';
+                openAdminNotificationsWindow();
                 return;
             }
             const res = await fetch(`${SERVER_ORIGIN}/api/auth/verify-code`, {
@@ -899,7 +902,7 @@ try {
             });
             if (res.ok) {
                 try { sessionStorage.setItem('gsm_code', '1'); } catch (e) {}
-                window.location.href = 'admin-notifications.html';
+                openAdminNotificationsWindow();
             } else {
                 alert('Code invalide');
             }
@@ -921,9 +924,14 @@ try {
     if (menuNotifsBtn) {
         menuNotifsBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const code = prompt('Entrez le code admin');
-            if (!code) return;
-            verifyAndOpenAdmin(code.trim());
+            if (isAdmin) { openAdminNotificationsWindow(); return; }
+            // request admin code via modal and open notifications on success
+            pendingNavigationTarget = '/admin-notifications.html';
+            try { showAdminCodeModal(); } catch (ex) {
+                const code = prompt('Entrez le code admin');
+                if (!code) return;
+                verifyAndOpenAdmin(code.trim());
+            }
         });
     }
 } catch (e) { console.warn('menu-admin attach failed', e); }
@@ -935,6 +943,7 @@ function setAdminUI(admin) {
         adminBtn.style.display = 'none';
         quitAdminBtn.style.display = '';
         const panelBtn = document.getElementById('open-admin-panel-btn'); if (panelBtn) panelBtn.style.display = '';
+        const notifsBtn = document.getElementById('open-admin-notifs-btn'); if (notifsBtn) notifsBtn.style.display = '';
         const menuNotifsBtn = document.getElementById('menu-notifs'); if (menuNotifsBtn) menuNotifsBtn.style.display = '';
         const mobileMenuNotifs = document.getElementById('mobile-menu-notifs'); if (mobileMenuNotifs) mobileMenuNotifs.style.display = '';
         notifDiv.style.display = '';
@@ -946,6 +955,7 @@ function setAdminUI(admin) {
     } else {
         adminBtn.style.display = '';
         quitAdminBtn.style.display = 'none';
+        const notifsBtn = document.getElementById('open-admin-notifs-btn'); if (notifsBtn) notifsBtn.style.display = 'none';
         const menuNotifsBtn = document.getElementById('menu-notifs'); if (menuNotifsBtn) menuNotifsBtn.style.display = 'none';
         const mobileMenuNotifs = document.getElementById('mobile-menu-notifs'); if (mobileMenuNotifs) mobileMenuNotifs.style.display = 'none';
         const panelBtn = document.getElementById('open-admin-panel-btn'); if (panelBtn) panelBtn.style.display = 'none';
@@ -1552,6 +1562,12 @@ if (openAdminPanelBtn) openAdminPanelBtn.addEventListener('click', () => {
     if (!isAdmin) return alert('Activez le mode admin pour ouvrir le panneau.');
     if (adminPanelModal) adminPanelModal.style.display = 'flex';
 });
+const openAdminNotifsBtn = document.getElementById('open-admin-notifs-btn');
+if (openAdminNotifsBtn) openAdminNotifsBtn.addEventListener('click', () => {
+    if (isAdmin) { openAdminNotificationsWindow(); return; }
+    pendingNavigationTarget = '/admin-notifications.html';
+    try { showAdminCodeModal(); } catch (e) { const code = prompt('Entrez le code admin'); if (code) verifyAndOpenAdmin(code.trim()); }
+});
 if (adminPanelClose) adminPanelClose.addEventListener('click', () => { if (adminPanelModal) adminPanelModal.style.display = 'none'; });
 if (adminPanelSave) adminPanelSave.addEventListener('click', async () => {
     try {
@@ -1634,7 +1650,19 @@ try {
     // wire menu-notifs button (open admin-notifications.html)
     try {
         const menuNotifs = document.getElementById('menu-notifs');
-        if (menuNotifs) menuNotifs.addEventListener('click', (e) => { e.stopPropagation(); try { openAdminNotificationsWindow(); if (mainMenuPanel) mainMenuPanel.style.display='none'; } catch (err) {} });
+        if (menuNotifs) menuNotifs.addEventListener('click', (e) => {
+            e.stopPropagation();
+            try {
+                if (isAdmin) {
+                    openAdminNotificationsWindow();
+                    if (mainMenuPanel) mainMenuPanel.style.display='none';
+                    return;
+                }
+                pendingNavigationTarget = '/admin-notifications.html';
+                showAdminCodeModal();
+                if (mainMenuPanel) mainMenuPanel.style.display='none';
+            } catch (err) { console.warn('menu-notifs click failed', err); }
+        });
     } catch (e) {}
 
     // mobile drawer: open admin notifications and close drawer
@@ -1644,7 +1672,10 @@ try {
         const backdrop = document.getElementById('mobile-menu-backdrop');
         if (mobileNotifs) mobileNotifs.addEventListener('click', (e) => {
             e.preventDefault();
-            try { openAdminNotificationsWindow(); } catch (err) {}
+            try {
+                if (isAdmin) { openAdminNotificationsWindow(); }
+                else { pendingNavigationTarget = '/admin-notifications.html'; showAdminCodeModal(); }
+            } catch (err) { console.warn('mobile menu-notifs failed', err); }
             try { if(drawer) drawer.classList.remove('open'); if(backdrop) backdrop.classList.remove('visible'); document.body.style.overflow=''; } catch(e){}
         });
     } catch(e) {}
@@ -1655,7 +1686,8 @@ try {
         if (menuBagages) {
             menuBagages.addEventListener('click', function(e){
                 e.stopPropagation();
-                const href = menuBagages.getAttribute('href') || 'bagages.html';
+                const raw = menuBagages.getAttribute('href') || 'bagages.html';
+                const href = raw.startsWith('/') ? raw : ('/' + raw.replace(/^\/+/, ''));
                 if (isAdmin) {
                     window.location.href = href;
                     return;
@@ -1794,7 +1826,8 @@ try {
             const mobileBagages = document.getElementById('mobile-menu-bagages');
             if(mobileBagages) mobileBagages.addEventListener('click', function(e){
                 e.stopPropagation();
-                const href = mobileBagages.getAttribute('href') || 'bagages.html';
+                const raw = mobileBagages.getAttribute('href') || 'bagages.html';
+                const href = raw.startsWith('/') ? raw : ('/' + raw.replace(/^\/+/, ''));
                 if(isAdmin){ closeDrawer(); window.location.href = href; return; }
                 e.preventDefault(); pendingNavigationTarget = href; closeDrawer(); showAdminCodeModal();
             });
