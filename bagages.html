@@ -13,9 +13,16 @@
   --primary:#1e40af;
   --primary-light:#3b82f6;
   --secondary:#0f766e;
-  </body>
-  <script>/* notification system removed from this page; admin notifications will be centralized in admin-notifications.html */</script>
-  </html>
+  --bg-secondary:#f1f5f9;
+  --text-primary:#0f172a;
+  --text-secondary:#6b7280;
+  --border:#e5e7eb;
+  --card:#ffffff;
+  --success:#10b981;
+  --danger:#ef4444;
+  --rounded-sm:8px;
+  --rounded-md:12px;
+}
 .btn-small{padding:0.6rem 1rem;font-size:0.85rem}
 
 .controls{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem}
@@ -49,7 +56,7 @@
 }
 
 /* Highlight search results for matricule */
-.highlight-matricule{background:linear-gradient(90deg,#fffbe6,#e6ffea);border-left:4px solid #10b981}
+.highlight-matricule{background:linear-gradient(90deg,#fffbe6,#e6ffea);border-left:4px solid var(--success)}
 
 table{
   width:100%;
@@ -76,16 +83,10 @@ tr:hover{background:#fafbfc}
 
 tr:last-child td{border-bottom:none}
 
-.badge{
-  display:inline-block;
-  padding:0.35rem 0.85rem;
-  border-radius:50px;
-  </body>
-  <script>/* notification system removed from this page; admin notifications will be centralized in admin-notifications.html */</script>
-  </html>
-      </div>
-    </div>
-    <button id="mobile-menu-btn" aria-label="Menu mobile" style="display:none;background:transparent;border:none;color:#fff;font-size:1.4rem;padding:8px;margin-left:12px;">☰</button>
+.badge{display:inline-block;padding:0.35rem 0.85rem;border-radius:50px;background:#f3f4f6;color:#111;font-weight:600}
+</style>
+</head>
+<body>
     <div style="display:flex;align-items:center;gap:12px">
       <a href="terms.html" style="color:#fff;text-decoration:none;font-weight:600;margin-right:8px">Conditions</a>
       <a href="contact.html" style="color:#fff;text-decoration:none;font-weight:600">Contact</a>
@@ -859,10 +860,23 @@ document.getElementById('bell-btn').addEventListener('click', function(e) {
     const q = (searchMat && searchMat.value||'').trim();
     clearHighlights();
     if(!q){ if(userInfo) userInfo.style.display='none'; return; }
-    const users = await fetchUsersOnce();
-    const norm = q.replace(/[^+0-9]/g,'');
-    let found = users.find(u => (u && u.matricule && u.matricule.toLowerCase() === q.toLowerCase()));
-    if(!found) found = users.find(u => ((u.whatsapp||'').replace(/[^+0-9]/g,'') === norm));
+    // First try server-side lookup by matricule (fast when MongoDB available)
+    let found = null;
+    try {
+      const res = await fetch('/api/users?matricule=' + encodeURIComponent(q));
+      if (res.ok) {
+        const arr = await res.json().catch(()=>[]);
+        if (Array.isArray(arr) && arr.length) found = arr[0];
+      }
+    } catch (e) { /* ignore and fallback to local cache */ }
+
+    // Fallback: local cache search by matricule or whatsapp
+    if (!found) {
+      const users = await fetchUsersOnce();
+      const norm = q.replace(/[^+0-9]/g,'');
+      found = users.find(u => (u && u.matricule && u.matricule.toLowerCase() === q.toLowerCase()));
+      if(!found) found = users.find(u => ((u.whatsapp||'').replace(/[^+0-9]/g,'') === norm));
+    }
     showUser(found);
     // highlight rows whose bag number contains the matricule string
     try{
